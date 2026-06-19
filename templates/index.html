@@ -505,17 +505,18 @@ body{
       <!-- JOIN: token input -->
       <div id="auth-token-wrap" style="display:none">
         <div style="font-size:12px;color:var(--muted2);margin-bottom:6px">Kod rodziny (6 znaków, np. XK9MPL)</div>
-        <input class="inp" id="auth-token" placeholder="Kod rodziny" maxlength="6"
-          oninput="this.value=this.value.toUpperCase()"
-          style="text-transform:uppercase;letter-spacing:3px;font-size:16px;font-weight:700;text-align:center"/>
+        <input class="inp" id="auth-token" placeholder="KOD RODZINY" maxlength="6"
+          oninput="this.value=this.value.toUpperCase();onTokenInput(this.value)"
+          style="text-transform:uppercase;letter-spacing:5px;font-size:18px;font-weight:900;text-align:center"/>
+        <!-- lookup result -->
+        <div id="token-lookup" style="margin-top:10px;display:none"></div>
       </div>
 
-      <!-- MEMBER LINK (register only) -->
+      <!-- MEMBER LINK (register only — shown after token lookup or for create) -->
       <div id="auth-member-wrap" style="display:none">
-        <div style="font-size:12px;color:var(--muted2);margin-bottom:6px">Połącz z profilem domownika (opcjonalne)</div>
-        <select class="inp" id="auth-member" style="width:100%">
-          <option value="">— brak połączenia —</option>
-        </select>
+        <div style="font-size:12px;color:var(--muted2);margin-bottom:6px">Kim jesteś w tej rodzinie?</div>
+        <div id="auth-member-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>
+        <input type="hidden" id="auth-member" value=""/>
       </div>
 
       <button onclick="doAuth()" style="
@@ -776,7 +777,72 @@ function setHouseholdAction(action){
   $('hact-join').style.color         = isJoin ? 'var(--blue2)' : 'var(--muted2)';
   $('auth-token-wrap').style.display = isJoin ? 'block' : 'none';
   $('auth-hname-wrap').style.display = isJoin ? 'none'  : 'block';
-  $('auth-member-wrap').style.display= 'none'; // member link only when joining existing data
+  $('auth-member-wrap').style.display = 'none';
+  $('token-lookup').style.display = 'none';
+  $('auth-token').value = '';
+  $('auth-member').value = '';
+}
+
+let _tokenTimer = null;
+function onTokenInput(val){
+  clearTimeout(_tokenTimer);
+  $('token-lookup').style.display = 'none';
+  $('auth-member-wrap').style.display = 'none';
+  $('auth-member').value = '';
+  if(val.length < 6) return;
+  // debounce 400ms
+  _tokenTimer = setTimeout(()=>lookupToken(val), 400);
+}
+
+async function lookupToken(token){
+  const box = $('token-lookup');
+  box.style.display = 'block';
+  box.innerHTML = `<div style="font-size:12px;color:var(--muted2);text-align:center;padding:8px">🔍 Szukam rodziny...</div>`;
+  const res = await fetch(`/api/household/lookup?token=${token}`).then(r=>r.json());
+  if(res.error){
+    box.innerHTML = `<div style="
+      background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);
+      border-radius:12px;padding:10px 14px;color:#fca5a5;font-size:13px;text-align:center;
+    ">❌ ${esc(res.error)}</div>`;
+    return;
+  }
+  box.innerHTML = `<div style="
+    background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);
+    border-radius:12px;padding:10px 14px;text-align:center;
+  ">
+    <div style="font-size:11px;color:var(--muted2);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Znaleziono rodzinę</div>
+    <div style="font-size:16px;font-weight:900;color:var(--green)">🏠 ${esc(res.name)}</div>
+  </div>`;
+
+  // Show member picker
+  const members = res.members || [];
+  const wrap = $('auth-member-wrap');
+  const grid = $('auth-member-grid');
+  if(members.length > 0){
+    grid.innerHTML = members.map(m=>`
+      <button type="button" onclick="selectMember('${m.id}',this)" style="
+        padding:10px 6px;border-radius:12px;border:2px solid var(--border);
+        background:var(--bg3);cursor:pointer;transition:all 0.15s;
+        display:flex;flex-direction:column;align-items:center;gap:4px;
+      ">
+        <span style="font-size:26px">${m.emoji}</span>
+        <span style="font-size:11px;font-weight:700;color:var(--text2)">${esc(m.name)}</span>
+      </button>`).join('');
+    wrap.style.display = 'block';
+  } else {
+    grid.innerHTML = `<div style="font-size:12px;color:var(--muted2);grid-column:span 3;padding:6px 0">Brak domowników — właściciel jeszcze ich nie dodał.</div>`;
+    wrap.style.display = 'block';
+  }
+}
+
+function selectMember(id, btn){
+  $('auth-member').value = id;
+  $('auth-member-grid').querySelectorAll('button').forEach(b=>{
+    b.style.borderColor = 'var(--border)';
+    b.style.background  = 'var(--bg3)';
+  });
+  btn.style.borderColor = 'var(--blue)';
+  btn.style.background  = 'rgba(14,165,233,0.15)';
 }
 
 function showAuthTab(mode){
