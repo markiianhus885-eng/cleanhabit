@@ -546,43 +546,54 @@ def leaderboard():
 # ── CALENDAR ──────────────────────────────────────────────────
 @app.route('/api/calendar')
 def calendar_view():
+    import calendar as cal_mod
     err = require_auth(); hid = get_hid()
     if err: return err
-    db = get_db()
+    db  = get_db()
+    now = datetime.now()
+    year  = int(request.args.get('year',  now.year))
+    month = int(request.args.get('month', now.month))
+
     tasks   = [dict(r) for r in db.execute("SELECT * FROM tasks WHERE household_id=?", [hid])]
     members = {r['id']: dict(r) for r in db.execute("SELECT * FROM members WHERE household_id=?", [hid])}
     rooms   = {r['id']: dict(r) for r in db.execute("SELECT * FROM rooms WHERE household_id=?", [hid])}
-    now = datetime.now()
-    week_start = now - timedelta(days=now.weekday())
-    week = []
-    for i in range(7):
-        day = week_start + timedelta(days=i)
+    history = [dict(r) for r in db.execute(
+        "SELECT task_id, completed_at FROM history WHERE household_id=? AND completed_at LIKE ?",
+        [hid, f'{year}-{month:02d}%'])]
+    done_dates = {}
+    for h in history:
+        d = h['completed_at'][:10]
+        done_dates.setdefault(d, set()).add(h['task_id'])
+
+    days_in_month = cal_mod.monthrange(year, month)[1]
+    result = []
+    for day_num in range(1, days_in_month + 1):
+        day = datetime(year, month, day_num)
+        day_iso = day.strftime('%Y-%m-%d')
         day_tasks = []
         for t in tasks:
             freq_days = FREQ_DAYS.get(t['freq'], 7)
+            created = datetime.fromisoformat(t['created_at']) if t['created_at'] else now
+            if created.date() > day.date():
+                continue
             if t['last_completed']:
                 last = datetime.fromisoformat(t['last_completed'])
                 next_due = last + timedelta(days=freq_days)
             else:
-                next_due = datetime.fromisoformat(t['created_at']) if t['created_at'] else now
-            diff_days = (day.date() - next_due.date()).days
-            if -1 <= diff_days <= 0 or freq_days == 1:
-                member = members.get(t['assigned_to'], {})
-                room   = rooms.get(t['room_id'], {})
-                day_tasks.append({
-                    'id': t['id'], 'name': t['name'], 'diff': t['diff'], 'freq': t['freq'],
-                    'member_name': member.get('name','?'), 'member_emoji': member.get('emoji','👤'),
-                    'room_name': room.get('name','?'),
-                    'done': bool(t['last_completed'] and
-                                 datetime.fromisoformat(t['last_completed']).date() == day.date()),
-                })
-        week.append({
-            'date': day.strftime('%Y-%m-%d'),
-            'weekday': ['Pon','Wt','Śr','Czw','Pt','Sob','Nd'][i],
-            'is_today': day.date() == now.date(),
-            'tasks': day_tasks,
-        })
-    return jsonify(week)
+                next_due = created
+            diff = (day.date() - next_due.date()).days
+            if not (0 <= diff < freq_days or freq_days == 1):
+                continue
+            member = members.get(t['assigned_to'], {})
+            room   = rooms.get(t['room_id'], {})
+            day_tasks.append({
+                'id': t['id'], 'name': t['name'], 'diff': t['diff'], 'freq': t['freq'],
+                'member_name': member.get('name', '?'), 'member_emoji': member.get('emoji', '👤'),
+                'room_name': room.get('name', '?'),
+                'done': t['id'] in done_dates.get(day_iso, set()),
+            })
+        result.append({'date': day_iso, 'is_today': day.date() == now.date(), 'tasks': day_tasks})
+    return jsonify(result)
 
 # ── VOICE ─────────────────────────────────────────────────────
 @app.route('/api/voice', methods=['POST'])
