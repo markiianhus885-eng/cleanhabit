@@ -508,11 +508,16 @@ body{
         <input class="inp" id="auth-token" placeholder="KOD RODZINY" maxlength="6"
           oninput="this.value=this.value.toUpperCase();onTokenInput(this.value)"
           style="text-transform:uppercase;letter-spacing:5px;font-size:18px;font-weight:900;text-align:center"/>
-        <!-- lookup result -->
         <div id="token-lookup" style="margin-top:10px;display:none"></div>
+        <!-- member picker shown after successful lookup -->
+        <div id="auth-member-wrap" style="display:none;margin-top:10px">
+          <div style="font-size:12px;color:var(--muted2);margin-bottom:8px;font-weight:700">Kim jesteś w tej rodzinie?</div>
+          <div id="auth-member-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>
+          <input type="hidden" id="auth-member" value=""/>
+        </div>
       </div>
 
-      <!-- DISPLAY NAME (register only) -->
+      <!-- DISPLAY NAME (create only) -->
       <div id="auth-displayname-wrap" style="display:none">
         <input class="inp" id="auth-displayname" placeholder="Twoje imię (np. Mama, Tata, Kacper)"/>
       </div>
@@ -894,9 +899,13 @@ function setHouseholdAction(action){
   $('hact-join').style.borderColor   = isJoin ? 'var(--blue)' : 'var(--border)';
   $('hact-join').style.background    = isJoin ? 'rgba(14,165,233,0.1)' : 'transparent';
   $('hact-join').style.color         = isJoin ? 'var(--blue2)' : 'var(--muted2)';
-  $('auth-token-wrap').style.display = isJoin ? 'block' : 'none';
-  $('auth-hname-wrap').style.display = isJoin ? 'none'  : 'block';
-  $('token-lookup').style.display = 'none';
+  $('auth-token-wrap').style.display    = isJoin ? 'block' : 'none';
+  $('auth-hname-wrap').style.display    = isJoin ? 'none'  : 'block';
+  $('auth-displayname-wrap').style.display = isJoin ? 'none' : 'block';
+  $('auth-emoji-wrap').style.display    = isJoin ? 'none' : 'block';
+  $('token-lookup').style.display    = 'none';
+  $('auth-member-wrap').style.display = 'none';
+  $('auth-member').value = '';
   if($('auth-token')) $('auth-token').value = '';
 }
 
@@ -911,28 +920,44 @@ function onTokenInput(val){
 async function lookupToken(token){
   const box = $('token-lookup');
   box.style.display = 'block';
+  $('auth-member-wrap').style.display = 'none';
+  $('auth-member').value = '';
   box.innerHTML = `<div style="font-size:12px;color:var(--muted2);text-align:center;padding:8px">🔍 Szukam rodziny...</div>`;
   const res = await fetch(`/api/household/lookup?token=${token}`).then(r=>r.json());
   if(res.error){
-    box.innerHTML = `<div style="
-      background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);
-      border-radius:12px;padding:10px 14px;color:#fca5a5;font-size:13px;text-align:center;
-    ">❌ ${esc(res.error)}</div>`;
+    box.innerHTML = `<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:10px 14px;color:#fca5a5;font-size:13px;text-align:center">❌ ${esc(res.error)}</div>`;
     return;
   }
-  const members = res.members || [];
-  const memberPreview = members.length
-    ? `<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:8px">${members.map(m=>`<span style="font-size:20px" title="${esc(m.name)}">${m.emoji}</span>`).join('')}</div>`
-    : '';
-  box.innerHTML = `<div style="
-    background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);
-    border-radius:12px;padding:10px 14px;text-align:center;
-  ">
+  box.innerHTML = `<div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:12px;padding:10px 14px;text-align:center">
     <div style="font-size:11px;color:var(--muted2);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Znaleziono rodzinę</div>
     <div style="font-size:16px;font-weight:900;color:var(--green)">🏠 ${esc(res.name)}</div>
-    ${memberPreview}
-    ${members.length ? `<div style="font-size:11px;color:var(--muted2);margin-top:6px">${members.length} domownik${members.length===1?'':'ów'} już w rodzinie</div>` : ''}
   </div>`;
+  const members = res.members || [];
+  const grid = $('auth-member-grid');
+  if(members.length > 0){
+    grid.innerHTML = members.map(m=>`
+      <button type="button" onclick="selectMember('${m.id}',this)" style="
+        padding:10px 6px;border-radius:12px;border:2px solid var(--border);
+        background:var(--bg3);cursor:pointer;
+        display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <span style="font-size:28px">${m.emoji}</span>
+        <span style="font-size:11px;font-weight:700;color:var(--text2)">${esc(m.name)}</span>
+      </button>`).join('');
+    $('auth-member-wrap').style.display = 'block';
+  } else {
+    grid.innerHTML = `<p style="font-size:12px;color:var(--muted2);grid-column:span 3">Właściciel jeszcze nie dodał domowników.</p>`;
+    $('auth-member-wrap').style.display = 'block';
+  }
+}
+
+function selectMember(id, btn){
+  $('auth-member').value = id;
+  $('auth-member-grid').querySelectorAll('button').forEach(b=>{
+    b.style.borderColor = 'var(--border)';
+    b.style.background  = 'var(--bg3)';
+  });
+  btn.style.borderColor = 'var(--blue)';
+  btn.style.background  = 'rgba(14,165,233,0.15)';
 }
 
 function showAuthTab(mode){
@@ -943,9 +968,9 @@ function showAuthTab(mode){
   $('tab-register').style.color = mode==='register' ? '#fff' : 'var(--muted2)';
   $('auth-household-wrap').style.display = mode==='register' ? 'block' : 'none';
   $('auth-token-wrap').style.display = 'none';
-  $('auth-hname-wrap').style.display = mode==='register' ? 'block' : 'none';
-  $('auth-displayname-wrap').style.display = mode==='register' ? 'block' : 'none';
-  $('auth-emoji-wrap').style.display = mode==='register' ? 'block' : 'none';
+  $('auth-hname-wrap').style.display = 'none';
+  $('auth-displayname-wrap').style.display = 'none';
+  $('auth-emoji-wrap').style.display = 'none';
   $('auth-btn').textContent = mode==='login' ? 'Zaloguj się' : 'Zarejestruj się';
   $('auth-error').style.display = 'none';
   if(mode==='register') { householdAction='create'; setHouseholdAction('create'); }
@@ -961,14 +986,17 @@ async function doAuth(){
   const body = {username, password};
   if(authMode==='register'){
     body.action = householdAction;
-    body.display_name = $('auth-displayname').value.trim() || username;
-    body.emoji = _selectedAuthEmoji || '😊';
     if(householdAction === 'join'){
       const tok = $('auth-token').value.trim().toUpperCase();
       if(tok.length < 6){ errEl.style.display='block'; errEl.textContent='Wpisz 6-znakowy kod rodziny'; return; }
       body.token = tok;
+      const mid = $('auth-member').value;
+      if(!mid){ errEl.style.display='block'; errEl.textContent='Wybierz siebie z listy domowników'; return; }
+      body.member_id = mid;
     } else {
       body.household_name = $('auth-hname').value.trim() || 'Moja Rodzina';
+      body.display_name = $('auth-displayname').value.trim() || username;
+      body.emoji = _selectedAuthEmoji || '😊';
     }
   }
   const res = await POST(url, body);

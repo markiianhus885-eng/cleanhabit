@@ -338,18 +338,17 @@ def auth_register():
     d = request.json or {}
     username     = d.get('username', '').strip().lower()
     password     = d.get('password', '').strip()
-    display_name = d.get('display_name', '').strip()  # visible name / member name
+    display_name = d.get('display_name', '').strip()
     action       = d.get('action', 'create')  # 'create' or 'join'
     token        = d.get('token', '').strip().upper()
     hname        = d.get('household_name', 'Moja Rodzina').strip()
     chosen_emoji = d.get('emoji', '').strip()
+    member_id    = d.get('member_id', '').strip()  # for join: pick existing member
 
     if not username or not password:
         return jsonify({'error': 'Podaj nazwę użytkownika i hasło'}), 400
     if len(password) < 4:
         return jsonify({'error': 'Hasło musi mieć min. 4 znaki'}), 400
-    if not display_name:
-        display_name = username
 
     db = get_db()
     if db.execute("SELECT 1 FROM users WHERE username=?", [username]).fetchone():
@@ -361,8 +360,18 @@ def auth_register():
             return jsonify({'error': f'Nie znaleziono rodziny z kodem "{token}"'}), 404
         household_id = household['id']
         role = 'member'
+        # Verify the member belongs to this household and isn't claimed yet
+        if not member_id:
+            return jsonify({'error': 'Wybierz swojego domownika z listy'}), 400
+        mbr = db.execute("SELECT * FROM members WHERE id=? AND household_id=?", [member_id, household_id]).fetchone()
+        if not mbr:
+            return jsonify({'error': 'Nie znaleziono domownika'}), 404
+        if db.execute("SELECT 1 FROM users WHERE member_id=? AND household_id=?", [member_id, household_id]).fetchone():
+            return jsonify({'error': 'Ten domownik ma już konto — zaloguj się'}), 400
     else:
         # Create new household
+        if not display_name:
+            display_name = username
         household_id = uid()
         new_token = gen_token()
         while db.execute("SELECT 1 FROM households WHERE token=?", [new_token]).fetchone():
@@ -372,15 +381,14 @@ def auth_register():
         db.execute("INSERT OR REPLACE INTO config(key,household_id,value) VALUES ('household',?,?)",
                    [household_id, hname])
         role = 'admin'
-
-    # Auto-create member profile for this user
-    import random
-    emoji = chosen_emoji if chosen_emoji else random.choice(MEMBER_EMOJIS)
-    member_id = uid()
-    db.execute(
-        "INSERT INTO members(id,household_id,name,emoji,points,coins,streak,streak_date,owned) VALUES (?,?,?,?,0,0,0,NULL,'[]')",
-        [member_id, household_id, display_name, emoji]
-    )
+        # Auto-create member profile for the owner
+        import random
+        emoji = chosen_emoji if chosen_emoji else random.choice(MEMBER_EMOJIS)
+        member_id = uid()
+        db.execute(
+            "INSERT INTO members(id,household_id,name,emoji,points,coins,streak,streak_date,owned) VALUES (?,?,?,?,0,0,0,NULL,'[]')",
+            [member_id, household_id, display_name, emoji]
+        )
 
     user_id = uid()
     db.execute("INSERT INTO users(id,username,password_hash,household_id,member_id,role,created_at) VALUES (?,?,?,?,?,?,?)",
@@ -432,6 +440,8 @@ def api_data():
 def api_household():
     err = require_auth(); hid = get_hid()
     if err: return err
+    if not is_admin(hid):
+        return jsonify({'error': 'Tylko właściciel może zmienić nazwę rodziny'}), 403
     name = (request.json or {}).get('name', '').strip()
     if name:
         db = get_db()
@@ -445,6 +455,8 @@ def api_household():
 def add_member():
     err = require_auth(); hid = get_hid()
     if err: return err
+    if not is_admin(hid):
+        return jsonify({'error': 'Tylko właściciel może dodawać domowników'}), 403
     d = request.json or {}
     get_db().execute(
         "INSERT INTO members(id,household_id,name,emoji,points,coins,streak,streak_date,owned) VALUES (?,?,?,?,0,0,0,NULL,'[]')",
