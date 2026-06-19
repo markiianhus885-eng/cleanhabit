@@ -758,6 +758,238 @@ const TASK_SUGGESTIONS = [
   {name:'Porządkowanie szaf',diff:'hard'},{name:'Mycie drzwi',diff:'medium'},
 ];
 
+// ─── I18N ─────────────────────────────────────────────────────
+const LANGS = {
+  pl: {
+    // nav
+    nav_home:'Dziś', nav_rooms:'Pokoje', nav_tasks:'Zadania', nav_lb:'Ranking',
+    nav_cal:'Kalendarz', nav_goals:'Cele', nav_badges:'Odznaki', nav_settings:'Profil',
+    // auth
+    auth_login:'Logowanie', auth_register:'Rejestracja', auth_username:'Nazwa użytkownika',
+    auth_password:'Hasło (min. 4 znaki)', auth_btn_login:'Zaloguj się', auth_btn_register:'Zarejestruj się',
+    auth_create:'Stwórz nowy dom', auth_join:'Dołącz do rodziny',
+    auth_hname:'Nazwa rodziny (np. Kowalski Family)', auth_token_label:'Kod rodziny (6 znaków)',
+    auth_token_ph:'KOD RODZINY', auth_displayname:'Twoje imię (np. Mama, Tata, Kacper)',
+    auth_pick_emoji:'Wybierz swoje emoji', auth_who:'Kim jesteś w tej rodzinie?',
+    auth_found:'Znaleziono rodzinę', auth_no_members:'Właściciel jeszcze nie dodał domowników.',
+    auth_safe:'Twoje dane są bezpieczne i widoczne tylko dla Twojej rodziny',
+    auth_err_fields:'Wypełnij wszystkie pola', auth_err_token:'Wpisz 6-znakowy kod rodziny',
+    auth_err_member:'Wybierz siebie z listy domowników',
+    // home
+    home_due:'Do zrobienia', home_done_today:'Dziś gotowe', home_expired:'Przepadło',
+    home_week:'Ten tydzień', home_tasks_lbl:'Zadań', home_pts_lbl:'Punktów',
+    home_streak_lbl:'Seria', home_leader:'Lider tygodnia', home_activity:'Aktywność (28 dni)',
+    home_pending:'Zaległe zadania', home_todo:'Zadania na dziś', home_rooms_state:'Stan pokojów',
+    home_no_tasks:'Wszystko zrobione! Świetna robota 🎉', home_daily_goal:'Cel dzienny osiągnięty! Świetna robota!',
+    home_effort:'Effort Points Today', home_approval:'Oczekuje na zatwierdzenie',
+    home_missed:'Przepadłe zadania',
+    // tasks
+    task_new:'Nowe zadanie', task_name:'Nazwa zadania', task_name_ph:'np. Odkurzanie',
+    task_room:'Pokój', task_room_ph:'Wybierz pokój...', task_assign:'Przypisz do',
+    task_assign_ph:'Wybierz osobę...', task_diff:'Trudność / Punkty',
+    task_cyclic:'Cykliczne', task_once:'Jednorazowe', task_type:'Typ zadania',
+    task_sched:'Harmonogram', task_freq:'Cyklicznie', task_days:'Konkretne dni',
+    task_approval:'Wymaga zatwierdzenia?', task_add:'Dodaj zadanie',
+    task_no_tasks:'Brak zadań. Dodaj pierwsze!', task_once_hint:'Zadanie zniknie po wykonaniu.',
+    task_cyclic_hint:'Zadanie będzie powtarzać się według harmonogramu.',
+    task_one_time_badge:'raz',
+    // rooms
+    room_new:'Nowy pokój', room_name:'Nazwa pokoju', room_clean:'Czysty',
+    room_dirty:'Brudny', room_add:'Dodaj pokój',
+    // leaderboard
+    lb_title:'Leaderboard', lb_members:'domowników', lb_week:'Ten tydzień',
+    lb_month:'Ten miesiąc', lb_all:'Wszystkie czasy', lb_pts:'PUNKTY', lb_no_members:'Brak domowników.',
+    lb_owner:'Właściciel',
+    // goals
+    goals_title:'Cele rodziny', goals_add:'Nowy cel', goals_buy:'Kup usługę',
+    goals_fulfill:'Zrealizuj ✓', goals_done:'Zrobione', goals_pending:'Oczekuje',
+    goals_no_goals:'Brak celów. Właściciel może dodać pierwszy cel!',
+    goals_price:'Cena', goals_single:'Ta usługa jest tylko dla rodzin z kilkoma domownikami.',
+    goals_purchases:'Zakupy czekające na realizację', goals_name:'Nazwa celu',
+    goals_desc:'Opis', goals_templates:'Szablony', goals_coins:'monet',
+    goals_not_enough:'Za mało monet', goals_buy_confirm:'Kupić',
+    // badges
+    badges_title:'Kolekcja odznak', badges_all:'Wszyscy', badges_earned:'Zdobyte',
+    badges_locked:'Zablokowane',
+    // calendar
+    cal_no_tasks:'Brak zadań', cal_task_done:'Wykonano',
+    // settings
+    set_title:'Profil', set_logout:'Wyloguj', set_tasks:'zadań', set_streak:'dni z rzędu',
+    set_badges:'odznak', set_my_badges:'Moje odznaki', set_no_badges:'Wykonaj pierwsze zadanie żeby zdobyć odznakę!',
+    set_family_code:'Kod rodziny', set_family_code_desc:'Udostępnij ten kod, aby inni mogli dołączyć do Twojej rodziny',
+    set_copy:'Skopiuj kod', set_family_name:'Nazwa rodziny', set_save:'Zapisz',
+    set_stats:'Statystyki rodziny', set_done_total:'Wykonanych zadań', set_pts_total:'Łącznie punktów',
+    set_coins_total:'Monety łącznie', set_members:'Domownicy', set_rooms:'Pokoje',
+    set_logout_btn:'Wyloguj się', set_reset:'Resetuj wszystkie dane', set_lang:'Język',
+    set_pts_suffix:'pkt',
+    // profile screen
+    prof_points:'Punkty', prof_coins:'Monety', prof_streak:'Seria', prof_level:'Poziom',
+    prof_progress:'Postęp do poziomu', prof_badges:'Odznaki', prof_activity:'Aktywność (28 dni)',
+    prof_history:'Historia zadań', prof_delete:'Usuń domownika', prof_delete_confirm:'Usunąć',
+    prof_no_hist:'Brak historii', prof_missed_badge:'Przepadło', prof_to_next:'pkt do poziomu',
+    // misc
+    yes:'Tak', no:'Nie', save:'Zapisz', cancel:'Anuluj', add:'Dodaj', delete:'Usuń',
+    confirm_reset:'Zresetować wszystkie dane?',
+    token_copied:'Skopiowano!', points_abbr:'pkt',
+    freq_daily:'Codziennie', freq_weekly:'Co tydzień', freq_biweekly:'Co 2 tyg.',
+    freq_monthly:'Co miesiąc', freq_quarterly:'Co kwartał',
+    diff_easy:'Łatwe', diff_medium:'Średnie', diff_hard:'Trudne',
+    cleanliness_perfect:'Idealnie czysty!', cleanliness_good:'Czysto!',
+    cleanliness_ok:'Nieźle', cleanliness_dirty:'Do sprzątania', cleanliness_filthy:'Pilne!',
+    cleanliness_msg_good:'Niezłe porządki!', cleanliness_msg_ok:'Jeszcze trochę do zrobienia',
+    cleanliness_msg_dirty:'Czas się zabrać do roboty!', cleanliness_msg_filthy:'Czas wziąć się za robotę!',
+    avg_clean:'Średnia czystość', leader:'Lider',
+  },
+  en: {
+    nav_home:'Today', nav_rooms:'Rooms', nav_tasks:'Tasks', nav_lb:'Ranking',
+    nav_cal:'Calendar', nav_goals:'Goals', nav_badges:'Badges', nav_settings:'Profile',
+    auth_login:'Login', auth_register:'Register', auth_username:'Username',
+    auth_password:'Password (min. 4 chars)', auth_btn_login:'Sign in', auth_btn_register:'Sign up',
+    auth_create:'Create new home', auth_join:'Join family',
+    auth_hname:'Family name (e.g. Smith Family)', auth_token_label:'Family code (6 chars)',
+    auth_token_ph:'FAMILY CODE', auth_displayname:'Your name (e.g. Mom, Dad, Jake)',
+    auth_pick_emoji:'Choose your emoji', auth_who:'Who are you in this family?',
+    auth_found:'Family found', auth_no_members:'Owner has not added any members yet.',
+    auth_safe:'Your data is safe and visible only to your family',
+    auth_err_fields:'Fill in all fields', auth_err_token:'Enter the 6-character family code',
+    auth_err_member:'Select yourself from the member list',
+    home_due:'To do', home_done_today:'Done today', home_expired:'Missed',
+    home_week:'This week', home_tasks_lbl:'Tasks', home_pts_lbl:'Points',
+    home_streak_lbl:'Streak', home_leader:'Top this week', home_activity:'Activity (28 days)',
+    home_pending:'Overdue tasks', home_todo:"Today's tasks", home_rooms_state:'Room status',
+    home_no_tasks:'All done! Great job 🎉', home_daily_goal:'Daily goal reached! Great job!',
+    home_effort:'Effort Points Today', home_approval:'Awaiting approval',
+    home_missed:'Missed tasks',
+    task_new:'New task', task_name:'Task name', task_name_ph:'e.g. Vacuuming',
+    task_room:'Room', task_room_ph:'Choose a room...', task_assign:'Assign to',
+    task_assign_ph:'Choose a person...', task_diff:'Difficulty / Points',
+    task_cyclic:'Recurring', task_once:'One-time', task_type:'Task type',
+    task_sched:'Schedule', task_freq:'Recurring', task_days:'Specific days',
+    task_approval:'Requires approval?', task_add:'Add task',
+    task_no_tasks:'No tasks yet. Add the first one!', task_once_hint:'Task will disappear after completion.',
+    task_cyclic_hint:'Task will repeat on schedule.',
+    task_one_time_badge:'once',
+    room_new:'New room', room_name:'Room name', room_clean:'Clean',
+    room_dirty:'Dirty', room_add:'Add room',
+    lb_title:'Leaderboard', lb_members:'members', lb_week:'This week',
+    lb_month:'This month', lb_all:'All time', lb_pts:'POINTS', lb_no_members:'No members.',
+    lb_owner:'Owner',
+    goals_title:'Family goals', goals_add:'New goal', goals_buy:'Buy service',
+    goals_fulfill:'Fulfill ✓', goals_done:'Done', goals_pending:'Pending',
+    goals_no_goals:'No goals yet. Owner can add the first one!',
+    goals_price:'Price', goals_single:'This service is only for families with multiple members.',
+    goals_purchases:'Purchases awaiting fulfillment', goals_name:'Goal name',
+    goals_desc:'Description', goals_templates:'Templates', goals_coins:'coins',
+    goals_not_enough:'Not enough coins', goals_buy_confirm:'Buy',
+    badges_title:'Badge collection', badges_all:'All', badges_earned:'Earned',
+    badges_locked:'Locked',
+    cal_no_tasks:'No tasks', cal_task_done:'Done',
+    set_title:'Profile', set_logout:'Logout', set_tasks:'tasks', set_streak:'day streak',
+    set_badges:'badges', set_my_badges:'My badges', set_no_badges:'Complete your first task to earn a badge!',
+    set_family_code:'Family code', set_family_code_desc:'Share this code so others can join your family',
+    set_copy:'Copy code', set_family_name:'Family name', set_save:'Save',
+    set_stats:'Family stats', set_done_total:'Tasks completed', set_pts_total:'Total points',
+    set_coins_total:'Total coins', set_members:'Members', set_rooms:'Rooms',
+    set_logout_btn:'Sign out', set_reset:'Reset all data', set_lang:'Language',
+    set_pts_suffix:'pts',
+    prof_points:'Points', prof_coins:'Coins', prof_streak:'Streak', prof_level:'Level',
+    prof_progress:'Progress to level', prof_badges:'Badges', prof_activity:'Activity (28 days)',
+    prof_history:'Task history', prof_delete:'Remove member', prof_delete_confirm:'Remove',
+    prof_no_hist:'No history', prof_missed_badge:'Missed', prof_to_next:'pts to level',
+    yes:'Yes', no:'No', save:'Save', cancel:'Cancel', add:'Add', delete:'Delete',
+    confirm_reset:'Reset all data?',
+    token_copied:'Copied!', points_abbr:'pts',
+    freq_daily:'Daily', freq_weekly:'Weekly', freq_biweekly:'Every 2 wks',
+    freq_monthly:'Monthly', freq_quarterly:'Quarterly',
+    diff_easy:'Easy', diff_medium:'Medium', diff_hard:'Hard',
+    cleanliness_perfect:'Perfectly clean!', cleanliness_good:'Clean!',
+    cleanliness_ok:'Not bad', cleanliness_dirty:'Needs cleaning', cleanliness_filthy:'Urgent!',
+    cleanliness_msg_good:'Nice and tidy!', cleanliness_msg_ok:'A bit more to do',
+    cleanliness_msg_dirty:'Time to get to work!', cleanliness_msg_filthy:'Time to clean up!',
+    avg_clean:'Avg cleanliness', leader:'Leader',
+  },
+  uk: {
+    nav_home:'Сьогодні', nav_rooms:'Кімнати', nav_tasks:'Завдання', nav_lb:'Рейтинг',
+    nav_cal:'Календар', nav_goals:'Цілі', nav_badges:'Значки', nav_settings:'Профіль',
+    auth_login:'Вхід', auth_register:'Реєстрація', auth_username:'Ім\'я користувача',
+    auth_password:'Пароль (мін. 4 символи)', auth_btn_login:'Увійти', auth_btn_register:'Зареєструватися',
+    auth_create:'Створити новий дім', auth_join:'Приєднатися до сім\'ї',
+    auth_hname:'Назва сім\'ї (напр. Сім\'я Коваль)', auth_token_label:'Код сім\'ї (6 символів)',
+    auth_token_ph:'КОД СІМ\'Ї', auth_displayname:'Ваше ім\'я (напр. Мама, Тато, Олег)',
+    auth_pick_emoji:'Оберіть своє emoji', auth_who:'Хто ви в цій сім\'ї?',
+    auth_found:'Знайдено сім\'ю', auth_no_members:'Власник ще не додав членів сім\'ї.',
+    auth_safe:'Ваші дані в безпеці і видимі лише вашій сім\'ї',
+    auth_err_fields:'Заповніть всі поля', auth_err_token:'Введіть 6-символьний код сім\'ї',
+    auth_err_member:'Оберіть себе зі списку',
+    home_due:'Потрібно зробити', home_done_today:'Зроблено сьогодні', home_expired:'Пропущено',
+    home_week:'Цього тижня', home_tasks_lbl:'Завдань', home_pts_lbl:'Балів',
+    home_streak_lbl:'Серія', home_leader:'Лідер тижня', home_activity:'Активність (28 днів)',
+    home_pending:'Прострочені завдання', home_todo:'Завдання на сьогодні', home_rooms_state:'Стан кімнат',
+    home_no_tasks:'Все зроблено! Чудова робота 🎉', home_daily_goal:'Денна ціль досягнута! Чудово!',
+    home_effort:'Очки зусиль сьогодні', home_approval:'Очікує підтвердження',
+    home_missed:'Пропущені завдання',
+    task_new:'Нове завдання', task_name:'Назва завдання', task_name_ph:'напр. Пилосос',
+    task_room:'Кімната', task_room_ph:'Оберіть кімнату...', task_assign:'Призначити',
+    task_assign_ph:'Оберіть людину...', task_diff:'Складність / Бали',
+    task_cyclic:'Повторюване', task_once:'Одноразове', task_type:'Тип завдання',
+    task_sched:'Розклад', task_freq:'Циклічно', task_days:'Конкретні дні',
+    task_approval:'Потребує підтвердження?', task_add:'Додати завдання',
+    task_no_tasks:'Немає завдань. Додайте перше!', task_once_hint:'Завдання зникне після виконання.',
+    task_cyclic_hint:'Завдання повторюватиметься за розкладом.',
+    task_one_time_badge:'раз',
+    room_new:'Нова кімната', room_name:'Назва кімнати', room_clean:'Чисто',
+    room_dirty:'Брудно', room_add:'Додати кімнату',
+    lb_title:'Рейтинг', lb_members:'мешканців', lb_week:'Цього тижня',
+    lb_month:'Цього місяця', lb_all:'За весь час', lb_pts:'БАЛИ', lb_no_members:'Немає мешканців.',
+    lb_owner:'Власник',
+    goals_title:'Сімейні цілі', goals_add:'Нова ціль', goals_buy:'Купити послугу',
+    goals_fulfill:'Виконати ✓', goals_done:'Виконано', goals_pending:'Очікує',
+    goals_no_goals:'Немає цілей. Власник може додати першу!',
+    goals_price:'Ціна', goals_single:'Цей сервіс лише для сімей із кількома мешканцями.',
+    goals_purchases:'Покупки, що очікують виконання', goals_name:'Назва цілі',
+    goals_desc:'Опис', goals_templates:'Шаблони', goals_coins:'монет',
+    goals_not_enough:'Недостатньо монет', goals_buy_confirm:'Купити',
+    badges_title:'Колекція значків', badges_all:'Всі', badges_earned:'Отримані',
+    badges_locked:'Заблоковані',
+    cal_no_tasks:'Немає завдань', cal_task_done:'Виконано',
+    set_title:'Профіль', set_logout:'Вийти', set_tasks:'завдань', set_streak:'днів поспіль',
+    set_badges:'значків', set_my_badges:'Мої значки', set_no_badges:'Виконайте перше завдання щоб отримати значок!',
+    set_family_code:'Код сім\'ї', set_family_code_desc:'Поділіться цим кодом, щоб інші могли приєднатися',
+    set_copy:'Скопіювати код', set_family_name:'Назва сім\'ї', set_save:'Зберегти',
+    set_stats:'Статистика сім\'ї', set_done_total:'Виконано завдань', set_pts_total:'Всього балів',
+    set_coins_total:'Монет разом', set_members:'Мешканці', set_rooms:'Кімнати',
+    set_logout_btn:'Вийти з акаунту', set_reset:'Скинути всі дані', set_lang:'Мова',
+    set_pts_suffix:'бал',
+    prof_points:'Бали', prof_coins:'Монети', prof_streak:'Серія', prof_level:'Рівень',
+    prof_progress:'Прогрес до рівня', prof_badges:'Значки', prof_activity:'Активність (28 днів)',
+    prof_history:'Історія завдань', prof_delete:'Видалити мешканця', prof_delete_confirm:'Видалити',
+    prof_no_hist:'Немає історії', prof_missed_badge:'Пропущено', prof_to_next:'бал до рівня',
+    yes:'Так', no:'Ні', save:'Зберегти', cancel:'Скасувати', add:'Додати', delete:'Видалити',
+    confirm_reset:'Скинути всі дані?',
+    token_copied:'Скопійовано!', points_abbr:'бал',
+    freq_daily:'Щодня', freq_weekly:'Щотижня', freq_biweekly:'Кожні 2 тиж.',
+    freq_monthly:'Щомісяця', freq_quarterly:'Щокварталу',
+    diff_easy:'Легко', diff_medium:'Середньо', diff_hard:'Важко',
+    cleanliness_perfect:'Ідеально чисто!', cleanliness_good:'Чисто!',
+    cleanliness_ok:'Непогано', cleanliness_dirty:'Треба прибрати', cleanliness_filthy:'Терміново!',
+    cleanliness_msg_good:'Гарний порядок!', cleanliness_msg_ok:'Ще трохи роботи',
+    cleanliness_msg_dirty:'Час братися за роботу!', cleanliness_msg_filthy:'Час прибирати!',
+    avg_clean:'Середня чистота', leader:'Лідер',
+  }
+};
+
+let _lang = localStorage.getItem('ch_lang') || 'pl';
+function t(key){ return (LANGS[_lang]||LANGS.pl)[key] || LANGS.pl[key] || key; }
+function setLang(lang){ _lang = lang; localStorage.setItem('ch_lang',''+lang); applyStaticLang(); render(); if(state.tab==='lb') loadLeaderboard(); }
+function applyStaticLang(){
+  // nav labels
+  const navMap = {home:'nav_home',rooms:'nav_rooms',tasks:'nav_tasks',lb:'nav_lb',cal:'nav_cal',goals:'nav_goals',badges:'nav_badges',settings:'nav_settings'};
+  document.querySelectorAll('.bnav-btn[data-tab]').forEach(btn=>{
+    const tab = btn.dataset.tab;
+    if(navMap[tab]) btn.childNodes[btn.childNodes.length-1].textContent = t(navMap[tab]);
+  });
+}
+
 // ─── STATE ────────────────────────────────────────────────────
 let state = {data: null, tab: 'home', lb_period: 'week', filter_task: 'all', diff_filter: 'all', user: null, household: null};
 
@@ -882,7 +1114,7 @@ async function loadStats(){
   if(el('hs-pts'))    el('hs-pts').textContent    = s.week_pts;
   if(el('hs-streak')) el('hs-streak').textContent = s.family_streak;
   if(el('hs-top') && s.top_member)
-    el('hs-top').textContent = `🏅 Lider tygodnia: ${s.top_member.emoji} ${s.top_member.name} (${s.top_member.count} zadań)`;
+    el('hs-top').textContent = `🏅 ${t('home_leader')}: ${s.top_member.emoji} ${s.top_member.name} (${s.top_member.count} ${t('home_tasks_lbl').toLowerCase()})`;
 
   // Heatmap — last 28 days, oldest left
   const hm = el('hs-heatmap');
@@ -986,7 +1218,7 @@ async function lookupToken(token){
       </button>`).join('');
     $('auth-member-wrap').style.display = 'block';
   } else {
-    grid.innerHTML = `<p style="font-size:12px;color:var(--muted2);grid-column:span 3">Właściciel jeszcze nie dodał domowników.</p>`;
+    grid.innerHTML = `<p style="font-size:12px;color:var(--muted2);grid-column:span 3">${t('auth_no_members')}</p>`;
     $('auth-member-wrap').style.display = 'block';
   }
 }
@@ -1032,7 +1264,7 @@ async function doAuth(){
       if(tok.length < 6){ errEl.style.display='block'; errEl.textContent='Wpisz 6-znakowy kod rodziny'; return; }
       body.token = tok;
       const mid = $('auth-member').value;
-      if(!mid){ errEl.style.display='block'; errEl.textContent='Wybierz siebie z listy domowników'; return; }
+      if(!mid){ errEl.style.display='block'; errEl.textContent=t('auth_err_member'); return; }
       body.member_id = mid;
     } else {
       body.household_name = $('auth-hname').value.trim() || 'Moja Rodzina';
@@ -1401,8 +1633,8 @@ function renderHome(d){
   <div class="${cleanHeroClass(avgClean)}">
     <span class="hero-emoji">${cleanHeroEmoji(avgClean)}</span>
     <h2>${cleanHeroMsg(avgClean)}</h2>
-    <p>Średnia czystość: <strong>${avgClean}%</strong>${top ? ` · Lider: ${top.emoji} ${esc(top.name)}` : ''}</p>
-    ${avgClean < 45 ? `<div class="hero-msg">"Czas wziąć się za robotę!"</div>` : ''}
+    <p>${t('avg_clean')}: <strong>${avgClean}%</strong>${top ? ` · ${t('leader')}: ${top.emoji} ${esc(top.name)}` : ''}</p>
+    ${avgClean < 45 ? `<div class="hero-msg">"${t('cleanliness_msg_filthy')}"</div>` : ''}
     <div style="margin-top:14px">
       <div class="pbar-track" style="height:6px">
         <div class="pbar-fill" style="width:${avgClean}%;height:6px;background:rgba(255,255,255,0.6)"></div>
@@ -1430,17 +1662,17 @@ function renderHome(d){
 
   <!-- STATS -->
   <div class="stat-row">
-    <div class="stat-box"><div class="stat-val">${pending.length}</div><div class="stat-lbl">DO ZROBIENIA</div></div>
-    <div class="stat-box"><div class="stat-val">${doneTodayIds.length}</div><div class="stat-lbl">DZIŚ GOTOWE</div></div>
+    <div class="stat-box"><div class="stat-val">${pending.length}</div><div class="stat-lbl">${t('home_due').toUpperCase()}</div></div>
+    <div class="stat-box"><div class="stat-val">${doneTodayIds.length}</div><div class="stat-lbl">${t('home_done_today').toUpperCase()}</div></div>
     <div class="stat-box" style="${expiredTasks.length>0?'border-color:rgba(239,68,68,0.4)':''}">
       <div class="stat-val" style="color:${expiredTasks.length>0?'var(--red)':'var(--blue2)'}">${expiredTasks.length}</div>
-      <div class="stat-lbl">PRZEPADŁO</div>
+      <div class="stat-lbl">${t('home_expired').toUpperCase()}</div>
     </div>
   </div>`;
 
   // APPROVALS
   if((d.approvals||[]).length > 0){
-    html += `<div class="shdr"><h2>🔔 Oczekuje na zatwierdzenie</h2></div>`;
+    html += `<div class="shdr"><h2>🔔 ${t('home_approval')}</h2></div>`;
     d.approvals.forEach(ap=>{
       const task = d.tasks.find(t=>t.id===ap.task_id);
       const mbr  = d.members.find(m=>m.id===ap.member_id);
@@ -1463,8 +1695,8 @@ function renderHome(d){
   if(expiredTasks.length > 0){
     html += `
     <div class="shdr" style="margin-top:4px">
-      <h2 style="color:var(--red)">💀 Przepadło!</h2>
-      <span style="color:var(--red);font-size:12px">${expiredTasks.length} zadań</span>
+      <h2 style="color:var(--red)">💀 ${t('home_missed')}</h2>
+      <span style="color:var(--red);font-size:12px">${expiredTasks.length} ${t('home_tasks_lbl').toLowerCase()}</span>
     </div>
     <div style="margin:0 16px 4px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:16px;padding:10px 14px;font-size:12px;color:rgba(239,68,68,0.8);line-height:1.5">
       ⏰ Nie zdążyłeś — te zadania wygasły. Szansa na monety przepadła. Pojawią się znowu w kolejnym cyklu.
@@ -1496,7 +1728,7 @@ function renderHome(d){
   }
 
   // TODAY TASKS
-  html += `<div class="shdr" style="margin-top:4px"><h2>📋 Na dziś</h2><span>${pending.length} zadań</span></div>`;
+  html += `<div class="shdr" style="margin-top:4px"><h2>📋 ${t('home_todo')}</h2><span>${pending.length} ${t('home_tasks_lbl').toLowerCase()}</span></div>`;
 
   if(pending.length===0 && doneTodayIds.length===0 && expiredTasks.length===0){
     html += `<div class="empty"><div class="ico">☀️</div><p>Brak zadań na dziś.<br>Dodaj zadania w zakładce Pokoje!</p></div>`;
@@ -1537,31 +1769,31 @@ function renderHome(d){
   // ROOMS SUMMARY
   // WEEKLY STATS CARD (data injected async after render)
   html += `
-  <div class="shdr" style="margin-top:6px"><h2>📊 Ten tydzień</h2></div>
+  <div class="shdr" style="margin-top:6px"><h2>📊 ${t('home_week')}</h2></div>
   <div id="home-stats-card" style="margin:0 16px 4px;padding:16px;background:var(--bg2);border-radius:18px;border:1px solid var(--border)">
     <div style="display:flex;gap:0;justify-content:space-around;margin-bottom:14px">
       <div style="text-align:center">
         <div style="font-size:24px;font-weight:900;color:var(--blue2)" id="hs-done">—</div>
-        <div style="font-size:10px;color:var(--muted2);font-weight:700;text-transform:uppercase;margin-top:2px">Zadań</div>
+        <div style="font-size:10px;color:var(--muted2);font-weight:700;text-transform:uppercase;margin-top:2px">${t('home_tasks_lbl')}</div>
       </div>
       <div style="text-align:center">
         <div style="font-size:24px;font-weight:900;color:var(--yellow)" id="hs-pts">—</div>
-        <div style="font-size:10px;color:var(--muted2);font-weight:700;text-transform:uppercase;margin-top:2px">Punktów</div>
+        <div style="font-size:10px;color:var(--muted2);font-weight:700;text-transform:uppercase;margin-top:2px">${t('home_pts_lbl')}</div>
       </div>
       <div style="text-align:center">
         <div style="font-size:24px;font-weight:900;color:var(--orange)" id="hs-streak">—</div>
-        <div style="font-size:10px;color:var(--muted2);font-weight:700;text-transform:uppercase;margin-top:2px">Seria 🔥</div>
+        <div style="font-size:10px;color:var(--muted2);font-weight:700;text-transform:uppercase;margin-top:2px">${t('home_streak_lbl')} 🔥</div>
       </div>
     </div>
     <div id="hs-top" style="font-size:12px;color:var(--muted2);margin-bottom:12px;text-align:center"></div>
-    <div style="font-size:10px;color:var(--muted2);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Aktywność (28 dni)</div>
+    <div style="font-size:10px;color:var(--muted2);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">${t('home_activity')}</div>
     <div id="hs-heatmap" style="display:grid;grid-template-columns:repeat(28,1fr);gap:2px"></div>
     <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:9px;color:var(--muted2)">
-      <span id="hs-label-l"></span><span id="hs-label-r">Dziś</span>
+      <span id="hs-label-l"></span><span id="hs-label-r">${t('nav_home')}</span>
     </div>
   </div>
 
-  <div class="shdr" style="margin-top:6px"><h2>🏡 Stan pokojów</h2></div>`;
+  <div class="shdr" style="margin-top:6px"><h2>🏡 ${t('home_rooms_state')}</h2></div>`;
   d.rooms.forEach(r=>{
     const col = cleanColor(r.cleanliness);
     html += `
@@ -2021,17 +2253,17 @@ async function renderLeaderboard(lb){
   <div class="topbar">
     <div class="topbar-left">
       <h1>🏆 Leaderboard</h1>
-      <span>${(d?.members||[]).length} domowników</span>
+      <span>${(d?.members||[]).length} ${t('lb_members')}</span>
     </div>
   </div>
   <div class="tabs">
-    ${[['week','Ten tydzień'],['month','Ten miesiąc'],['all','Wszystkie czasy']].map(([v,l])=>
+    ${[['week',t('lb_week')],['month',t('lb_month')],['all',t('lb_all')]].map(([v,l])=>
       `<button class="tab-btn${state.lb_period===v?' on':''}" onclick="state.lb_period='${v}';loadLeaderboard()">${l}</button>`
     ).join('')}
   </div>`;
 
   if(!lb||lb.length===0){
-    html+=`<div class="empty"><div class="ico">👥</div><p>Brak domowników.<br>Dodaj pierwszego!</p></div>`;
+    html+=`<div class="empty"><div class="ico">👥</div><p>${t('lb_no_members')}</p></div>`;
   }
 
   (lb||[]).forEach((m,i)=>{
@@ -2770,9 +3002,9 @@ function renderSettings(d){
 
   let html = `
   <div class="topbar">
-    <div class="topbar-left"><h1>👤 Profil</h1></div>
+    <div class="topbar-left"><h1>👤 ${t('set_title')}</h1></div>
     <div class="topbar-right">
-      <button class="btn btn-ghost btn-sm" onclick="logout()" style="font-size:12px">Wyloguj</button>
+      <button class="btn btn-ghost btn-sm" onclick="logout()" style="font-size:12px">${t('set_logout')}</button>
     </div>
   </div>`;
 
@@ -2797,23 +3029,23 @@ function renderSettings(d){
     <div style="display:flex;gap:16px;text-align:center">
       <div style="flex:1;background:var(--bg3);border-radius:12px;padding:10px">
         <div style="font-size:20px;font-weight:800;color:var(--green)">${myTasks}</div>
-        <div style="font-size:10px;color:var(--muted2)">zadań</div>
+        <div style="font-size:10px;color:var(--muted2)">${t('set_tasks')}</div>
       </div>
       <div style="flex:1;background:var(--bg3);border-radius:12px;padding:10px">
         <div style="font-size:20px;font-weight:800;color:var(--orange)">🔥 ${myMember.streak}</div>
-        <div style="font-size:10px;color:var(--muted2)">dni z rzędu</div>
+        <div style="font-size:10px;color:var(--muted2)">${t('set_streak')}</div>
       </div>
       <div style="flex:1;background:var(--bg3);border-radius:12px;padding:10px">
         <div style="font-size:20px;font-weight:800;color:var(--indigo)">${myAch.length}</div>
-        <div style="font-size:10px;color:var(--muted2)">odznak</div>
+        <div style="font-size:10px;color:var(--muted2)">${t('set_badges')}</div>
       </div>
     </div>
   </div>
 
   <div class="card" style="margin:0 16px 14px">
-    <div style="font-weight:800;font-size:15px;margin-bottom:14px">🏆 Moje odznaki</div>
+    <div style="font-weight:800;font-size:15px;margin-bottom:14px">🏆 ${t('set_my_badges')}</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px">
-      ${myAch.length===0?'<div style="color:var(--muted2);font-size:13px">Wykonaj pierwsze zadanie żeby zdobyć odznakę!</div>':''}
+      ${myAch.length===0?`<div style="color:var(--muted2);font-size:13px">${t('set_no_badges')}</div>`:''}
       ${myAch.map(b=>`
         <div title="${esc(b.desc)}" style="
           background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.3);
@@ -2833,35 +3065,33 @@ function renderSettings(d){
   const tok = d.household_token || '';
   html += `
   <div class="card" style="margin:0 16px 14px;border-color:rgba(14,165,233,0.3)">
-    <div style="font-weight:800;font-size:15px;margin-bottom:4px">🔑 Kod rodziny</div>
-    <div style="font-size:12px;color:var(--muted2);margin-bottom:14px">
-      Udostępnij ten kod, aby inni mogli dołączyć do Twojej rodziny
-    </div>
+    <div style="font-weight:800;font-size:15px;margin-bottom:4px">🔑 ${t('set_family_code')}</div>
+    <div style="font-size:12px;color:var(--muted2);margin-bottom:14px">${t('set_family_code_desc')}</div>
     <div style="
       font-size:30px;font-weight:900;letter-spacing:6px;color:var(--blue2);
       background:rgba(14,165,233,0.08);border:1.5px solid rgba(14,165,233,0.25);
       border-radius:14px;padding:12px;text-align:center;margin-bottom:12px;
     ">${tok}</div>
     <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center"
-      onclick="copyToken('${tok}')">📋 Skopiuj kod</button>
+      onclick="copyToken('${tok}')">📋 ${t('set_copy')}</button>
   </div>
 
   <div class="card" style="margin:0 16px 14px">
-    <div style="font-weight:800;font-size:15px;margin-bottom:12px">🏠 Nazwa rodziny</div>
+    <div style="font-weight:800;font-size:15px;margin-bottom:12px">🏠 ${t('set_family_name')}</div>
     <div style="display:flex;gap:10px">
       <input class="inp" id="hname-inp" value="${esc(d.household)}" style="flex:1"/>
-      <button class="btn btn-primary btn-sm" onclick="saveHouseholdName()">Zapisz</button>
+      <button class="btn btn-primary btn-sm" onclick="saveHouseholdName()">${t('set_save')}</button>
     </div>
   </div>
 
   <div class="card" style="margin:0 16px 14px">
-    <div style="font-weight:800;font-size:15px;margin-bottom:12px">📊 Statystyki rodziny</div>
+    <div style="font-weight:800;font-size:15px;margin-bottom:12px">📊 ${t('set_stats')}</div>
     ${[
-      ['Wykonanych zadań', total],
-      ['Łącznie punktów', totalPts+' pkt'],
-      ['Monety łącznie', '🪙 '+totalCoins],
-      ['Domownicy', d.members.length],
-      ['Pokoje', d.rooms.length],
+      [t('set_done_total'), total],
+      [t('set_pts_total'), totalPts+' '+t('set_pts_suffix')],
+      [t('set_coins_total'), '🪙 '+totalCoins],
+      [t('set_members'), d.members.length],
+      [t('set_rooms'), d.rooms.length],
     ].map(([l,v])=>`
       <div class="settings-row">
         <span style="color:var(--muted2);font-size:14px">${l}</span>
@@ -2869,13 +3099,27 @@ function renderSettings(d){
       </div>`).join('')}
   </div>
 
+  <div class="card" style="margin:0 16px 14px">
+    <div style="font-weight:800;font-size:15px;margin-bottom:14px">🌍 ${t('set_lang')}</div>
+    <div style="display:flex;gap:8px">
+      ${[['pl','🇵🇱 Polski'],['en','🇬🇧 English'],['uk','🇺🇦 Українська']].map(([code,label])=>`
+        <button onclick="setLang('${code}')" style="
+          flex:1;padding:10px 6px;border-radius:12px;border:2px solid ${_lang===code?'var(--blue)':'var(--border)'};
+          background:${_lang===code?'rgba(14,165,233,0.1)':'var(--bg3)'};
+          color:${_lang===code?'var(--blue2)':'var(--muted2)'};font-weight:700;font-size:11px;cursor:pointer;
+          display:flex;flex-direction:column;align-items:center;gap:3px;
+        "><span style="font-size:20px">${label.split(' ')[0]}</span><span>${label.split(' ').slice(1).join(' ')}</span></button>
+      `).join('')}
+    </div>
+  </div>
+
   <div style="padding:0 16px 32px;display:flex;flex-direction:column;gap:10px">
     <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="logout()">
-      🚪 Wyloguj się
+      🚪 ${t('set_logout_btn')}
     </button>
     <button class="btn btn-danger" style="width:100%;justify-content:center"
-      onclick="if(confirm('Zresetować wszystkie dane?'))resetAll()">
-      🗑️ Resetuj wszystkie dane
+      onclick="if(confirm(t('confirm_reset')))resetAll()">
+      🗑️ ${t('set_reset')}
     </button>
   </div>`;
 
@@ -3057,6 +3301,7 @@ const _origCompleteTask = window.completeTask;
 // ─── INIT ─────────────────────────────────────────────────────
 // Hide nav until logged in
 $('bnav').style.display = 'none';
+applyStaticLang();
 checkAuth();
 </script>
 </body>
