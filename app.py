@@ -11,7 +11,9 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'cleanhouse-secret-2026-xK9mP')
 
 if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('RENDER'):
-    DB = '/tmp/sweepy.db'
+    # Use persistent volume if available, fallback to /tmp
+    _data_dir = os.environ.get('RAILWAY_VOLUME_MOUNT_PATH', '/tmp')
+    DB = os.path.join(_data_dir, 'sweepy.db')
 else:
     DB = os.path.join(os.path.dirname(__file__), 'sweepy.db')
 
