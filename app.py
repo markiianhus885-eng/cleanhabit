@@ -104,6 +104,7 @@ def _ensure_db():
     for migration in [
         "ALTER TABLE tasks ADD COLUMN specific_days TEXT DEFAULT NULL",
         "ALTER TABLE history ADD COLUMN type TEXT DEFAULT 'done'",
+        "ALTER TABLE tasks ADD COLUMN one_time INTEGER DEFAULT 0",
     ]:
         try:
             db.execute(migration)
@@ -506,11 +507,13 @@ def add_task():
     if specific_days and not isinstance(specific_days, str):
         specific_days = ','.join(str(x) for x in specific_days)
     freq = d.get('freq', 'weekly') if not specific_days else 'custom'
-    get_db().execute(
-        "INSERT INTO tasks(id,household_id,name,room_id,assigned_to,freq,diff,last_completed,approval_needed,created_at,specific_days) VALUES (?,?,?,?,?,?,?,NULL,?,?,?)",
+    one_time = 1 if d.get('oneTime') else 0
+    db = get_db()
+    db.execute(
+        "INSERT INTO tasks(id,household_id,name,room_id,assigned_to,freq,diff,last_completed,approval_needed,created_at,specific_days,one_time) VALUES (?,?,?,?,?,?,?,NULL,?,?,?,?)",
         [uid(), hid, d['name'], d['roomId'], d['assignedTo'], freq, d['diff'],
-         1 if d.get('approvalNeeded') else 0, datetime.now().isoformat(), specific_days])
-    get_db().commit()
+         1 if d.get('approvalNeeded') else 0, datetime.now().isoformat(), specific_days, one_time])
+    db.commit()
     return jsonify({'ok': True})
 
 @app.route('/api/tasks/<tid>/expire', methods=['POST'])
@@ -575,6 +578,9 @@ def complete_task(tid):
                [min(pts*8, 22), now_iso, task['room_id'], hid])
     db.execute("INSERT INTO history(id,household_id,task_id,member_id,completed_at,pts,coins_earned) VALUES (?,?,?,?,?,?,?)",
                [uid(), hid, tid, member_id, now_iso, pts, pts])
+    # Delete one-time tasks after completion
+    if task.get('one_time'):
+        db.execute("DELETE FROM tasks WHERE id=? AND household_id=?", [tid, hid])
     db.commit()
 
     all_tasks = [dict(r) for r in db.execute("SELECT * FROM tasks WHERE household_id=?", [hid])]
@@ -658,6 +664,72 @@ def leaderboard():
         result.append(m)
     result.sort(key=lambda x: x['period_pts'], reverse=True)
     return jsonify(result)
+
+# ── STATS ─────────────────────────────────────────────────────
+@app.route('/api/stats')
+def api_stats():
+    err = require_auth(); hid = get_hid()
+    if err: return err
+    db = get_db()
+
+    # Last 28 days activity heatmap (per day count of completed tasks)
+    cutoff28 = (datetime.now() - timedelta(days=28)).isoformat()
+    rows = db.execute(
+        "SELECT DATE(completed_at) as day, COUNT(*) as cnt FROM history "
+        "WHERE household_id=? AND completed_at>? AND type='done' GROUP BY day",
+        [hid, cutoff28]).fetchall()
+    heatmap = {r['day']: r['cnt'] for r in rows}
+
+    # This week stats
+    cutoff7 = (datetime.now() - timedelta(days=7)).isoformat()
+    week_done = db.execute(
+        "SELECT COUNT(*) FROM history WHERE household_id=? AND completed_at>? AND type='done'",
+        [hid, cutoff7]).fetchone()[0]
+    week_pts = db.execute(
+        "SELECT COALESCE(SUM(pts),0) FROM history WHERE household_id=? AND completed_at>? AND type='done'",
+        [hid, cutoff7]).fetchone()[0]
+
+    # Most active member this week
+    top_row = db.execute(
+        "SELECT member_id, COUNT(*) as cnt FROM history "
+        "WHERE household_id=? AND completed_at>? AND type='done' GROUP BY member_id ORDER BY cnt DESC LIMIT 1",
+        [hid, cutoff7]).fetchone()
+    top_member = None
+    if top_row:
+        m = db.execute("SELECT name, emoji FROM members WHERE id=? AND household_id=?",
+                       [top_row['member_id'], hid]).fetchone()
+        if m:
+            top_member = {'name': m['name'], 'emoji': m['emoji'], 'count': top_row['cnt']}
+
+    # Family streak — consecutive days with at least one task done
+    streak = 0
+    check_day = datetime.now().date()
+    for _ in range(365):
+        day_str = check_day.strftime('%Y-%m-%d')
+        cnt = db.execute(
+            "SELECT COUNT(*) FROM history WHERE household_id=? AND DATE(completed_at)=? AND type='done'",
+            [hid, day_str]).fetchone()[0]
+        if cnt == 0:
+            break
+        streak += 1
+        check_day -= timedelta(days=1)
+
+    # Per-member activity (last 28 days) for member profile
+    member_activity = {}
+    for r in db.execute(
+        "SELECT member_id, DATE(completed_at) as day, COUNT(*) as cnt FROM history "
+        "WHERE household_id=? AND completed_at>? AND type='done' GROUP BY member_id, day",
+        [hid, cutoff28]).fetchall():
+        member_activity.setdefault(r['member_id'], {})[r['day']] = r['cnt']
+
+    return jsonify({
+        'heatmap': heatmap,
+        'week_done': week_done,
+        'week_pts': week_pts,
+        'top_member': top_member,
+        'family_streak': streak,
+        'member_activity': member_activity,
+    })
 
 # ── CALENDAR ──────────────────────────────────────────────────
 @app.route('/api/calendar')
