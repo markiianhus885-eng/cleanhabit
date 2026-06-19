@@ -59,7 +59,8 @@ def _ensure_db():
             id TEXT PRIMARY KEY,
             household_id TEXT NOT NULL,
             task_id TEXT, member_id TEXT,
-            completed_at TEXT, pts INTEGER, coins_earned INTEGER
+            completed_at TEXT, pts INTEGER, coins_earned INTEGER,
+            type TEXT DEFAULT 'done'
         );
         CREATE TABLE IF NOT EXISTS approvals (
             id TEXT PRIMARY KEY,
@@ -81,11 +82,15 @@ def _ensure_db():
     ''')
     db.commit()
     # safe migrations for existing DBs
-    try:
-        db.execute("ALTER TABLE tasks ADD COLUMN specific_days TEXT DEFAULT NULL")
-        db.commit()
-    except Exception:
-        pass
+    for migration in [
+        "ALTER TABLE tasks ADD COLUMN specific_days TEXT DEFAULT NULL",
+        "ALTER TABLE history ADD COLUMN type TEXT DEFAULT 'done'",
+    ]:
+        try:
+            db.execute(migration)
+            db.commit()
+        except Exception:
+            pass
     db.close()
 
 _ensure_db()
@@ -445,6 +450,27 @@ def add_task():
          1 if d.get('approvalNeeded') else 0, datetime.now().isoformat(), specific_days])
     get_db().commit()
     return jsonify({'ok': True})
+
+@app.route('/api/tasks/<tid>/expire', methods=['POST'])
+def expire_task(tid):
+    """Mark a task as missed/expired — advance cycle without awarding points."""
+    err = require_auth(); hid = get_hid()
+    if err: return err
+    db = get_db()
+    task = db.execute("SELECT * FROM tasks WHERE id=? AND household_id=?", [tid, hid]).fetchone()
+    if not task: return jsonify({'error': 'not found'}), 404
+    task = dict(task)
+    now_iso = datetime.now().isoformat()
+
+    # Advance last_completed so the task resets to the next cycle
+    db.execute("UPDATE tasks SET last_completed=? WHERE id=? AND household_id=?", [now_iso, tid, hid])
+    # Log as missed (type='missed', 0 pts)
+    member_id = task['assigned_to'] or ''
+    db.execute(
+        "INSERT INTO history(id,household_id,task_id,member_id,completed_at,pts,coins_earned,type) VALUES (?,?,?,?,?,0,0,'missed')",
+        [uid(), hid, tid, member_id, now_iso])
+    db.commit()
+    return jsonify({'ok': True, 'missed': True})
 
 @app.route('/api/tasks/<tid>', methods=['DELETE'])
 def del_task(tid):

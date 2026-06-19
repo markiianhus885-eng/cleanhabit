@@ -749,18 +749,50 @@ function nextLvPts(pts){ const l=getLevel(pts); return LV_PTS[l+1]||null; }
 
 function isDue(task){
   if(task.specific_days){
-    // due if today is one of the chosen weekdays AND not done today
-    const todayDow = (new Date().getDay()+6)%7; // Mon=0..Sun=6
+    const todayDow = (new Date().getDay()+6)%7;
     const chosen = task.specific_days.split(',').map(Number);
     if(!chosen.includes(todayDow)) return false;
     if(!task.last_completed) return true;
-    const lastDate = new Date(task.last_completed).toDateString();
-    return lastDate !== new Date().toDateString();
+    return new Date(task.last_completed).toDateString() !== new Date().toDateString();
   }
   if(!task.last_completed) return true;
   const last = new Date(task.last_completed);
   const days = FREQ_DAYS[task.freq]||7;
   return (Date.now()-last.getTime()) >= days*86400000;
+}
+
+function isExpired(task){
+  if(task.specific_days){
+    const todayDow = (new Date().getDay()+6)%7;
+    const chosen = task.specific_days.split(',').map(Number);
+    const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+    for(const dow of chosen){
+      const daysBack = ((todayDow - dow)+7)%7;
+      if(daysBack === 0) continue;
+      const occDate = new Date(todayStart);
+      occDate.setDate(todayStart.getDate() - daysBack);
+      const lastDone = task.last_completed ? new Date(task.last_completed) : null;
+      if(!lastDone || lastDone < occDate) return true;
+    }
+    return false;
+  }
+  const ref = task.last_completed ? new Date(task.last_completed)
+            : task.created_at     ? new Date(task.created_at) : null;
+  if(!ref) return false;
+  const freqDays = FREQ_DAYS[task.freq] || 7;
+  const overdueDays = (Date.now() - ref.getTime()) / 86400000 - freqDays;
+  return overdueDays > freqDays; // missed the whole window (2× freq elapsed)
+}
+
+let _expiringNow = false;
+async function autoExpireTasks(){
+  if(_expiringNow || !state.data) return;
+  const toExpire = state.data.tasks.filter(t => isExpired(t));
+  if(toExpire.length === 0) return;
+  _expiringNow = true;
+  await Promise.all(toExpire.map(t => POST(`/api/tasks/${t.id}/expire`, {})));
+  _expiringNow = false;
+  await loadData();
 }
 
 function fmtSchedule(task){
@@ -801,6 +833,7 @@ const DEL  = url => api('DELETE', url);
 async function loadData(){
   state.data = await GET('/api/data');
   render();
+  autoExpireTasks();
 }
 async function loadLeaderboard(){
   const lb = await GET(`/api/leaderboard?period=${state.lb_period}`);
@@ -1250,9 +1283,13 @@ function render(){
 // HOME SCREEN
 // ═══════════════════════════════════════════
 function renderHome(d){
-  const dueTasks = d.tasks.filter(isDue);
+  const dueTasks    = d.tasks.filter(isDue);
+  const expiredTasks= d.tasks.filter(t => isExpired(t) && !isDue(t));
   const doneTodayIds = (d.history||[])
     .filter(h=>new Date(h.completed_at)>new Date(Date.now()-86400000))
+    .map(h=>h.task_id);
+  const missedTodayIds = (d.history||[])
+    .filter(h=>h.type==='missed' && new Date(h.completed_at)>new Date(Date.now()-86400000*2))
     .map(h=>h.task_id);
   const pending = dueTasks.filter(t=>!doneTodayIds.includes(t.id));
   const effortToday = (d.history||[])
@@ -1311,7 +1348,10 @@ function renderHome(d){
   <div class="stat-row">
     <div class="stat-box"><div class="stat-val">${pending.length}</div><div class="stat-lbl">DO ZROBIENIA</div></div>
     <div class="stat-box"><div class="stat-val">${doneTodayIds.length}</div><div class="stat-lbl">DZIŚ GOTOWE</div></div>
-    <div class="stat-box"><div class="stat-val">${d.members.reduce((a,m)=>a+m.points,0)}</div><div class="stat-lbl">ŁĄC. PUNKTY</div></div>
+    <div class="stat-box" style="${expiredTasks.length>0?'border-color:rgba(239,68,68,0.4)':''}">
+      <div class="stat-val" style="color:${expiredTasks.length>0?'var(--red)':'var(--blue2)'}">${expiredTasks.length}</div>
+      <div class="stat-lbl">PRZEPADŁO</div>
+    </div>
   </div>`;
 
   // APPROVALS
@@ -1335,12 +1375,48 @@ function renderHome(d){
     });
   }
 
-  // TODAY TASKS
-  html += `<div class="shdr"><h2>📋 Na dziś</h2><span>${pending.length} zadań</span></div>`;
+  // EXPIRED TASKS SECTION
+  if(expiredTasks.length > 0){
+    html += `
+    <div class="shdr" style="margin-top:4px">
+      <h2 style="color:var(--red)">💀 Przepadło!</h2>
+      <span style="color:var(--red);font-size:12px">${expiredTasks.length} zadań</span>
+    </div>
+    <div style="margin:0 16px 4px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:16px;padding:10px 14px;font-size:12px;color:rgba(239,68,68,0.8);line-height:1.5">
+      ⏰ Nie zdążyłeś — te zadania wygasły. Szansa na monety przepadła. Pojawią się znowu w kolejnym cyklu.
+    </div>`;
+    expiredTasks.forEach(task=>{
+      const room = d.rooms.find(r=>r.id===task.room_id);
+      const mbr  = d.members.find(m=>m.id===task.assigned_to);
+      const pts  = DIFF_PTS[task.diff]||1;
+      const freqDays = task.specific_days ? null : (FREQ_DAYS[task.freq]||7);
+      const ref  = task.last_completed ? new Date(task.last_completed) : new Date(task.created_at);
+      const daysLate = Math.floor((Date.now() - ref.getTime())/86400000) - (freqDays||0);
+      html += `
+      <div class="task-item" style="opacity:0.6;border-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.05)">
+        <div style="width:30px;height:30px;border-radius:50%;background:rgba(239,68,68,0.15);border:2px solid rgba(239,68,68,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px">💀</div>
+        <div style="flex:1;min-width:0">
+          <div class="task-name" style="text-decoration:line-through;color:var(--muted2)">${esc(task.name)}</div>
+          <div class="task-meta">
+            ${room?`<span>${room.emoji} ${esc(room.name)}</span><span class="dot">·</span>`:''}
+            ${mbr?`<span>${mbr.emoji} ${esc(mbr.name)}</span><span class="dot">·</span>`:''}
+            <span style="color:var(--red)">${freqDays?`${daysLate} dni po terminie`:'Minął termin'}</span>
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:11px;color:rgba(239,68,68,0.7);font-weight:700;text-decoration:line-through">+${pts} pkt</div>
+          <div style="font-size:10px;color:var(--muted2)">🪙 stracono</div>
+        </div>
+      </div>`;
+    });
+  }
 
-  if(pending.length===0 && doneTodayIds.length===0){
+  // TODAY TASKS
+  html += `<div class="shdr" style="margin-top:4px"><h2>📋 Na dziś</h2><span>${pending.length} zadań</span></div>`;
+
+  if(pending.length===0 && doneTodayIds.length===0 && expiredTasks.length===0){
     html += `<div class="empty"><div class="ico">☀️</div><p>Brak zadań na dziś.<br>Dodaj zadania w zakładce Pokoje!</p></div>`;
-  } else if(pending.length===0){
+  } else if(pending.length===0 && expiredTasks.length===0){
     html += `<div class="empty"><div class="ico">🎉</div><p>Wszystkie zadania na dziś gotowe!<br><strong>Rewelacyjna robota!</strong></p></div>`;
   }
 
@@ -1348,8 +1424,12 @@ function renderHome(d){
     const room = d.rooms.find(r=>r.id===task.room_id);
     const mbr  = d.members.find(m=>m.id===task.assigned_to);
     const pts  = DIFF_PTS[task.diff]||1;
+    const freqDays = FREQ_DAYS[task.freq]||7;
+    const ref  = task.last_completed ? new Date(task.last_completed) : new Date(task.created_at||Date.now());
+    const overdueDays = Math.floor((Date.now()-ref.getTime())/86400000) - freqDays;
+    const isOverdue = overdueDays > 0;
     html += `
-    <div class="task-item" id="ti-${task.id}">
+    <div class="task-item" id="ti-${task.id}" style="${isOverdue?'border-color:rgba(249,115,22,0.4);background:rgba(249,115,22,0.04)':''}">
       <div class="task-chk${isDue(task)?' due':''}" onclick="handleCheck('${task.id}',this)">
         <span style="font-size:11px;color:var(--muted2)">○</span>
       </div>
@@ -1358,7 +1438,9 @@ function renderHome(d){
         <div class="task-meta">
           ${room?`<span>${room.emoji} ${esc(room.name)}</span><span class="dot">·</span>`:''}
           ${mbr?`<span>${mbr.emoji} ${esc(mbr.name)}</span><span class="dot">·</span>`:''}
-          <span>${fmtSchedule(task)}</span>
+          ${isOverdue
+            ? `<span style="color:var(--orange);font-weight:700">⚠️ Spóźnione ${overdueDays}d — zrób teraz!</span>`
+            : `<span>${fmtSchedule(task)}</span>`}
         </div>
       </div>
       <div style="text-align:right;flex-shrink:0">
