@@ -512,11 +512,36 @@ body{
         <div id="token-lookup" style="margin-top:10px;display:none"></div>
       </div>
 
-      <!-- MEMBER LINK (register only — shown after token lookup or for create) -->
-      <div id="auth-member-wrap" style="display:none">
-        <div style="font-size:12px;color:var(--muted2);margin-bottom:6px">Kim jesteś w tej rodzinie?</div>
-        <div id="auth-member-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>
-        <input type="hidden" id="auth-member" value=""/>
+      <!-- DISPLAY NAME (register only) -->
+      <div id="auth-displayname-wrap" style="display:none">
+        <input class="inp" id="auth-displayname" placeholder="Twoje imię (np. Mama, Tata, Kacper)"/>
+      </div>
+
+      <!-- EMOJI PICKER (register only) -->
+      <div id="auth-emoji-wrap" style="display:none">
+        <div style="font-size:12px;color:var(--muted2);margin-bottom:8px">Wybierz swoje emoji</div>
+        <div id="auth-emoji-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px">
+          <button type="button" onclick="selectAuthEmoji('😊',this)" class="emoji-opt" style="aspect-ratio:1;border-radius:12px;border:2px solid var(--blue);background:rgba(14,165,233,0.12);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">😊</button>
+          <button type="button" onclick="selectAuthEmoji('😎',this)" class="emoji-opt" style="aspect-ratio:1;border-radius:12px;border:2px solid var(--border);background:rgba(255,255,255,0.03);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">😎</button>
+          <button type="button" onclick="selectAuthEmoji('🤩',this)" class="emoji-opt" style="aspect-ratio:1;border-radius:12px;border:2px solid var(--border);background:rgba(255,255,255,0.03);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">🤩</button>
+          <button type="button" onclick="selectAuthEmoji('🥳',this)" class="emoji-opt" style="aspect-ratio:1;border-radius:12px;border:2px solid var(--border);background:rgba(255,255,255,0.03);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">🥳</button>
+          <button type="button" onclick="selectAuthEmoji('😄',this)" class="emoji-opt" style="aspect-ratio:1;border-radius:12px;border:2px solid var(--border);background:rgba(255,255,255,0.03);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">😄</button>
+          <button type="button" onclick="selectAuthEmoji('🦸',this)" class="emoji-opt" style="aspect-ratio:1;border-radius:12px;border:2px solid var(--border);background:rgba(255,255,255,0.03);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">🦸</button>
+          <button type="button" onclick="selectAuthEmoji('👦',this)" class="emoji-opt" style="aspect-ratio:1;border-radius:12px;border:2px solid var(--border);background:rgba(255,255,255,0.03);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">👦</button>
+          <button type="button" onclick="selectAuthEmoji('👧',this)" class="emoji-opt" style="aspect-ratio:1;border-radius:12px;border:2px solid var(--border);background:rgba(255,255,255,0.03);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">👧</button>
+          <button type="button" onclick="selectAuthEmoji('👨',this)" class="emoji-opt" style="aspect-ratio:1;border-radius:12px;border:2px solid var(--border);background:rgba(255,255,255,0.03);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">👨</button>
+          <button type="button" onclick="selectAuthEmoji('👩',this)" class="emoji-opt" style="aspect-ratio:1;border-radius:12px;border:2px solid var(--border);background:rgba(255,255,255,0.03);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">👩</button>
+          <button type="button" onclick="selectAuthEmoji('🧔',this)" class="emoji-opt" style="aspect-ratio:1;border-radius:12px;border:2px solid var(--border);background:rgba(255,255,255,0.03);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">🧔</button>
+          <button type="button" onclick="selectAuthEmoji('👴',this)" class="emoji-opt" style="aspect-ratio:1;border-radius:12px;border:2px solid var(--border);background:rgba(255,255,255,0.03);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">👴</button>
+          <button type="button" onclick="selectAuthEmoji('👵',this)" class="emoji-opt" style="aspect-ratio:1;border-radius:12px;border:2px solid var(--border);background:rgba(255,255,255,0.03);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">👵</button>
+          <button type="button" onclick="selectAuthEmoji('🐱',this)" class="emoji-opt" style="aspect-ratio:1;border-radius:12px;border:2px solid var(--border);background:rgba(255,255,255,0.03);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">🐱</button>
+          <button type="button" onclick="selectAuthEmoji('🐶',this)" class="emoji-opt" style="aspect-ratio:1;border-radius:12px;border:2px solid var(--border);background:rgba(255,255,255,0.03);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">🐶</button>
+          <button type="button" onclick="selectAuthEmoji('🦊',this)" class="emoji-opt" style="aspect-ratio:1;border-radius:12px;border:2px solid var(--border);background:rgba(255,255,255,0.03);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">🦊</button>
+          <button type="button" onclick="selectAuthEmoji('🐸',this)" class="emoji-opt" style="aspect-ratio:1;border-radius:12px;border:2px solid var(--border);background:rgba(255,255,255,0.03);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">🐸</button>
+          <button type="button" onclick="selectAuthEmoji('🐼',this)" class="emoji-opt" style="aspect-ratio:1;border-radius:12px;border:2px solid var(--border);background:rgba(255,255,255,0.03);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">🐼</button>
+          <button type="button" onclick="selectAuthEmoji('🦁',this)" class="emoji-opt" style="aspect-ratio:1;border-radius:12px;border:2px solid var(--border);background:rgba(255,255,255,0.03);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">🦁</button>
+          <button type="button" onclick="selectAuthEmoji('🐻',this)" class="emoji-opt" style="aspect-ratio:1;border-radius:12px;border:2px solid var(--border);background:rgba(255,255,255,0.03);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">🐻</button>
+        </div>
       </div>
 
       <button onclick="doAuth()" style="
@@ -848,6 +873,18 @@ async function loadLeaderboard(){
 let authMode = 'login';
 let householdAction = 'create'; // 'create' | 'join'
 
+let _selectedAuthEmoji = '😊';
+
+function selectAuthEmoji(emoji, btn){
+  _selectedAuthEmoji = emoji;
+  document.querySelectorAll('.emoji-opt').forEach(b=>{
+    b.style.borderColor = 'var(--border)';
+    b.style.background  = 'rgba(255,255,255,0.03)';
+  });
+  btn.style.borderColor = 'var(--blue)';
+  btn.style.background  = 'rgba(14,165,233,0.12)';
+}
+
 function setHouseholdAction(action){
   householdAction = action;
   const isJoin = action === 'join';
@@ -859,20 +896,15 @@ function setHouseholdAction(action){
   $('hact-join').style.color         = isJoin ? 'var(--blue2)' : 'var(--muted2)';
   $('auth-token-wrap').style.display = isJoin ? 'block' : 'none';
   $('auth-hname-wrap').style.display = isJoin ? 'none'  : 'block';
-  $('auth-member-wrap').style.display = 'none';
   $('token-lookup').style.display = 'none';
-  $('auth-token').value = '';
-  $('auth-member').value = '';
+  if($('auth-token')) $('auth-token').value = '';
 }
 
 let _tokenTimer = null;
 function onTokenInput(val){
   clearTimeout(_tokenTimer);
   $('token-lookup').style.display = 'none';
-  $('auth-member-wrap').style.display = 'none';
-  $('auth-member').value = '';
   if(val.length < 6) return;
-  // debounce 400ms
   _tokenTimer = setTimeout(()=>lookupToken(val), 400);
 }
 
@@ -888,43 +920,19 @@ async function lookupToken(token){
     ">❌ ${esc(res.error)}</div>`;
     return;
   }
+  const members = res.members || [];
+  const memberPreview = members.length
+    ? `<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:8px">${members.map(m=>`<span style="font-size:20px" title="${esc(m.name)}">${m.emoji}</span>`).join('')}</div>`
+    : '';
   box.innerHTML = `<div style="
     background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);
     border-radius:12px;padding:10px 14px;text-align:center;
   ">
     <div style="font-size:11px;color:var(--muted2);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Znaleziono rodzinę</div>
     <div style="font-size:16px;font-weight:900;color:var(--green)">🏠 ${esc(res.name)}</div>
+    ${memberPreview}
+    ${members.length ? `<div style="font-size:11px;color:var(--muted2);margin-top:6px">${members.length} domownik${members.length===1?'':'ów'} już w rodzinie</div>` : ''}
   </div>`;
-
-  // Show member picker
-  const members = res.members || [];
-  const wrap = $('auth-member-wrap');
-  const grid = $('auth-member-grid');
-  if(members.length > 0){
-    grid.innerHTML = members.map(m=>`
-      <button type="button" onclick="selectMember('${m.id}',this)" style="
-        padding:10px 6px;border-radius:12px;border:2px solid var(--border);
-        background:var(--bg3);cursor:pointer;transition:all 0.15s;
-        display:flex;flex-direction:column;align-items:center;gap:4px;
-      ">
-        <span style="font-size:26px">${m.emoji}</span>
-        <span style="font-size:11px;font-weight:700;color:var(--text2)">${esc(m.name)}</span>
-      </button>`).join('');
-    wrap.style.display = 'block';
-  } else {
-    grid.innerHTML = `<div style="font-size:12px;color:var(--muted2);grid-column:span 3;padding:6px 0">Brak domowników — właściciel jeszcze ich nie dodał.</div>`;
-    wrap.style.display = 'block';
-  }
-}
-
-function selectMember(id, btn){
-  $('auth-member').value = id;
-  $('auth-member-grid').querySelectorAll('button').forEach(b=>{
-    b.style.borderColor = 'var(--border)';
-    b.style.background  = 'var(--bg3)';
-  });
-  btn.style.borderColor = 'var(--blue)';
-  btn.style.background  = 'rgba(14,165,233,0.15)';
 }
 
 function showAuthTab(mode){
@@ -935,8 +943,9 @@ function showAuthTab(mode){
   $('tab-register').style.color = mode==='register' ? '#fff' : 'var(--muted2)';
   $('auth-household-wrap').style.display = mode==='register' ? 'block' : 'none';
   $('auth-token-wrap').style.display = 'none';
-  $('auth-member-wrap').style.display = 'none';
   $('auth-hname-wrap').style.display = mode==='register' ? 'block' : 'none';
+  $('auth-displayname-wrap').style.display = mode==='register' ? 'block' : 'none';
+  $('auth-emoji-wrap').style.display = mode==='register' ? 'block' : 'none';
   $('auth-btn').textContent = mode==='login' ? 'Zaloguj się' : 'Zarejestruj się';
   $('auth-error').style.display = 'none';
   if(mode==='register') { householdAction='create'; setHouseholdAction('create'); }
@@ -952,6 +961,8 @@ async function doAuth(){
   const body = {username, password};
   if(authMode==='register'){
     body.action = householdAction;
+    body.display_name = $('auth-displayname').value.trim() || username;
+    body.emoji = _selectedAuthEmoji || '😊';
     if(householdAction === 'join'){
       const tok = $('auth-token').value.trim().toUpperCase();
       if(tok.length < 6){ errEl.style.display='block'; errEl.textContent='Wpisz 6-znakowy kod rodziny'; return; }
@@ -959,7 +970,6 @@ async function doAuth(){
     } else {
       body.household_name = $('auth-hname').value.trim() || 'Moja Rodzina';
     }
-    body.member_id = ($('auth-member') && $('auth-member').value) || '';
   }
   const res = await POST(url, body);
   if(res.error){ errEl.style.display='block'; errEl.textContent=res.error; return; }

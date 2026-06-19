@@ -329,20 +329,25 @@ def household_lookup():
     return jsonify({'name': hh['name'], 'token': hh['token'], 'members': members})
 
 # ── AUTH ──────────────────────────────────────────────────────
+MEMBER_EMOJIS = ['😊','😎','🤩','🥳','😄','🦸','🧑','👦','👧','👨','👩','🧔','👴','👵','🐱','🐶','🦊','🐸','🐼','🦁']
+
 @app.route('/api/auth/register', methods=['POST'])
 def auth_register():
     d = request.json or {}
-    username  = d.get('username', '').strip().lower()
-    password  = d.get('password', '').strip()
-    action    = d.get('action', 'create')  # 'create' or 'join'
-    token     = d.get('token', '').strip().upper()
-    hname     = d.get('household_name', 'Moja Rodzina').strip()
-    member_id = d.get('member_id', '')
+    username     = d.get('username', '').strip().lower()
+    password     = d.get('password', '').strip()
+    display_name = d.get('display_name', '').strip()  # visible name / member name
+    action       = d.get('action', 'create')  # 'create' or 'join'
+    token        = d.get('token', '').strip().upper()
+    hname        = d.get('household_name', 'Moja Rodzina').strip()
+    chosen_emoji = d.get('emoji', '').strip()
 
     if not username or not password:
         return jsonify({'error': 'Podaj nazwę użytkownika i hasło'}), 400
     if len(password) < 4:
         return jsonify({'error': 'Hasło musi mieć min. 4 znaki'}), 400
+    if not display_name:
+        display_name = username
 
     db = get_db()
     if db.execute("SELECT 1 FROM users WHERE username=?", [username]).fetchone():
@@ -365,6 +370,15 @@ def auth_register():
         db.execute("INSERT OR REPLACE INTO config(key,household_id,value) VALUES ('household',?,?)",
                    [household_id, hname])
         role = 'admin'
+
+    # Auto-create member profile for this user
+    import random
+    emoji = chosen_emoji if chosen_emoji else random.choice(MEMBER_EMOJIS)
+    member_id = uid()
+    db.execute(
+        "INSERT INTO members(id,household_id,name,emoji,points,coins,streak,streak_date,owned) VALUES (?,?,?,?,0,0,0,NULL,'[]')",
+        [member_id, household_id, display_name, emoji]
+    )
 
     user_id = uid()
     db.execute("INSERT INTO users(id,username,password_hash,household_id,member_id,role,created_at) VALUES (?,?,?,?,?,?,?)",
