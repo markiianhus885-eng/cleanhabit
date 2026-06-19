@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+*.pyo
+sweepy.db
+.env
+*.log
+.DS_Store

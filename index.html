@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Sweepy – Cleaning Schedule</title>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script>
+window.addEventListener('load',function(){
+  document.querySelectorAll('script[type="text/jsx"]').forEach(function(s){
+    try{
+      var code=Babel.transform(s.textContent,{presets:[['react',{runtime:'classic'}]]}).code;
+      (new Function(code))();
+    }catch(e){console.error('JSX Error:',e);}
+  });
+});
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0F1923;
+  --bg2:#172030;
+  --bg3:#1E2C3D;
+  --card:#1E2C3D;
+  --card2:#243347;
+  --blue:#0EA5E9;
+  --blue2:#38BDF8;
+  --blue3:#7DD3FC;
+  --bluedk:#0369A1;
+  --green:#22C55E;
+  --yellow:#F59E0B;
+  --orange:#F97316;
+  --red:#EF4444;
+  --purple:#A855F7;
+  --pink:#EC4899;
+  --text:#F0F9FF;
+  --text2:#BAE6FD;
+  --muted:#64748B;
+  --border:#243347;
+  --navh:68px;
+}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:430px;margin:0 auto;min-height:100vh;overflow-x:hidden;position:relative;}
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-thumb{background:var(--blue);border-radius:2px;}
+
+/* SCREENS */
+.screen{min-height:100vh;padding-bottom:calc(var(--navh)+12px);overflow-y:auto;}
+
+/* TOP BAR */
+.topbar{padding:18px 20px 10px;display:flex;align-items:flex-start;justify-content:space-between;}
+.topbar-title{font-size:24px;font-weight:800;letter-spacing:-0.5px;}
+.topbar-sub{font-size:13px;color:var(--text2);margin-top:2px;opacity:0.7;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+
+/* BOTTOM NAV */
+.bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;height:var(--navh);background:var(--bg2);border-top:1px solid var(--border);display:flex;z-index:200;}
+.bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:none;cursor:pointer;color:var(--muted);font-size:9.5px;font-weight:600;letter-spacing:0.3px;padding:6px 2px;transition:color 0.2s;}
+.bnav-btn.active{color:var(--blue);}
+.bnav-icon{width:36px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:12px;font-size:20px;transition:all 0.2s;}
+.bnav-btn.active .bnav-icon{background:rgba(14,165,233,0.15);}
+
+/* CARDS */
+.card{background:var(--card);border-radius:20px;border:1px solid var(--border);padding:18px;}
+.mx{margin:0 16px;}
+.mb{margin-bottom:12px;}
+
+/* PROGRESS */
+.pbar-wrap{background:rgba(255,255,255,0.07);border-radius:100px;overflow:hidden;}
+.pbar{border-radius:100px;transition:width 0.6s cubic-bezier(.4,0,.2,1);}
+
+/* BUTTONS */
+.btn{border:none;border-radius:12px;padding:11px 20px;font-size:14px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 0.15s;}
+.btn-blue{background:linear-gradient(135deg,var(--bluedk),var(--blue));color:#fff;box-shadow:0 4px 16px rgba(14,165,233,0.3);}
+.btn-blue:active{transform:scale(0.96);}
+.btn-ghost{background:rgba(255,255,255,0.06);color:var(--text2);border:1px solid var(--border);}
+.btn-danger{background:rgba(239,68,68,0.12);color:var(--red);border:1px solid rgba(239,68,68,0.2);}
+.btn-sm{padding:7px 14px;font-size:12px;border-radius:9px;}
+.btn-icon{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;}
+
+/* FAB */
+.fab{position:fixed;bottom:calc(var(--navh)+16px);right:16px;width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,var(--bluedk),var(--blue2));border:none;color:#fff;font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 24px rgba(14,165,233,0.45);z-index:100;transition:transform 0.15s;}
+.fab:active{transform:scale(0.9);}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:flex;align-items:flex-end;justify-content:center;}
+.modal{background:var(--bg2);border-radius:28px 28px 0 0;padding:20px 18px 32px;width:100%;max-width:430px;max-height:90vh;overflow-y:auto;border:1px solid var(--border);border-bottom:none;}
+.modal-pill{width:42px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 18px;}
+.modal h2{font-size:20px;font-weight:800;margin-bottom:16px;}
+
+/* INPUTS */
+.field{margin-bottom:14px;}
+.field label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:6px;}
+.inp{width:100%;background:rgba(255,255,255,0.05);border:1.5px solid var(--border);border-radius:12px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;transition:border-color 0.2s;}
+.inp:focus{border-color:var(--blue);}
+select.inp{cursor:pointer;}
+
+/* TAGS / CHIPS */
+.chip-row{display:flex;gap:8px;flex-wrap:wrap;}
+.chip{padding:7px 14px;border-radius:100px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;}
+.chip.on{background:rgba(14,165,233,0.15);border-color:var(--blue);color:var(--blue2);}
+.tag{display:inline-flex;align-items:center;padding:3px 9px;border-radius:100px;font-size:11px;font-weight:700;}
+.tag-g{background:rgba(34,197,94,0.12);color:var(--green);}
+.tag-y{background:rgba(245,158,11,0.12);color:var(--yellow);}
+.tag-o{background:rgba(249,115,22,0.12);color:var(--orange);}
+.tag-r{background:rgba(239,68,68,0.12);color:var(--red);}
+.tag-b{background:rgba(14,165,233,0.12);color:var(--blue2);}
+.tag-p{background:rgba(168,85,247,0.12);color:var(--purple);}
+
+/* SECTION HDR */
+.shdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px 8px;}
+.shdr h2{font-size:16px;font-weight:800;}
+.shdr span{font-size:12px;color:var(--muted);}
+
+/* AVATAR */
+.ava{display:flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0;}
+
+/* ROOM CARD */
+.room-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:16px;display:flex;align-items:flex-start;gap:14px;margin:0 16px 10px;transition:all 0.2s;cursor:default;}
+.room-icon-wrap{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;}
+.room-meta{flex:1;min-width:0;}
+.room-name{font-size:15px;font-weight:700;margin-bottom:2px;}
+.room-last{font-size:11px;color:var(--muted);margin-bottom:8px;}
+.clean-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.clean-pct{font-size:13px;font-weight:700;}
+.clean-lbl{font-size:11px;color:var(--muted);}
+
+/* TASK ITEM */
+.task-item{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--card);border-radius:16px;margin:0 16px 8px;border:1px solid var(--border);transition:all 0.2s;}
+.task-item.done{opacity:0.45;}
+.task-chk{width:28px;height:28px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;flex-shrink:0;}
+.task-chk.on{background:var(--green);border-color:var(--green);}
+.task-info{flex:1;min-width:0;}
+.task-name{font-size:14px;font-weight:700;margin-bottom:2px;}
+.task-sub{font-size:12px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;}
+.pts-badge{display:inline-flex;align-items:center;gap:3px;background:rgba(14,165,233,0.12);color:var(--blue2);padding:3px 8px;border-radius:100px;font-size:12px;font-weight:700;}
+
+/* EFFORT BAR */
+.effort-wrap{margin:0 16px 12px;background:var(--card);border-radius:18px;border:1px solid var(--border);padding:16px;}
+.effort-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.effort-title{font-size:13px;font-weight:700;color:var(--text2);}
+.effort-val{font-size:22px;font-weight:800;color:var(--blue2);}
+.effort-sub{font-size:11px;color:var(--muted);}
+
+/* HERO */
+.hero{margin:8px 16px 12px;border-radius:22px;padding:20px;position:relative;overflow:hidden;}
+.hero-blue{background:linear-gradient(135deg,#0c4a6e,#0369a1,#0ea5e9);}
+.hero-green{background:linear-gradient(135deg,#14532d,#15803d,#22c55e);}
+.hero-orange{background:linear-gradient(135deg,#7c2d12,#c2410c,#f97316);}
+.hero::before{content:'';position:absolute;top:-40px;right:-40px;width:140px;height:140px;background:rgba(255,255,255,0.06);border-radius:50%;}
+.hero::after{content:'';position:absolute;bottom:-30px;right:20px;width:90px;height:90px;background:rgba(255,255,255,0.04);border-radius:50%;}
+.hero-emoji{font-size:36px;margin-bottom:8px;}
+.hero h2{font-size:20px;font-weight:800;line-height:1.2;}
+.hero p{font-size:13px;opacity:0.85;margin-top:5px;line-height:1.5;}
+
+/* LEADERBOARD */
+.lb-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--card);border-radius:16px;margin:0 16px 8px;border:1px solid var(--border);}
+.lb-rank{width:32px;text-align:center;font-size:20px;font-weight:800;flex-shrink:0;}
+.lb-right{margin-left:auto;text-align:right;flex-shrink:0;}
+
+/* VIRTUAL HOME */
+.vhome-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px;}
+.vhome-item{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;text-align:center;cursor:pointer;transition:all 0.2s;position:relative;}
+.vhome-item.owned{border-color:var(--green);}
+.vhome-item:active{transform:scale(0.96);}
+.vhome-emoji{font-size:36px;margin-bottom:8px;}
+.vhome-name{font-size:12px;font-weight:700;margin-bottom:4px;}
+.vhome-price{display:flex;align-items:center;justify-content:center;gap:3px;font-size:12px;font-weight:700;color:var(--yellow);}
+
+/* COINS DISPLAY */
+.coins-bar{display:flex;align-items:center;gap:6px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:100px;padding:5px 12px;font-size:13px;font-weight:700;color:var(--yellow);}
+
+/* TABS */
+.tabs{display:flex;background:var(--bg3);border-radius:12px;padding:3px;margin:0 16px 12px;}
+.tab{flex:1;padding:8px;text-align:center;font-size:13px;font-weight:700;border-radius:10px;cursor:pointer;transition:all 0.2s;color:var(--muted);border:none;background:none;}
+.tab.on{background:var(--blue);color:#fff;box-shadow:0 2px 12px rgba(14,165,233,0.4);}
+
+/* STATS GRID */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 16px;margin-bottom:12px;}
+.stat-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:12px 8px;text-align:center;}
+.stat-val{font-size:22px;font-weight:800;color:var(--blue2);}
+.stat-lbl{font-size:10px;color:var(--muted);margin-top:2px;font-weight:600;}
+
+/* EMPTY */
+.empty{text-align:center;padding:48px 24px;color:var(--muted);}
+.empty-ico{font-size:52px;margin-bottom:14px;}
+
+/* BADGE */
+.bdg{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:100px;font-size:11px;font-weight:700;background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.2);color:var(--blue3);}
+
+/* EMOJI GRID */
+.egrid{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin-top:8px;}
+.ebtn{aspect-ratio:1;border-radius:10px;border:1.5px solid var(--border);background:rgba(255,255,255,0.03);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
+.ebtn.on{background:rgba(14,165,233,0.15);border-color:var(--blue);}
+
+/* DIVIDER */
+.div{height:1px;background:var(--border);margin:10px 0;}
+
+/* HISTORY */
+.hitem{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.hitem:last-child{border-bottom:none;}
+
+/* ANIMATIONS */
+@keyframes slideUp{from{transform:translateY(24px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+@keyframes popIn{0%{transform:scale(0.75);opacity:0;}100%{transform:scale(1);opacity:1;}}
+@keyframes floatUp{0%{transform:translateY(0);opacity:1;}100%{transform:translateY(-70px);opacity:0;}}
+.su{animation:slideUp 0.25s ease;}
+.pi{animation:popIn 0.2s ease;}
+.pts-float{position:fixed;pointer-events:none;z-index:999;font-size:20px;font-weight:800;color:var(--green);text-shadow:0 2px 8px rgba(0,0,0,0.4);animation:floatUp 0.75s ease forwards;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/jsx">
+const {useState,useEffect,useRef,useCallback}=React;
+
+/* ── CONSTANTS ── */
+const LV_PTS=[0,50,150,350,700,1200,2000,3500,5000];
+const LV_NAMES=['Beginner','Helper','Cleaner','Pro Cleaner','Expert','Master','Champion','Legend','Grandmaster'];
+const LV_ICO=['🌱','🧹','🫧','⭐','💎','🏅','👑','🏆','✨'];
+const FREQ={'daily':'Codziennie','every2':'Co 2 dni','weekly':'Co tydzień','biweekly':'Co 2 tyg.','monthly':'Co miesiąc'};
+const FREQ_DAYS={'daily':1,'every2':2,'weekly':7,'biweekly':14,'monthly':30};
+const DIFF_PTS={'easy':1,'medium':2,'hard':3};
+const DIFF_LBL={'easy':'Łatwe','medium':'Średnie','hard':'Trudne'};
+const ROOM_EMOJIS=['🛋️','🍽️','🚿','🛏️','🪴','📚','🚗','🧺','🚪','🏋️','🎮','💻','🛁','🪟','🪑','🏠'];
+const MBR_EMOJIS=['😊','😎','🤩','🥳','😄','👩','👨','👧','👦','🧑','🐶','🐱','🐼','🤖','👾','🦸'];
+const CLEAN_ITEMS=[
+  {id:'c1',name:'Sofa',emoji:'🛋️',price:120,room:'living'},
+  {id:'c2',name:'Dywan',emoji:'🟫',price:80,room:'living'},
+  {id:'c3',name:'Stolik kawowy',emoji:'🪑',price:90,room:'living'},
+  {id:'c4',name:'TV',emoji:'📺',price:200,room:'living'},
+  {id:'c5',name:'Lampa',emoji:'💡',price:60,room:'bedroom'},
+  {id:'c6',name:'Łóżko',emoji:'🛏️',price:250,room:'bedroom'},
+  {id:'c7',name:'Szafa',emoji:'🚪',price:180,room:'bedroom'},
+  {id:'c8',name:'Roślina',emoji:'🪴',price:40,room:'any'},
+  {id:'c9',name:'Kwiaty',emoji:'🌸',price:30,room:'any'},
+  {id:'c10',name:'Obraz',emoji:'🖼️',price:70,room:'any'},
+  {id:'c11',name:'Książki',emoji:'📚',price:50,room:'any'},
+  {id:'c12',name:'Kuchnia',emoji:'🍽️',price:300,room:'kitchen'},
+];
+const TASK_SUGGESTIONS=[
+  {name:'Odkurzanie',diff:'medium'},{name:'Mycie podłóg',diff:'hard'},{name:'Wycieranie kurzu',diff:'easy'},
+  {name:'Mycie okien',diff:'hard'},{name:'Zmywanie naczyń',diff:'easy'},{name:'Czyszczenie zlewu',diff:'easy'},
+  {name:'Mycie toalety',diff:'medium'},{name:'Czyszczenie wanny',diff:'hard'},{name:'Zmiana pościeli',diff:'medium'},
+  {name:'Pranie',diff:'medium'},{name:'Prasowanie',diff:'medium'},{name:'Wyrzucenie śmieci',diff:'easy'},
+  {name:'Mycie lodówki',diff:'hard'},{name:'Czyszczenie kuchenki',diff:'medium'},{name:'Wycieranie luster',diff:'easy'},
+];
+
+function uid(){return Math.random().toString(36).slice(2,10);}
+function getLevel(pts){let l=0;for(let i=0;i<LV_PTS.length;i++){if(pts>=LV_PTS[i])l=i;}return l;}
+function lvProg(pts){const l=getLevel(pts),c=LV_PTS[l],n=LV_PTS[l+1];if(!n)return 100;return Math.round(((pts-c)/(n-c))*100);}
+function nextLv(pts){const l=getLevel(pts);return LV_PTS[l+1]||null;}
+function cleanColor(p){return p>=70?'#22C55E':p>=45?'#F59E0B':p>=25?'#F97316':'#EF4444';}
+function cleanLabel(p){return p>=70?'Czysto ✓':p>=45?'Znośnie':p>=25?'Brudno':'Wymaga uwagi!';}
+function cleanTagClass(p){return p>=70?'tag-g':p>=45?'tag-y':p>=25?'tag-o':'tag-r';}
+function isDue(task){
+  if(!task.lastCompleted)return true;
+  return (Date.now()-new Date(task.lastCompleted))>=FREQ_DAYS[task.freq]*86400000;
+}
+function daysSince(iso){if(!iso)return null;return Math.floor((Date.now()-new Date(iso))/86400000);}
+function fmtDate(iso){const d=new Date(iso);return d.toLocaleDateString('pl-PL',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}
+function fmtDaysSince(iso){
+  if(!iso)return 'Nigdy nie czyszczony';
+  const d=daysSince(iso);
+  if(d===0)return 'Czyszczony dzisiaj';
+  if(d===1)return 'Czyszczony wczoraj';
+  return `Czyszczony ${d} dni temu`;
+}
+
+const INIT={
+  household:'Moja Rodzina',
+  members:[
+    {id:'m1',name:'Mama',emoji:'👩',points:340,coins:85,streak:5,streakDate:null,owned:['c8','c9']},
+    {id:'m2',name:'Tata',emoji:'👨',points:210,coins:52,streak:3,streakDate:null,owned:['c8']},
+    {id:'m3',name:'Kasia',emoji:'😊',points:480,coins:120,streak:8,streakDate:null,owned:['c8','c9','c10','c11']},
+  ],
+  rooms:[
+    {id:'r1',name:'Salon',emoji:'🛋️',cleanliness:72,lastCleaned:new Date(Date.now()-86400000*2).toISOString()},
+    {id:'r2',name:'Kuchnia',emoji:'🍽️',cleanliness:48,lastCleaned:new Date(Date.now()-86400000*4).toISOString()},
+    {id:'r3',name:'Łazienka',emoji:'🚿',cleanliness:30,lastCleaned:new Date(Date.now()-86400000*6).toISOString()},
+    {id:'r4',name:'Sypialnia',emoji:'🛏️',cleanliness:85,lastCleaned:new Date(Date.now()-86400000).toISOString()},
+  ],
+  tasks:[
+    {id:'t1',name:'Odkurzanie',roomId:'r1',assignedTo:'m1',freq:'weekly',diff:'medium',lastCompleted:null,approvalNeeded:false},
+    {id:'t2',name:'Zmywanie naczyń',roomId:'r2',assignedTo:'m2',freq:'daily',diff:'easy',lastCompleted:null,approvalNeeded:false},
+    {id:'t3',name:'Mycie toalety',roomId:'r3',assignedTo:'m3',freq:'weekly',diff:'medium',lastCompleted:null,approvalNeeded:false},
+    {id:'t4',name:'Wycieranie kurzu',roomId:'r4',assignedTo:'m1',freq:'every2',diff:'easy',lastCompleted:null,approvalNeeded:false},
+    {id:'t5',name:'Mycie podłóg',roomId:'r2',assignedTo:'m3',freq:'weekly',diff:'hard',lastCompleted:null,approvalNeeded:false},
+    {id:'t6',name:'Mycie okien',roomId:'r1',assignedTo:'m2',freq:'monthly',diff:'hard',lastCompleted:null,approvalNeeded:false},
+  ],
+  history:[],
+  pendingApprovals:[],
+};
+
+function load(){try{const r=localStorage.getItem('sweepy_v3');return r?JSON.parse(r):INIT;}catch{return INIT;}}
+function save(d){localStorage.setItem('sweepy_v3',JSON.stringify(d));}
+
+/* ── FLOAT PTS ── */
+function FloatPts({x,y,txt,onDone}){
+  useEffect(()=>{const t=setTimeout(onDone,750);return()=>clearTimeout(t);},[]);
+  return <div className="pts-float" style={{left:x,top:y}}>{txt}</div>;
+}
+
+/* ── MODAL ── */
+function Modal({onClose,children}){
+  return(
+    <div className="modal-bg" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal su">{children}</div>
+    </div>
+  );
+}
+
+/* ── HOME SCREEN ── */
+function Home({data,onComplete,onApprove}){
+  const dueTasks=data.tasks.filter(isDue);
+  const doneTodayIds=data.history.filter(h=>new Date(h.at)>new Date(Date.now()-86400000)).map(h=>h.taskId);
+  const pendingTasks=dueTasks.filter(t=>!doneTodayIds.includes(t.id));
+  const effortToday=data.history.filter(h=>new Date(h.at)>new Date(Date.now()-86400000)).reduce((a,h)=>a+h.pts,0);
+  const effortGoal=20;
+  const effortPct=Math.min(100,Math.round((effortToday/effortGoal)*100));
+  const avgClean=data.rooms.length?Math.round(data.rooms.reduce((a,r)=>a+r.cleanliness,0)/data.rooms.length):0;
+  const totalPts=data.members.reduce((a,m)=>a+m.points,0);
+  const top=data.members.length?[...data.members].sort((a,b)=>b.points-a.points)[0]:null;
+
+  // hero variant
+  const heroClass=avgClean>=70?'hero hero-blue':avgClean>=45?'hero hero-green':'hero hero-orange';
+  const heroEmoji=avgClean>=70?'✨':avgClean>=45?'🧹':'😅';
+  const heroTxt=avgClean>=70?'Dom lśni czystością!':avgClean>=45?'Całkiem czysto, tak trzymaj!':'Czas wziąć się za sprzątanie!';
+
+  return(
+    <div className="screen">
+      <div className="topbar">
+        <div>
+          <div className="topbar-title">🏠 {data.household}</div>
+          <div className="topbar-sub">{new Date().toLocaleDateString('pl-PL',{weekday:'long',day:'numeric',month:'long'})}</div>
+        </div>
+        <div className="coins-bar">🪙 {data.members.reduce((a,m)=>a+m.coins,0)}</div>
+      </div>
+
+      {/* HERO */}
+      <div className={heroClass}>
+        <div className="hero-emoji">{heroEmoji}</div>
+        <h2>{heroTxt}</h2>
+        <p>Średnia czystość: <strong>{avgClean}%</strong>{top?` · Lider: ${top.emoji} ${top.name}`:''}</p>
+        <div style={{marginTop:14}}>
+          <div className="pbar-wrap" style={{height:6}}>
+            <div className="pbar" style={{width:`${avgClean}%`,height:6,background:'rgba(255,255,255,0.6)'}}/>
+          </div>
+        </div>
+      </div>
+
+      {/* EFFORT BAR */}
+      <div className="effort-wrap">
+        <div className="effort-top">
+          <div>
+            <div className="effort-title">Effort Points Today</div>
+            <div className="effort-sub">Cel dzienny: {effortGoal} pkt</div>
+          </div>
+          <div style={{textAlign:'right'}}>
+            <div className="effort-val">{effortToday}</div>
+            <div className="effort-sub">/ {effortGoal} pkt</div>
+          </div>
+        </div>
+        <div className="pbar-wrap" style={{height:10}}>
+          <div className="pbar" style={{width:`${effortPct}%`,height:10,background:effortPct>=100?'var(--green)':effortPct>=60?'var(--blue2)':'var(--blue)'}}/>
+        </div>
+        {effortPct>=100&&<div style={{fontSize:12,color:'var(--green)',fontWeight:700,marginTop:6}}>🎉 Cel dzienny osiągnięty!</div>}
+      </div>
+
+      {/* STATS */}
+      <div className="stats-grid">
+        <div className="stat-box"><div className="stat-val">{pendingTasks.length}</div><div className="stat-lbl">Do zrobienia</div></div>
+        <div className="stat-box"><div className="stat-val">{doneTodayIds.length}</div><div className="stat-lbl">Dziś gotowe</div></div>
+        <div className="stat-box"><div className="stat-val">{totalPts}</div><div className="stat-lbl">Łącznie pkt</div></div>
+      </div>
+
+      {/* PENDING APPROVALS */}
+      {data.pendingApprovals&&data.pendingApprovals.length>0&&(
+        <>
+          <div className="shdr"><h2>🔔 Oczekuje na zatwierdzenie</h2></div>
+          {data.pendingApprovals.map(pa=>{
+            const task=data.tasks.find(t=>t.id===pa.taskId);
+            const mbr=data.members.find(m=>m.id===pa.memberId);
+            return(
+              <div key={pa.id} className="task-item" style={{borderColor:'rgba(245,158,11,0.3)'}}>
+                <span style={{fontSize:22}}>⏳</span>
+                <div className="task-info">
+                  <div className="task-name">{task?.name}</div>
+                  <div className="task-sub"><span>{mbr?.emoji} {mbr?.name}</span></div>
+                </div>
+                <div style={{display:'flex',gap:6}}>
+                  <button className="btn btn-sm" style={{background:'rgba(34,197,94,0.15)',color:'var(--green)',border:'1px solid rgba(34,197,94,0.3)'}} onClick={()=>onApprove(pa,true)}>✓</button>
+                  <button className="btn btn-sm btn-danger" onClick={()=>onApprove(pa,false)}>✕</button>
+                </div>
+              </div>
+            );
+          })}
+        </>
+      )}
+
+      {/* TODAY'S TASKS */}
+      <div className="shdr"><h2>📋 Na dziś</h2><span>{pendingTasks.length} zadań</span></div>
+
+      {pendingTasks.length===0&&doneTodayIds.length===0&&(
+        <div className="empty"><div className="empty-ico">☀️</div><p style={{fontSize:14}}>Brak zadań na dziś.<br/>Dodaj zadania w zakładce Pokoje!</p></div>
+      )}
+      {pendingTasks.length===0&&doneTodayIds.length>0&&(
+        <div className="empty"><div className="empty-ico">🎉</div><p style={{fontSize:14}}>Wszystkie zadania na dziś gotowe!<br/>Rewelacyjna robota!</p></div>
+      )}
+
+      {pendingTasks.map(task=>{
+        const room=data.rooms.find(r=>r.id===task.roomId);
+        const mbr=data.members.find(m=>m.id===task.assignedTo);
+        const pts=DIFF_PTS[task.diff]||1;
+        return(
+          <div key={task.id} className="task-item">
+            <div className="task-chk" onClick={e=>onComplete(task,e)}>
+              <span style={{fontSize:10,color:'var(--muted)'}}>○</span>
+            </div>
+            <div className="task-info">
+              <div className="task-name">{task.name}</div>
+              <div className="task-sub">
+                {room&&<span>{room.emoji} {room.name}</span>}
+                {mbr&&<><span>·</span><span>{mbr.emoji} {mbr.name}</span></>}
+                <span>·</span><span>{FREQ[task.freq]}</span>
+              </div>
+            </div>
+            <div style={{textAlign:'right',flexShrink:0}}>
+              <div className="pts-badge">+{pts} pkt</div>
+              <div style={{fontSize:10,color:'var(--yellow)',marginTop:3}}>+{pts} 🪙</div>
+            </div>
+          </div>
+        );
+      })}
+
+      {/* QUICK ROOMS */}
+      <div className="shdr" style={{marginTop:6}}><h2>🏡 Pokoje</h2></div>
+      {data.rooms.slice(0,3).map(r=>{
+        const col=cleanColor(r.cleanliness);
+        return(
+          <div key={r.id} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 16px'}}>
+            <span style={{fontSize:24,width:32,textAlign:'center'}}>{r.emoji}</span>
+            <div style={{flex:1}}>
+              <div style={{display:'flex',justifyContent:'space-between',marginBottom:5}}>
+                <span style={{fontSize:14,fontWeight:700}}>{r.name}</span>
+                <span style={{fontSize:13,fontWeight:700,color:col}}>{r.cleanliness}%</span>
+              </div>
+              <div className="pbar-wrap" style={{height:7}}>
+                <div className="pbar" style={{width:`${r.cleanliness}%`,height:7,background:col}}/>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── ROOMS SCREEN ── */
+function RoomsScreen({data,setData,onComplete}){
+  const [showAdd,setShowAdd]=useState(false);
+  const [showRoom,setShowRoom]=useState(null);
+  const [form,setForm]=useState({name:'',emoji:'🛋️'});
+
+  function addRoom(){
+    if(!form.name.trim())return;
+    const r={id:uid(),name:form.name.trim(),emoji:form.emoji,cleanliness:100,lastCleaned:null};
+    const nd={...data,rooms:[...data.rooms,r]};
+    setData(nd);save(nd);
+    setForm({name:'',emoji:'🛋️'});setShowAdd(false);
+  }
+  function delRoom(id){
+    const nd={...data,rooms:data.rooms.filter(r=>r.id!==id),tasks:data.tasks.filter(t=>t.roomId!==id)};
+    setData(nd);save(nd);setShowRoom(null);
+  }
+
+  const doneTodayIds=data.history.filter(h=>new Date(h.at)>new Date(Date.now()-86400000)).map(h=>h.taskId);
+
+  return(
+    <div className="screen">
+      <div className="topbar">
+        <div><div className="topbar-title">Twoje pokoje</div><div className="topbar-sub">{data.rooms.length} pomieszczeń</div></div>
+      </div>
+
+      {data.rooms.length===0&&<div className="empty"><div className="empty-ico">🏠</div><p>Brak pokojów. Dodaj pierwszy!</p></div>}
+
+      {data.rooms.map(room=>{
+        const roomTasks=data.tasks.filter(t=>t.roomId===room.id);
+        const overdue=roomTasks.filter(t=>isDue(t)&&!doneTodayIds.includes(t.id));
+        const col=cleanColor(room.cleanliness);
+        const bgColor=`${col}18`;
+        return(
+          <div key={room.id} className="room-card" onClick={()=>setShowRoom(room)}>
+            <div className="room-icon-wrap" style={{background:bgColor}}>
+              <span>{room.emoji}</span>
+            </div>
+            <div className="room-meta">
+              <div className="room-name">{room.name}</div>
+              <div className="room-last">{fmtDaysSince(room.lastCleaned)}</div>
+              <div className="clean-row">
+                <span style={{color:col,fontSize:15,fontWeight:800}}>{room.cleanliness}%</span>
+                <span className={`tag ${cleanTagClass(room.cleanliness)}`}>{cleanLabel(room.cleanliness)}</span>
+              </div>
+              <div className="pbar-wrap" style={{height:7,marginBottom:6}}>
+                <div className="pbar" style={{width:`${room.cleanliness}%`,height:7,background:col}}/>
+              </div>
+              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                <span className="tag tag-b">{roomTasks.length} zadań</span>
+                {overdue.length>0&&<span className="tag tag-r">{overdue.length} zaległe</span>}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+
+      <button className="fab" onClick={()=>setShowAdd(true)}>+</button>
+
+      {/* ADD ROOM MODAL */}
+      {showAdd&&(
+        <Modal onClose={()=>setShowAdd(false)}>
+          <div className="modal-pill"/>
+          <h2>Nowy pokój</h2>
+          <div className="field"><label>Nazwa</label><input className="inp" placeholder="np. Salon" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}/></div>
+          <div className="field">
+            <label>Ikona</label>
+            <div className="egrid">{ROOM_EMOJIS.map(em=><button key={em} className={`ebtn ${form.emoji===em?'on':''}`} onClick={()=>setForm(f=>({...f,emoji:em}))}>{em}</button>)}</div>
+          </div>
+          <button className="btn btn-blue" style={{width:'100%',justifyContent:'center',marginTop:8}} onClick={addRoom}>Dodaj pokój</button>
+        </Modal>
+      )}
+
+      {/* ROOM DETAIL MODAL */}
+      {showRoom&&(()=>{
+        const r=data.rooms.find(x=>x.id===showRoom.id)||showRoom;
+        const roomTasks=data.tasks.filter(t=>t.roomId===r.id);
+        const doneTIds=data.history.filter(h=>new Date(h.at)>new Date(Date.now()-86400000)).map(h=>h.taskId);
+        const col=cleanColor(r.cleanliness);
+        return(
+          <Modal onClose={()=>setShowRoom(null)}>
+            <div className="modal-pill"/>
+            <div style={{textAlign:'center',marginBottom:16}}>
+              <div style={{fontSize:52,marginBottom:8}}>{r.emoji}</div>
+              <div style={{fontSize:22,fontWeight:800}}>{r.name}</div>
+              <div style={{fontSize:13,color:'var(--muted)',marginTop:4}}>{fmtDaysSince(r.lastCleaned)}</div>
+              <div style={{marginTop:12,marginBottom:6,display:'flex',justifyContent:'center',gap:8}}>
+                <span style={{fontSize:28,fontWeight:800,color:col}}>{r.cleanliness}%</span>
+                <span className={`tag ${cleanTagClass(r.cleanliness)}`} style={{alignSelf:'center'}}>{cleanLabel(r.cleanliness)}</span>
+              </div>
+              <div className="pbar-wrap" style={{height:10}}>
+                <div className="pbar" style={{width:`${r.cleanliness}%`,height:10,background:col}}/>
+              </div>
+            </div>
+            <div className="div"/>
+            <div style={{fontWeight:700,fontSize:14,marginBottom:10}}>Zadania w tym pokoju ({roomTasks.length})</div>
+            {roomTasks.length===0&&<div style={{color:'var(--muted)',fontSize:13,textAlign:'center',padding:'16px 0'}}>Brak zadań</div>}
+            {roomTasks.map(t=>{
+              const mbr=data.members.find(m=>m.id===t.assignedTo);
+              const done=doneTIds.includes(t.id);
+              const due=isDue(t);
+              return(
+                <div key={t.id} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 0',borderBottom:'1px solid var(--border)'}}>
+                  <div className={`task-chk ${done?'on':''}`} style={{width:24,height:24}} onClick={e=>{if(!done)onComplete(t,e);}}>
+                    {done&&<span style={{color:'#fff',fontSize:12}}>✓</span>}
+                    {!done&&due&&<span style={{fontSize:10,color:'var(--orange)'}}>!</span>}
+                  </div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:13,fontWeight:600,textDecoration:done?'line-through':'none'}}>{t.name}</div>
+                    <div style={{fontSize:11,color:'var(--muted)'}}>{mbr?.emoji} {mbr?.name} · {FREQ[t.freq]}</div>
+                  </div>
+                  <span className="pts-badge">+{DIFF_PTS[t.diff]} pkt</span>
+                </div>
+              );
+            })}
+            <div style={{marginTop:16,display:'flex',gap:8}}>
+              <button className="btn btn-danger btn-sm" style={{flex:1,justifyContent:'center'}} onClick={()=>delRoom(r.id)}>🗑️ Usuń pokój</button>
+              <button className="btn btn-ghost btn-sm" style={{flex:1,justifyContent:'center'}} onClick={()=>setShowRoom(null)}>Zamknij</button>
+            </div>
+          </Modal>
+        );
+      })()}
+    </div>
+  );
+}
+
+/* ── TASKS SCREEN ── */
+function TasksScreen({data,setData,onComplete}){
+  const [showAdd,setShowAdd]=useState(false);
+  const [filter,setFilter]=useState('all');
+  const [diffFilter,setDiffFilter]=useState('all');
+  const [form,setForm]=useState({name:'',roomId:'',assignedTo:'',freq:'weekly',diff:'medium',approvalNeeded:false});
+  const [showSug,setShowSug]=useState(false);
+
+  const doneTodayIds=data.history.filter(h=>new Date(h.at)>new Date(Date.now()-86400000)).map(h=>h.taskId);
+
+  let tasks=data.tasks;
+  if(filter==='today')tasks=tasks.filter(isDue);
+  if(filter==='done')tasks=tasks.filter(t=>doneTodayIds.includes(t.id));
+  if(diffFilter!=='all')tasks=tasks.filter(t=>t.diff===diffFilter);
+
+  function addTask(){
+    if(!form.name.trim()||!form.roomId||!form.assignedTo)return;
+    const t={id:uid(),name:form.name.trim(),roomId:form.roomId,assignedTo:form.assignedTo,freq:form.freq,diff:form.diff,lastCompleted:null,approvalNeeded:form.approvalNeeded};
+    const nd={...data,tasks:[...data.tasks,t]};
+    setData(nd);save(nd);
+    setForm({name:'',roomId:'',assignedTo:'',freq:'weekly',diff:'medium',approvalNeeded:false});
+    setShowAdd(false);
+  }
+  function delTask(id){const nd={...data,tasks:data.tasks.filter(t=>t.id!==id)};setData(nd);save(nd);}
+  function useSuggestion(s){setForm(f=>({...f,name:s.name,diff:s.diff}));setShowSug(false);setShowAdd(true);}
+
+  return(
+    <div className="screen">
+      <div className="topbar">
+        <div><div className="topbar-title">Zadania</div><div className="topbar-sub">{data.tasks.length} zadań łącznie</div></div>
+      </div>
+
+      {/* FILTER CHIPS */}
+      <div style={{padding:'0 16px',marginBottom:10}}>
+        <div className="chip-row" style={{marginBottom:8}}>
+          {[['all','Wszystkie'],['today','Na dziś'],['done','Wykonane']].map(([v,l])=>(
+            <button key={v} className={`chip ${filter===v?'on':''}`} onClick={()=>setFilter(v)}>{l}</button>
+          ))}
+        </div>
+        <div className="chip-row">
+          <button className={`chip ${diffFilter==='all'?'on':''}`} onClick={()=>setDiffFilter('all')}>Wszystkie</button>
+          <button className={`chip ${diffFilter==='easy'?'on':''}`} onClick={()=>setDiffFilter('easy')}>⭐ Łatwe</button>
+          <button className={`chip ${diffFilter==='medium'?'on':''}`} onClick={()=>setDiffFilter('medium')}>⭐⭐ Średnie</button>
+          <button className={`chip ${diffFilter==='hard'?'on':''}`} onClick={()=>setDiffFilter('hard')}>⭐⭐⭐ Trudne</button>
+        </div>
+      </div>
+
+      {tasks.length===0&&<div className="empty"><div className="empty-ico">📝</div><p>Brak zadań spełniających kryteria</p></div>}
+
+      {tasks.map(task=>{
+        const room=data.rooms.find(r=>r.id===task.roomId);
+        const mbr=data.members.find(m=>m.id===task.assignedTo);
+        const done=doneTodayIds.includes(task.id);
+        const due=isDue(task);
+        const pts=DIFF_PTS[task.diff]||1;
+        return(
+          <div key={task.id} className={`task-item ${done?'done':''}`}>
+            <div className={`task-chk ${done?'on':''}`} onClick={e=>!done&&onComplete(task,e)}>
+              {done&&<span style={{color:'#fff',fontSize:14}}>✓</span>}
+              {!done&&due&&<span style={{fontSize:10,color:'var(--orange)'}}>!</span>}
+            </div>
+            <div className="task-info">
+              <div className="task-name" style={{textDecoration:done?'line-through':'none'}}>{task.name}</div>
+              <div className="task-sub">
+                {room&&<span>{room.emoji} {room.name}</span>}
+                {mbr&&<><span>·</span><span>{mbr.emoji} {mbr.name}</span></>}
+                <span>·</span><span>{FREQ[task.freq]}</span>
+              </div>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4,flexShrink:0}}>
+              <span className="pts-badge">+{pts} pkt</span>
+              {task.approvalNeeded&&<span className="tag tag-y">wymaga akceptacji</span>}
+              <button className="btn-ghost btn-sm btn" style={{color:'var(--red)',padding:'2px 6px',fontSize:11}} onClick={()=>delTask(task.id)}>✕</button>
+            </div>
+          </div>
+        );
+      })}
+
+      {/* SUGGESTIONS BTN */}
+      <div style={{padding:'12px 16px'}}>
+        <button className="btn btn-ghost" style={{width:'100%',justifyContent:'center'}} onClick={()=>setShowSug(true)}>
+          💡 Wybierz z gotowych sugestii
+        </button>
+      </div>
+
+      <button className="fab" onClick={()=>setShowAdd(true)}>+</button>
+
+      {/* SUGGESTIONS MODAL */}
+      {showSug&&(
+        <Modal onClose={()=>setShowSug(false)}>
+          <div className="modal-pill"/>
+          <h2>Sugestie zadań</h2>
+          {TASK_SUGGESTIONS.map((s,i)=>(
+            <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 0',borderBottom:'1px solid var(--border)',cursor:'pointer'}} onClick={()=>useSuggestion(s)}>
+              <span style={{fontSize:14,fontWeight:600}}>{s.name}</span>
+              <div style={{display:'flex',gap:8,alignItems:'center'}}>
+                <span className={`tag ${s.diff==='easy'?'tag-g':s.diff==='medium'?'tag-y':'tag-r'}`}>{DIFF_LBL[s.diff]}</span>
+                <span style={{color:'var(--blue2)',fontSize:13}}>+{DIFF_PTS[s.diff]} pkt</span>
+              </div>
+            </div>
+          ))}
+        </Modal>
+      )}
+
+      {/* ADD TASK MODAL */}
+      {showAdd&&(
+        <Modal onClose={()=>setShowAdd(false)}>
+          <div className="modal-pill"/>
+          <h2>Nowe zadanie</h2>
+          <div className="field"><label>Nazwa</label><input className="inp" placeholder="np. Odkurzanie" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}/></div>
+          <div className="field">
+            <label>Pokój</label>
+            <select className="inp" value={form.roomId} onChange={e=>setForm(f=>({...f,roomId:e.target.value}))}>
+              <option value="">Wybierz pokój...</option>
+              {data.rooms.map(r=><option key={r.id} value={r.id}>{r.emoji} {r.name}</option>)}
+            </select>
+          </div>
+          <div className="field">
+            <label>Przypisz do</label>
+            <select className="inp" value={form.assignedTo} onChange={e=>setForm(f=>({...f,assignedTo:e.target.value}))}>
+              <option value="">Wybierz osobę...</option>
+              {data.members.map(m=><option key={m.id} value={m.id}>{m.emoji} {m.name}</option>)}
+            </select>
+          </div>
+          <div className="field">
+            <label>Częstotliwość</label>
+            <div className="chip-row">
+              {Object.entries(FREQ).map(([v,l])=>(
+                <button key={v} className={`chip ${form.freq===v?'on':''}`} onClick={()=>setForm(f=>({...f,freq:v}))}>{l}</button>
+              ))}
+            </div>
+          </div>
+          <div className="field">
+            <label>Trudność / Punkty</label>
+            <div className="chip-row">
+              <button className={`chip ${form.diff==='easy'?'on':''}`} onClick={()=>setForm(f=>({...f,diff:'easy'}))}>⭐ Łatwe (1 pkt)</button>
+              <button className={`chip ${form.diff==='medium'?'on':''}`} onClick={()=>setForm(f=>({...f,diff:'medium'}))}>⭐⭐ Średnie (2 pkt)</button>
+              <button className={`chip ${form.diff==='hard'?'on':''}`} onClick={()=>setForm(f=>({...f,diff:'hard'}))}>⭐⭐⭐ Trudne (3 pkt)</button>
+            </div>
+          </div>
+          <div className="field">
+            <label>Wymaga zatwierdzenia rodzica?</label>
+            <div className="chip-row">
+              <button className={`chip ${!form.approvalNeeded?'on':''}`} onClick={()=>setForm(f=>({...f,approvalNeeded:false}))}>Nie</button>
+              <button className={`chip ${form.approvalNeeded?'on':''}`} onClick={()=>setForm(f=>({...f,approvalNeeded:true}))}>Tak</button>
+            </div>
+          </div>
+          <button className="btn btn-blue" style={{width:'100%',justifyContent:'center',marginTop:8}} onClick={addTask}>Dodaj zadanie</button>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+/* ── LEADERBOARD SCREEN ── */
+function LeaderboardScreen({data,setData}){
+  const [period,setPeriod]=useState('week');
+  const [showAdd,setShowAdd]=useState(false);
+  const [showMbr,setShowMbr]=useState(null);
+  const [form,setForm]=useState({name:'',emoji:'😊'});
+
+  const now=Date.now();
+  const periodMs={'week':7*86400000,'month':30*86400000,'all':Infinity};
+  const cutoff=now-periodMs[period];
+
+  const getMemberPts=(m)=>{
+    if(period==='all')return m.points;
+    return data.history.filter(h=>h.memberId===m.id&&new Date(h.at)>new Date(cutoff)).reduce((a,h)=>a+h.pts,0);
+  };
+
+  const sorted=[...data.members].sort((a,b)=>getMemberPts(b)-getMemberPts(a));
+  const medals=['🥇','🥈','🥉'];
+
+  function addMbr(){
+    if(!form.name.trim())return;
+    const m={id:uid(),name:form.name.trim(),emoji:form.emoji,points:0,coins:0,streak:0,streakDate:null,owned:[]};
+    const nd={...data,members:[...data.members,m]};
+    setData(nd);save(nd);
+    setForm({name:'',emoji:'😊'});setShowAdd(false);
+  }
+  function delMbr(id){
+    const nd={...data,members:data.members.filter(m=>m.id!==id),tasks:data.tasks.map(t=>t.assignedTo===id?{...t,assignedTo:''}:t)};
+    setData(nd);save(nd);setShowMbr(null);
+  }
+
+  return(
+    <div className="screen">
+      <div className="topbar">
+        <div><div className="topbar-title">🏆 Leaderboard</div><div className="topbar-sub">{data.members.length} domowników</div></div>
+      </div>
+
+      {/* PERIOD TABS */}
+      <div className="tabs">
+        {[['week','Ten tydzień'],['month','Ten miesiąc'],['all','Wszystkie czasy']].map(([v,l])=>(
+          <button key={v} className={`tab ${period===v?'on':''}`} onClick={()=>setPeriod(v)}>{l}</button>
+        ))}
+      </div>
+
+      {sorted.length===0&&<div className="empty"><div className="empty-ico">👥</div><p>Brak domowników. Dodaj pierwszego!</p></div>}
+
+      {sorted.map((m,i)=>{
+        const pts=getMemberPts(m);
+        const lv=getLevel(m.points);
+        const prog=lvProg(m.points);
+        const nxt=nextLv(m.points);
+        return(
+          <div key={m.id} className="lb-item" style={{cursor:'pointer'}} onClick={()=>setShowMbr(m)}>
+            <div className="lb-rank">{medals[i]||`${i+1}`}</div>
+            <div className="ava" style={{width:50,height:50,background:i===0?'rgba(245,158,11,0.15)':i===1?'rgba(100,116,139,0.15)':'rgba(180,83,9,0.15)',fontSize:28}}>
+              {m.emoji}
+            </div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:3}}>
+                <span style={{fontWeight:800,fontSize:15}}>{m.name}</span>
+                {m.streak>0&&<span style={{fontSize:12,color:'var(--orange)'}}>🔥 {m.streak}</span>}
+              </div>
+              <div style={{fontSize:11,color:'var(--muted)',marginBottom:6}}>
+                {LV_ICO[lv]} {LV_NAMES[lv]} · Poz. {lv}
+                {nxt&&<span> · {nxt-m.points} pkt do nast.</span>}
+              </div>
+              <div className="pbar-wrap" style={{height:5}}>
+                <div className="pbar" style={{width:`${prog}%`,height:5,background:i===0?'linear-gradient(90deg,#D97706,#F59E0B)':i===1?'linear-gradient(90deg,#64748B,#94A3B8)':'linear-gradient(90deg,#92400E,#D97706)'}}/>
+              </div>
+            </div>
+            <div className="lb-right">
+              <div style={{fontSize:22,fontWeight:800,color:i===0?'var(--yellow)':i===1?'#94A3B8':i===2?'#D97706':'var(--blue2)'}}>{pts}</div>
+              <div style={{fontSize:9,color:'var(--muted)',fontWeight:700}}>PUNKTY</div>
+              <div style={{fontSize:11,color:'var(--yellow)',marginTop:2}}>🪙 {m.coins}</div>
+            </div>
+          </div>
+        );
+      })}
+
+      <button className="fab" onClick={()=>setShowAdd(true)}>+</button>
+
+      {/* ADD MEMBER */}
+      {showAdd&&(
+        <Modal onClose={()=>setShowAdd(false)}>
+          <div className="modal-pill"/>
+          <h2>Nowy domownik</h2>
+          <div className="field"><label>Imię</label><input className="inp" placeholder="np. Kasia" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}/></div>
+          <div className="field">
+            <label>Avatar</label>
+            <div className="egrid">{MBR_EMOJIS.map(em=><button key={em} className={`ebtn ${form.emoji===em?'on':''}`} onClick={()=>setForm(f=>({...f,emoji:em}))}>{em}</button>)}</div>
+          </div>
+          <button className="btn btn-blue" style={{width:'100%',justifyContent:'center',marginTop:8}} onClick={addMbr}>Dodaj domownika</button>
+        </Modal>
+      )}
+
+      {/* MEMBER DETAIL */}
+      {showMbr&&(()=>{
+        const m=data.members.find(x=>x.id===showMbr.id)||showMbr;
+        const lv=getLevel(m.points);
+        const prog=lvProg(m.points);
+        const nxt=nextLv(m.points);
+        const mhist=data.history.filter(h=>h.memberId===m.id).slice().reverse().slice(0,15);
+        return(
+          <Modal onClose={()=>setShowMbr(null)}>
+            <div className="modal-pill"/>
+            <div style={{textAlign:'center',marginBottom:16}}>
+              <div style={{fontSize:56,marginBottom:8}}>{m.emoji}</div>
+              <div style={{fontSize:22,fontWeight:800}}>{m.name}</div>
+              <div style={{display:'flex',gap:12,justifyContent:'center',marginTop:8,flexWrap:'wrap'}}>
+                <div style={{textAlign:'center'}}><div style={{fontSize:20,fontWeight:800,color:'var(--blue2)'}}>{m.points}</div><div style={{fontSize:10,color:'var(--muted)'}}>PUNKTY</div></div>
+                <div style={{textAlign:'center'}}><div style={{fontSize:20,fontWeight:800,color:'var(--yellow)'}}>🪙 {m.coins}</div><div style={{fontSize:10,color:'var(--muted)'}}>MONETY</div></div>
+                <div style={{textAlign:'center'}}><div style={{fontSize:20,fontWeight:800,color:'var(--orange)'}}>🔥 {m.streak}</div><div style={{fontSize:10,color:'var(--muted)'}}>SERIA</div></div>
+              </div>
+              <div style={{margin:'12px 0 6px',fontSize:12,color:'var(--muted)'}}>{LV_ICO[lv]} {LV_NAMES[lv]} · Poziom {lv}</div>
+              <div className="pbar-wrap" style={{height:8}}>
+                <div className="pbar" style={{width:`${prog}%`,height:8,background:'linear-gradient(90deg,var(--bluedk),var(--blue2))'}}/>
+              </div>
+              {nxt&&<div style={{fontSize:11,color:'var(--muted)',marginTop:4}}>{nxt-m.points} pkt do poziomu {lv+1}</div>}
+            </div>
+
+            {/* BADGES */}
+            <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:14,justifyContent:'center'}}>
+              {lv>=1&&<span className="bdg">🧹 Czyściciel</span>}
+              {lv>=2&&<span className="bdg">⭐ Pro</span>}
+              {lv>=3&&<span className="bdg">💎 Ekspert</span>}
+              {lv>=5&&<span className="bdg">👑 Mistrz</span>}
+              {m.streak>=3&&<span className="bdg">🔥 Seria {m.streak}!</span>}
+              {m.streak>=7&&<span className="bdg">💪 Tydzień serii</span>}
+              {m.points>=100&&<span className="bdg">🌟 100 pkt</span>}
+              {m.points>=500&&<span className="bdg">💫 500 pkt</span>}
+              {mhist.length>=5&&<span className="bdg">📋 5 zadań</span>}
+            </div>
+
+            <div className="div"/>
+            <div style={{fontWeight:700,fontSize:14,marginBottom:10}}>Historia zadań</div>
+            {mhist.length===0&&<div style={{color:'var(--muted)',fontSize:13,textAlign:'center',padding:16}}>Brak historii</div>}
+            {mhist.map(h=>{
+              const task=data.tasks.find(t=>t.id===h.taskId);
+              return(
+                <div key={h.id} className="hitem">
+                  <span style={{fontSize:20}}>✅</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:13,fontWeight:600}}>{task?.name||'Usunięte zadanie'}</div>
+                    <div style={{fontSize:11,color:'var(--muted)'}}>{fmtDate(h.at)}</div>
+                  </div>
+                  <span style={{color:'var(--green)',fontWeight:700,fontSize:13}}>+{h.pts} pkt</span>
+                </div>
+              );
+            })}
+            <div style={{marginTop:16}}>
+              <button className="btn btn-danger btn-sm" style={{width:'100%',justifyContent:'center'}} onClick={()=>delMbr(m.id)}>🗑️ Usuń domownika</button>
+            </div>
+          </Modal>
+        );
+      })()}
+    </div>
+  );
+}
+
+/* ── VIRTUAL HOME SCREEN ── */
+function VirtualHome({data,setData}){
+  const [selectedMbr,setSelectedMbr]=useState(data.members[0]?.id||null);
+  const [buyConfirm,setBuyConfirm]=useState(null);
+
+  const mbr=data.members.find(m=>m.id===selectedMbr);
+  const owned=mbr?.owned||[];
+
+  function buy(item){
+    if(!mbr||mbr.coins<item.price)return;
+    if(owned.includes(item.id))return;
+    const newMembers=data.members.map(m=>m.id===mbr.id?{...m,coins:m.coins-item.price,owned:[...(m.owned||[]),item.id]}:m);
+    const nd={...data,members:newMembers};
+    setData(nd);save(nd);
+    setBuyConfirm(null);
+  }
+
+  const totalItems=CLEAN_ITEMS.length;
+  const ownedCount=CLEAN_ITEMS.filter(it=>owned.includes(it.id)).length;
+
+  return(
+    <div className="screen">
+      <div className="topbar">
+        <div><div className="topbar-title">🏡 Wirtualny Dom</div><div className="topbar-sub">Zdobywaj monety, dekoruj dom!</div></div>
+      </div>
+
+      {/* MEMBER SELECT */}
+      {data.members.length>0&&(
+        <div style={{padding:'0 16px',marginBottom:12}}>
+          <div className="chip-row">
+            {data.members.map(m=>(
+              <button key={m.id} className={`chip ${selectedMbr===m.id?'on':''}`} onClick={()=>setSelectedMbr(m.id)}>
+                {m.emoji} {m.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* COIN STATUS */}
+      {mbr&&(
+        <div className="card mx mb" style={{display:'flex',alignItems:'center',gap:16}}>
+          <div style={{fontSize:40}}>{mbr.emoji}</div>
+          <div style={{flex:1}}>
+            <div style={{fontWeight:800,fontSize:16}}>{mbr.name}</div>
+            <div style={{color:'var(--muted)',fontSize:12,marginBottom:8}}>Zebrane przedmioty: {ownedCount}/{totalItems}</div>
+            <div className="pbar-wrap" style={{height:6}}>
+              <div className="pbar" style={{width:`${Math.round((ownedCount/totalItems)*100)}%`,height:6,background:'var(--yellow)'}}/>
+            </div>
+          </div>
+          <div style={{textAlign:'center'}}>
+            <div style={{fontSize:26,fontWeight:800,color:'var(--yellow)'}}>🪙</div>
+            <div style={{fontSize:22,fontWeight:800,color:'var(--yellow)'}}>{mbr.coins}</div>
+            <div style={{fontSize:10,color:'var(--muted)'}}>monet</div>
+          </div>
+        </div>
+      )}
+
+      {/* VIRTUAL HOUSE VISUAL */}
+      <div className="card mx mb" style={{textAlign:'center',padding:20}}>
+        <div style={{fontSize:14,fontWeight:700,color:'var(--text2)',marginBottom:12}}>Twój wirtualny dom</div>
+        <div style={{background:'var(--bg)',borderRadius:16,padding:16,minHeight:120,display:'flex',flexWrap:'wrap',gap:8,justifyContent:'center',alignItems:'center'}}>
+          {CLEAN_ITEMS.filter(it=>(mbr?.owned||[]).includes(it.id)).map(it=>(
+            <div key={it.id} style={{fontSize:28,textAlign:'center'}}>
+              <div>{it.emoji}</div>
+              <div style={{fontSize:9,color:'var(--muted)'}}>{it.name}</div>
+            </div>
+          ))}
+          {(mbr?.owned||[]).length===0&&(
+            <div style={{color:'var(--muted)',fontSize:13}}>Dom pusty – kup pierwsze meble!</div>
+          )}
+        </div>
+      </div>
+
+      {/* SHOP */}
+      <div className="shdr"><h2>🛒 Sklep</h2><span>Wydaj monety 🪙</span></div>
+      <div className="vhome-grid">
+        {CLEAN_ITEMS.map(item=>{
+          const isOwned=owned.includes(item.id);
+          const canAfford=mbr&&mbr.coins>=item.price;
+          return(
+            <div key={item.id} className={`vhome-item ${isOwned?'owned':''}`} onClick={()=>!isOwned&&canAfford&&setBuyConfirm(item)}>
+              {isOwned&&<div style={{position:'absolute',top:8,right:8,fontSize:12}}>✅</div>}
+              <div className="vhome-emoji">{item.emoji}</div>
+              <div className="vhome-name">{item.name}</div>
+              {isOwned
+                ?<div style={{fontSize:12,color:'var(--green)',fontWeight:700}}>Posiadasz</div>
+                :<div className="vhome-price"><span>🪙</span><span>{item.price}</span></div>
+              }
+              {!isOwned&&!canAfford&&<div style={{fontSize:10,color:'var(--red)',marginTop:2}}>Za mało monet</div>}
+            </div>
+          );
+        })}
+      </div>
+      <div style={{height:16}}/>
+
+      {/* BUY CONFIRM */}
+      {buyConfirm&&(
+        <Modal onClose={()=>setBuyConfirm(null)}>
+          <div className="modal-pill"/>
+          <div style={{textAlign:'center',marginBottom:20}}>
+            <div style={{fontSize:56,marginBottom:12}}>{buyConfirm.emoji}</div>
+            <h2 style={{marginBottom:6}}>{buyConfirm.name}</h2>
+            <div style={{fontSize:14,color:'var(--muted)'}}>Czy kupić za <strong style={{color:'var(--yellow)'}}>🪙 {buyConfirm.price}</strong> monet?</div>
+            <div style={{fontSize:12,color:'var(--muted)',marginTop:4}}>Pozostanie: 🪙 {(mbr?.coins||0)-buyConfirm.price}</div>
+          </div>
+          <div style={{display:'flex',gap:10}}>
+            <button className="btn btn-ghost" style={{flex:1,justifyContent:'center'}} onClick={()=>setBuyConfirm(null)}>Anuluj</button>
+            <button className="btn btn-blue" style={{flex:1,justifyContent:'center'}} onClick={()=>buy(buyConfirm)}>🪙 Kup!</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+/* ── SETTINGS SCREEN ── */
+function SettingsScreen({data,setData}){
+  const [hname,setHname]=useState(data.household);
+
+  function saveName(){const nd={...data,household:hname};setData(nd);save(nd);}
+  function reset(){if(window.confirm('Zresetować wszystkie dane?')){setData(INIT);save(INIT);}}
+
+  return(
+    <div className="screen">
+      <div className="topbar"><div className="topbar-title">⚙️ Ustawienia</div></div>
+
+      <div className="card mx mb">
+        <div style={{fontWeight:700,marginBottom:12}}>Nazwa gospodarstwa</div>
+        <div style={{display:'flex',gap:8}}>
+          <input className="inp" value={hname} onChange={e=>setHname(e.target.value)} style={{flex:1}}/>
+          <button className="btn btn-blue btn-sm" onClick={saveName}>Zapisz</button>
+        </div>
+      </div>
+
+      <div className="card mx mb">
+        <div style={{fontWeight:700,marginBottom:12}}>📊 Statystyki</div>
+        {[
+          ['Wykonanych zadań',data.history.length],
+          ['Łącznie punktów',data.members.reduce((a,m)=>a+m.points,0)+' pkt'],
+          ['Monety łącznie',data.members.reduce((a,m)=>a+m.coins,0)+' 🪙'],
+          ['Domownicy',data.members.length],
+          ['Pokoje',data.rooms.length],
+          ['Zadania',data.tasks.length],
+        ].map(([l,v])=>(
+          <div key={l} style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid var(--border)'}}>
+            <span style={{color:'var(--muted)',fontSize:14}}>{l}</span>
+            <span style={{fontWeight:700,fontSize:14,color:'var(--blue2)'}}>{v}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="card mx mb">
+        <div style={{fontWeight:700,marginBottom:12}}>🏅 System poziomów</div>
+        {LV_NAMES.map((n,i)=>(
+          <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'7px 0',borderBottom:i<LV_NAMES.length-1?'1px solid var(--border)':'none'}}>
+            <span style={{fontSize:18,width:28,textAlign:'center'}}>{LV_ICO[i]}</span>
+            <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600}}>{n}</div><div style={{fontSize:11,color:'var(--muted)'}}>od {LV_PTS[i]} pkt</div></div>
+            <span style={{fontSize:11,color:'var(--blue2)',fontWeight:700}}>Poziom {i}</span>
+          </div>
+        ))}
+      </div>
+
+      <div style={{padding:'0 16px 32px'}}>
+        <button className="btn btn-danger" style={{width:'100%',justifyContent:'center'}} onClick={reset}>🗑️ Resetuj wszystkie dane</button>
+      </div>
+    </div>
+  );
+}
+
+/* ── APP ── */
+function App(){
+  const [data,setData]=useState(load);
+  const [tab,setTab]=useState('home');
+  const [floats,setFloats]=useState([]);
+
+  function handleComplete(task,e){
+    const mbr=data.members.find(m=>m.id===task.assignedTo);
+    if(!mbr)return;
+
+    // if approval needed, add to pending
+    if(task.approvalNeeded){
+      const pa={id:uid(),taskId:task.id,memberId:mbr.id,at:new Date().toISOString()};
+      const nd={...data,pendingApprovals:[...(data.pendingApprovals||[]),pa]};
+      setData(nd);save(nd);
+      // show float
+      const rect=e.currentTarget.getBoundingClientRect();
+      const f={id:uid(),x:rect.left,y:rect.top-30,txt:'⏳ Czeka na akceptację'};
+      setFloats(fs=>[...fs,f]);
+      return;
+    }
+
+    const pts=DIFF_PTS[task.diff]||1;
+    const coinsEarned=pts;
+    const hist={id:uid(),taskId:task.id,memberId:mbr.id,at:new Date().toISOString(),pts};
+
+    // update streak
+    const today=new Date().toDateString();
+    const streak=mbr.streakDate===today?mbr.streak:mbr.streak+1;
+
+    const newMembers=data.members.map(m=>
+      m.id===mbr.id?{...m,points:m.points+pts,coins:(m.coins||0)+coinsEarned,streak,streakDate:today}:m
+    );
+    const newTasks=data.tasks.map(t=>t.id===task.id?{...t,lastCompleted:new Date().toISOString()}:t);
+    // boost room cleanliness
+    const boost=Math.min(pts*7,20);
+    const newRooms=data.rooms.map(r=>r.id===task.roomId?{...r,cleanliness:Math.min(100,r.cleanliness+boost),lastCleaned:new Date().toISOString()}:r);
+
+    const nd={...data,members:newMembers,tasks:newTasks,rooms:newRooms,history:[...data.history,hist]};
+    setData(nd);save(nd);
+
+    // float animation
+    const rect=e.currentTarget.getBoundingClientRect();
+    const f={id:uid(),x:rect.left,y:rect.top-30,txt:`+${pts} pkt · +${coinsEarned} 🪙`};
+    setFloats(fs=>[...fs,f]);
+  }
+
+  function handleApprove(pa,approve){
+    const newPending=(data.pendingApprovals||[]).filter(p=>p.id!==pa.id);
+    if(approve){
+      const task=data.tasks.find(t=>t.id===pa.taskId);
+      const mbr=data.members.find(m=>m.id===pa.memberId);
+      if(task&&mbr){
+        const pts=DIFF_PTS[task.diff]||1;
+        const hist={id:uid(),taskId:task.id,memberId:mbr.id,at:new Date().toISOString(),pts};
+        const today=new Date().toDateString();
+        const streak=mbr.streakDate===today?mbr.streak:mbr.streak+1;
+        const newMembers=data.members.map(m=>m.id===mbr.id?{...m,points:m.points+pts,coins:(m.coins||0)+pts,streak,streakDate:today}:m);
+        const newTasks=data.tasks.map(t=>t.id===task.id?{...t,lastCompleted:new Date().toISOString()}:t);
+        const boost=Math.min(pts*7,20);
+        const newRooms=data.rooms.map(r=>r.id===task.roomId?{...r,cleanliness:Math.min(100,r.cleanliness+boost),lastCleaned:new Date().toISOString()}:r);
+        const nd={...data,members:newMembers,tasks:newTasks,rooms:newRooms,history:[...data.history,hist],pendingApprovals:newPending};
+        setData(nd);save(nd);
+        return;
+      }
+    }
+    const nd={...data,pendingApprovals:newPending};
+    setData(nd);save(nd);
+  }
+
+  const tabs=[
+    {id:'home',icon:'🏠',label:'Dziś'},
+    {id:'rooms',icon:'🛋️',label:'Pokoje'},
+    {id:'tasks',icon:'✅',label:'Zadania'},
+    {id:'leaderboard',icon:'🏆',label:'Ranking'},
+    {id:'vhome',icon:'🏡',label:'Mój Dom'},
+  ];
+
+  // Pending approvals badge count
+  const pendingCount=(data.pendingApprovals||[]).length;
+
+  return(
+    <>
+      {tab==='home'&&<Home data={data} onComplete={handleComplete} onApprove={handleApprove}/>}
+      {tab==='rooms'&&<RoomsScreen data={data} setData={setData} onComplete={handleComplete}/>}
+      {tab==='tasks'&&<TasksScreen data={data} setData={setData} onComplete={handleComplete}/>}
+      {tab==='leaderboard'&&<LeaderboardScreen data={data} setData={setData}/>}
+      {tab==='vhome'&&<VirtualHome data={data} setData={setData}/>}
+      {tab==='settings'&&<SettingsScreen data={data} setData={setData}/>}
+
+      <nav className="bnav">
+        {tabs.map(t=>(
+          <button key={t.id} className={`bnav-btn ${tab===t.id?'active':''}`} onClick={()=>setTab(t.id)}>
+            <div className="bnav-icon" style={{position:'relative'}}>
+              {t.icon}
+              {t.id==='home'&&pendingCount>0&&(
+                <div style={{position:'absolute',top:-2,right:-2,width:14,height:14,background:'var(--red)',borderRadius:'50%',fontSize:9,display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:700}}>{pendingCount}</div>
+              )}
+            </div>
+            {t.label}
+          </button>
+        ))}
+        <button className={`bnav-btn ${tab==='settings'?'active':''}`} onClick={()=>setTab('settings')}>
+          <div className="bnav-icon">⚙️</div>
+          Ustawienia
+        </button>
+      </nav>
+
+      {floats.map(f=>(
+        <FloatPts key={f.id} x={f.x} y={f.y} txt={f.txt} onDone={()=>setFloats(fs=>fs.filter(x=>x.id!==f.id))}/>
+      ))}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+</script>
+</body>
+</html>
