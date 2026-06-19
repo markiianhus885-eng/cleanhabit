@@ -9,9 +9,11 @@ import anthropic
 app = Flask(__name__)
 
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
-# On Railway/Render use /tmp for writable storage, locally use project dir
-_local_db = os.path.join(os.path.dirname(__file__), 'sweepy.db')
-DB = os.environ.get('DB_PATH', _local_db if os.path.exists(os.path.dirname(_local_db)) else '/tmp/sweepy.db')
+# Use /tmp on Railway (read-only filesystem), local dir otherwise
+if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('RENDER'):
+    DB = '/tmp/sweepy.db'
+else:
+    DB = os.path.join(os.path.dirname(__file__), 'sweepy.db')
 
 # ─── DB ───────────────────────────────────────────────────────────────────────
 def get_db():
