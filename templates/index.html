@@ -411,6 +411,7 @@ body{
 /* ──────────────── ANIMATIONS ──────────────── */
 @keyframes dropIn{from{transform:scale(0) translateY(-20px);opacity:0;}to{transform:scale(1) translateY(0);opacity:1;}}
 @keyframes floatUp{0%{transform:translateY(0);opacity:1;}100%{transform:translateY(-80px);opacity:0;}}
+@keyframes slideDown{from{transform:translateX(-50%) translateY(-20px);opacity:0;}to{transform:translateX(-50%) translateY(0);opacity:1;}}
 @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
 @keyframes shimmer{0%{background-position:-200% 0;}100%{background-position:200% 0;}}
 
@@ -454,11 +455,48 @@ body{
 </head>
 <body>
 
+<!-- ═══════════════ LOGIN SCREEN ═══════════════ -->
+<div id="screen-auth" style="
+  position:fixed;inset:0;background:var(--bg);z-index:999;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;
+">
+  <div style="width:100%;max-width:360px">
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="font-size:56px;margin-bottom:8px">🧹</div>
+      <div style="font-size:26px;font-weight:900;color:var(--text)">CleanHouse</div>
+      <div style="font-size:13px;color:var(--muted2);margin-top:4px">Zarządzanie porządkami domowymi</div>
+    </div>
+    <div id="auth-tabs" style="display:flex;background:var(--bg2);border-radius:14px;padding:4px;margin-bottom:20px">
+      <button onclick="showAuthTab('login')" id="tab-login" style="flex:1;padding:10px;border:none;border-radius:10px;background:var(--blue);color:#fff;font-weight:700;font-size:14px;cursor:pointer">Logowanie</button>
+      <button onclick="showAuthTab('register')" id="tab-register" style="flex:1;padding:10px;border:none;background:transparent;color:var(--muted2);font-weight:700;font-size:14px;cursor:pointer">Rejestracja</button>
+    </div>
+    <div id="auth-error" style="display:none;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:10px 14px;color:#fca5a5;font-size:13px;margin-bottom:14px"></div>
+    <div class="card" style="padding:20px;gap:12px;display:flex;flex-direction:column">
+      <input class="inp" id="auth-username" placeholder="Nazwa użytkownika" autocomplete="username"/>
+      <input class="inp" id="auth-password" placeholder="Hasło (min. 4 znaki)" type="password" autocomplete="current-password"/>
+      <div id="auth-member-wrap" style="display:none">
+        <div style="font-size:12px;color:var(--muted2);margin-bottom:6px">Połącz z profilem rodziny (opcjonalne)</div>
+        <select class="inp" id="auth-member" style="width:100%">
+          <option value="">— brak połączenia —</option>
+        </select>
+      </div>
+      <button onclick="doAuth()" style="
+        padding:14px;border-radius:14px;border:none;cursor:pointer;font-weight:800;font-size:15px;
+        background:linear-gradient(135deg,var(--bluedark),var(--blue2));color:#fff;
+      " id="auth-btn">Zaloguj się</button>
+    </div>
+    <div style="text-align:center;margin-top:16px;font-size:12px;color:var(--muted2)">
+      Twoje dane są bezpieczne i widoczne tylko dla rodziny
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════════ SCREENS ═══════════════ -->
 <div id="screen-home"   class="screen active"></div>
 <div id="screen-rooms"  class="screen"></div>
 <div id="screen-tasks"  class="screen"></div>
 <div id="screen-lb"     class="screen"></div>
+<div id="screen-cal"    class="screen"></div>
 <div id="screen-vhome"  class="screen"></div>
 <div id="screen-settings" class="screen"></div>
 
@@ -476,11 +514,11 @@ body{
   <button class="bnav-btn" data-tab="lb">
     <div class="bnav-icon">🏆</div>Ranking
   </button>
-  <button class="bnav-btn" data-tab="vhome">
-    <div class="bnav-icon">🏡</div>Mój Dom
+  <button class="bnav-btn" data-tab="cal">
+    <div class="bnav-icon">📅</div>Kalendarz
   </button>
   <button class="bnav-btn" data-tab="settings">
-    <div class="bnav-icon">⚙️</div>Ustawienia
+    <div class="bnav-icon">⚙️</div>Profil
   </button>
 </nav>
 
@@ -619,7 +657,7 @@ const TASK_SUGGESTIONS = [
 ];
 
 // ─── STATE ────────────────────────────────────────────────────
-let state = {data: null, tab: 'home', lb_period: 'week', filter_task: 'all', diff_filter: 'all'};
+let state = {data: null, tab: 'home', lb_period: 'week', filter_task: 'all', diff_filter: 'all', user: null};
 
 // ─── HELPERS ──────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
@@ -685,6 +723,127 @@ async function loadLeaderboard(){
   renderLeaderboard(lb);
 }
 
+// ─── AUTH ─────────────────────────────────────────────────────
+let authMode = 'login';
+function showAuthTab(mode){
+  authMode = mode;
+  $('tab-login').style.background = mode==='login' ? 'var(--blue)' : 'transparent';
+  $('tab-login').style.color = mode==='login' ? '#fff' : 'var(--muted2)';
+  $('tab-register').style.background = mode==='register' ? 'var(--blue)' : 'transparent';
+  $('tab-register').style.color = mode==='register' ? '#fff' : 'var(--muted2)';
+  $('auth-member-wrap').style.display = mode==='register' ? 'block' : 'none';
+  $('auth-btn').textContent = mode==='login' ? 'Zaloguj się' : 'Zarejestruj się';
+  $('auth-error').style.display = 'none';
+  // Populate member select
+  if(mode==='register' && state.data){
+    const sel = $('auth-member');
+    sel.innerHTML = '<option value="">— brak połączenia —</option>' +
+      state.data.members.map(m=>`<option value="${m.id}">${m.emoji} ${esc(m.name)}</option>`).join('');
+  }
+}
+async function doAuth(){
+  const username = $('auth-username').value.trim();
+  const password = $('auth-password').value.trim();
+  const errEl = $('auth-error');
+  if(!username||!password){ errEl.style.display='block'; errEl.textContent='Wypełnij wszystkie pola'; return; }
+  const url = authMode==='login' ? '/api/auth/login' : '/api/auth/register';
+  const body = {username, password};
+  if(authMode==='register') body.member_id = $('auth-member').value;
+  const res = await POST(url, body);
+  if(res.error){ errEl.style.display='block'; errEl.textContent=res.error; return; }
+  state.user = res.user;
+  $('screen-auth').style.display = 'none';
+  $('bnav').style.display = 'flex';
+  await loadData();
+  requestNotificationPermission();
+}
+async function checkAuth(){
+  // Load data first (needed for member select in register)
+  await loadData();
+  const res = await GET('/api/auth/me');
+  if(res.user){
+    state.user = res.user;
+    $('screen-auth').style.display = 'none';
+    $('bnav').style.display = 'flex';
+    requestNotificationPermission();
+  } else {
+    $('screen-auth').style.display = 'flex';
+    $('bnav').style.display = 'none';
+  }
+}
+async function logout(){
+  await POST('/api/auth/logout', {});
+  state.user = null;
+  $('screen-auth').style.display = 'flex';
+  $('bnav').style.display = 'none';
+  showAuthTab('login');
+}
+
+// ─── NOTIFICATIONS ────────────────────────────────────────────
+function requestNotificationPermission(){
+  if(!('Notification' in window)) return;
+  if(Notification.permission === 'default'){
+    Notification.requestPermission();
+  }
+}
+function scheduleNotifications(){
+  if(!('Notification' in window) || Notification.permission !== 'granted') return;
+  if(!state.data) return;
+  const due = state.data.tasks.filter(t => {
+    if(!t.last_completed) return true;
+    const freq = {daily:1,every2:2,weekly:7,biweekly:14,monthly:30}[t.freq]||7;
+    const last = new Date(t.last_completed);
+    return (Date.now()-last.getTime()) >= freq*86400000;
+  });
+  if(due.length > 0){
+    setTimeout(()=>{
+      new Notification('🧹 CleanHouse', {
+        body: `Masz ${due.length} zadań do wykonania dzisiaj!`,
+        icon: '/static/icon-192.png'
+      });
+    }, 3000);
+  }
+}
+
+// ─── CALENDAR ─────────────────────────────────────────────────
+async function renderCalendar(){
+  const week = await GET('/api/calendar');
+  const DIFF_COLOR = {easy:'var(--green)',medium:'var(--amber)',hard:'var(--red)'};
+  let html = `
+  <div class="topbar">
+    <div class="topbar-left"><h1>📅 Kalendarz</h1></div>
+  </div>
+  <div style="padding:0 16px;overflow-x:auto">
+  <div style="display:flex;gap:8px;min-width:fit-content;padding-bottom:8px">`;
+  for(const day of week){
+    const borderColor = day.is_today ? 'var(--blue)' : 'var(--border)';
+    html += `<div style="
+      min-width:120px;background:var(--card);border-radius:16px;padding:12px;
+      border:2px solid ${borderColor};
+    ">
+      <div style="font-weight:800;font-size:13px;color:${day.is_today?'var(--blue)':'var(--text)'}">
+        ${day.weekday}
+      </div>
+      <div style="font-size:11px;color:var(--muted2);margin-bottom:10px">${day.date.slice(5)}</div>`;
+    if(day.tasks.length === 0){
+      html += `<div style="font-size:11px;color:var(--muted2);text-align:center;padding:8px 0">🎉 wolne</div>`;
+    }
+    for(const t of day.tasks){
+      html += `<div style="
+        background:rgba(255,255,255,0.04);border-radius:10px;padding:7px 9px;margin-bottom:6px;
+        border-left:3px solid ${DIFF_COLOR[t.diff]||'var(--blue)'};
+        opacity:${t.done?0.45:1};
+      ">
+        <div style="font-size:11px;font-weight:700;color:var(--text)">${t.done?'✅ ':''} ${esc(t.name)}</div>
+        <div style="font-size:10px;color:var(--muted2);margin-top:2px">${t.member_emoji} ${esc(t.member_name)} · ${esc(t.room_name)}</div>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+  html += `</div></div>`;
+  $('screen-cal').innerHTML = html;
+}
+
 // ─── FLOAT ANIMATION ──────────────────────────────────────────
 function showFloat(x,y,html){
   const el = document.createElement('div');
@@ -715,6 +874,7 @@ function setTab(tab){
   $(`screen-${tab}`).classList.add('active');
   document.querySelector(`[data-tab="${tab}"]`)?.classList.add('active');
   if(tab==='lb') loadLeaderboard();
+  if(tab==='cal') renderCalendar();
 }
 $('bnav').addEventListener('click', e=>{
   const btn = e.target.closest('[data-tab]');
@@ -734,6 +894,7 @@ async function completeTask(taskId, chkEl){
   const rect = chkEl.getBoundingClientRect();
   showFloat(rect.left, rect.top-30, `+${r.pts} pkt &nbsp; 🪙 +${r.coins}`);
   await loadData();
+  if(r.new_badges && r.new_badges.length > 0) showBadgeToast(r.new_badges);
 }
 
 // ─── APPROVE ──────────────────────────────────────────────────
@@ -1519,18 +1680,79 @@ async function executeBuy(itemId, price){
 }
 
 // ═══════════════════════════════════════════
-// SETTINGS SCREEN
+// SETTINGS / PROFILE SCREEN
 // ═══════════════════════════════════════════
 function renderSettings(d){
+  const u = state.user;
+  const myMember = u?.member_id ? d.members.find(m=>m.id===u.member_id) : null;
   const total=(d.history||[]).length;
   const totalPts=d.members.reduce((a,m)=>a+m.points,0);
   const totalCoins=d.members.reduce((a,m)=>a+m.coins,0);
+  const myAch = myMember?.achievements || [];
+  const myTasks = (d.history||[]).filter(h=>h.member_id===myMember?.id).length;
 
   let html = `
   <div class="topbar">
-    <div class="topbar-left"><h1>⚙️ Ustawienia</h1></div>
+    <div class="topbar-left"><h1>👤 Profil</h1></div>
+    <div class="topbar-right">
+      <button class="btn btn-ghost btn-sm" onclick="logout()" style="font-size:12px">Wyloguj</button>
+    </div>
+  </div>`;
+
+  // My profile card
+  if(myMember){
+    const lv = getLevel(myMember.points);
+    html += `
+  <div class="card" style="margin:0 16px 14px">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+      <div style="font-size:48px">${myMember.emoji}</div>
+      <div style="flex:1">
+        <div style="font-weight:900;font-size:18px">${esc(myMember.name)}</div>
+        <div style="font-size:12px;color:var(--muted2)">@${esc(u.username)}</div>
+        <div class="level-pill" style="margin-top:6px">${LV_ICONS[lv]} ${LV_NAMES[lv]}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:22px;font-weight:800;color:var(--blue2)">${myMember.points}</div>
+        <div style="font-size:11px;color:var(--muted2)">punktów</div>
+        <div style="font-size:16px;font-weight:800;color:var(--yellow);margin-top:4px">🪙 ${myMember.coins}</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:16px;text-align:center">
+      <div style="flex:1;background:var(--bg3);border-radius:12px;padding:10px">
+        <div style="font-size:20px;font-weight:800;color:var(--green)">${myTasks}</div>
+        <div style="font-size:10px;color:var(--muted2)">zadań</div>
+      </div>
+      <div style="flex:1;background:var(--bg3);border-radius:12px;padding:10px">
+        <div style="font-size:20px;font-weight:800;color:var(--orange)">🔥 ${myMember.streak}</div>
+        <div style="font-size:10px;color:var(--muted2)">dni z rzędu</div>
+      </div>
+      <div style="flex:1;background:var(--bg3);border-radius:12px;padding:10px">
+        <div style="font-size:20px;font-weight:800;color:var(--indigo)">${myAch.length}</div>
+        <div style="font-size:10px;color:var(--muted2)">odznak</div>
+      </div>
+    </div>
   </div>
 
+  <div class="card" style="margin:0 16px 14px">
+    <div style="font-weight:800;font-size:15px;margin-bottom:14px">🏆 Moje odznaki</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      ${myAch.length===0?'<div style="color:var(--muted2);font-size:13px">Wykonaj pierwsze zadanie żeby zdobyć odznakę!</div>':''}
+      ${myAch.map(b=>`
+        <div title="${esc(b.desc)}" style="
+          background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.3);
+          border-radius:12px;padding:8px 12px;display:flex;align-items:center;gap:6px;
+        ">
+          <span style="font-size:18px">${b.emoji}</span>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--text)">${esc(b.name)}</div>
+            <div style="font-size:10px;color:var(--muted2)">${new Date(b.earned_at).toLocaleDateString('pl-PL')}</div>
+          </div>
+        </div>`).join('')}
+    </div>
+  </div>`;
+  }
+
+  html += `
   <div class="card" style="margin:0 16px 14px">
     <div style="font-weight:800;font-size:15px;margin-bottom:12px">🏠 Nazwa gospodarstwa</div>
     <div style="display:flex;gap:10px">
@@ -1540,14 +1762,13 @@ function renderSettings(d){
   </div>
 
   <div class="card" style="margin:0 16px 14px">
-    <div style="font-weight:800;font-size:15px;margin-bottom:12px">📊 Statystyki</div>
+    <div style="font-weight:800;font-size:15px;margin-bottom:12px">📊 Statystyki rodziny</div>
     ${[
       ['Wykonanych zadań', total],
       ['Łącznie punktów', totalPts+' pkt'],
       ['Monety łącznie', '🪙 '+totalCoins],
       ['Domownicy', d.members.length],
       ['Pokoje', d.rooms.length],
-      ['Zadania', d.tasks.length],
     ].map(([l,v])=>`
       <div class="settings-row">
         <span style="color:var(--muted2);font-size:14px">${l}</span>
@@ -1555,40 +1776,16 @@ function renderSettings(d){
       </div>`).join('')}
   </div>
 
-  <div class="card" style="margin:0 16px 14px">
-    <div style="font-weight:800;font-size:15px;margin-bottom:12px">🏅 System poziomów</div>
-    ${LV_NAMES.map((n,i)=>`
-      <div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:${i<LV_NAMES.length-1?'1px solid var(--border)':'none'}">
-        <span style="font-size:20px;width:30px;text-align:center">${LV_ICONS[i]}</span>
-        <div style="flex:1">
-          <div style="font-size:13px;font-weight:700">${n}</div>
-          <div style="font-size:11px;color:var(--muted2)">od ${LV_PTS[i]} pkt</div>
-        </div>
-        <span style="font-size:11px;color:var(--blue2);font-weight:700">Poziom ${i}</span>
-      </div>`).join('')}
-  </div>
-
-  <div style="padding:0 16px;margin-bottom:8px">
-    <div style="font-size:12px;color:var(--muted2);margin-bottom:8px;text-align:center">
-      Aplikacja wzorowana na Sweepy · Dane w SQLite
-    </div>
-  </div>
-
-  <div class="card" style="margin:0 16px 14px">
-    <div style="font-weight:800;font-size:15px;margin-bottom:6px">🤖 Klucz API Claude (AI Voice)</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">Wymagany do funkcji głosowej AI. Pobierz na console.anthropic.com</div>
-    <div style="display:flex;gap:10px">
-      <input class="inp" id="api-key-inp" type="password" placeholder="sk-ant-..." style="flex:1"/>
-      <button class="btn btn-primary btn-sm" onclick="saveApiKey()">Zapisz</button>
-    </div>
-  </div>
-
-  <div style="padding:0 16px 32px">
+  <div style="padding:0 16px 32px;display:flex;flex-direction:column;gap:10px">
+    <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="logout()">
+      🚪 Wyloguj się
+    </button>
     <button class="btn btn-danger" style="width:100%;justify-content:center"
-      onclick="if(confirm('Zresetować wszystkie dane? Tej akcji nie można cofnąć!'))resetAll()">
+      onclick="if(confirm('Zresetować wszystkie dane?'))resetAll()">
       🗑️ Resetuj wszystkie dane
     </button>
   </div>`;
+
   $('screen-settings').innerHTML = html;
 }
 
@@ -1708,6 +1905,7 @@ async function sendVoiceCommand() {
       tEl.style.display = 'none';
       document.getElementById('voice-send').style.display = 'none';
       await loadData();
+      if(data.new_badges && data.new_badges.length > 0) showBadgeToast(data.new_badges);
     }
   } catch(e) {
     statusEl.textContent = 'Naciśnij i mów';
@@ -1733,8 +1931,40 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/static/sw.js').catch(() => {});
 }
 
+// ─── BADGE TOAST ──────────────────────────────────────────────
+function showBadgeToast(badgeKeys){
+  const BADGE_DEFS = {
+    first_step:{name:'Pierwszy Krok',emoji:'👟'},streak_3:{name:'Seria 3 dni',emoji:'🔥'},
+    streak_7:{name:'Seria 7 dni',emoji:'🔥🔥'},streak_30:{name:'Niezniszczalny',emoji:'💎'},
+    tasks_10:{name:'Pracowity',emoji:'⚡'},tasks_50:{name:'Superbohater',emoji:'🦸'},
+    tasks_100:{name:'Legenda',emoji:'👑'},daily_5:{name:'Błyskawica',emoji:'⚡'},
+    perfect_room:{name:'Perfekcjonista',emoji:'✨'},week_champ:{name:'Sprzątacz Tygodnia',emoji:'🏆'},
+    month_champ:{name:'Mistrz Miesiąca',emoji:'🥇'},hard_worker:{name:'Twardziel',emoji:'💪'},
+    early_bird:{name:'Ranny Ptaszek',emoji:'🐦'},night_owl:{name:'Nocna Sowa',emoji:'🦉'},
+  };
+  badgeKeys.forEach((key, i) => {
+    const b = BADGE_DEFS[key]; if(!b) return;
+    const toast = document.createElement('div');
+    toast.style.cssText = `position:fixed;top:${80+i*70}px;left:50%;transform:translateX(-50%);
+      background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;padding:12px 20px;
+      border-radius:16px;font-size:14px;font-weight:700;z-index:9999;
+      box-shadow:0 8px 32px rgba(99,102,241,0.5);animation:slideDown 0.4s ease;
+      display:flex;align-items:center;gap:10px;white-space:nowrap`;
+    toast.innerHTML = `<span style="font-size:24px">${b.emoji}</span><div>
+      <div style="font-size:11px;opacity:0.8">Nowa odznaka!</div>
+      <div>${b.name}</div></div>`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+  });
+}
+
+// ─── COMPLETE TASK with badge check ───────────────────────────
+const _origCompleteTask = window.completeTask;
+
 // ─── INIT ─────────────────────────────────────────────────────
-loadData();
+// Hide nav until logged in
+$('bnav').style.display = 'none';
+checkAuth();
 </script>
 </body>
 </html>
