@@ -8,6 +8,23 @@ import anthropic
 
 app = Flask(__name__)
 
+# Always init DB on import (works with both gunicorn and direct run)
+def _ensure_db():
+    import sqlite3 as _sq
+    db = _sq.connect(DB)
+    db.executescript('''
+        CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT);
+        CREATE TABLE IF NOT EXISTS members (id TEXT PRIMARY KEY, name TEXT, emoji TEXT, points INTEGER DEFAULT 0, coins INTEGER DEFAULT 0, streak INTEGER DEFAULT 0, streak_date TEXT, owned TEXT DEFAULT '[]');
+        CREATE TABLE IF NOT EXISTS rooms (id TEXT PRIMARY KEY, name TEXT, emoji TEXT, cleanliness INTEGER DEFAULT 100, last_cleaned TEXT, color TEXT DEFAULT '#38BDF8');
+        CREATE TABLE IF NOT EXISTS tasks (id TEXT PRIMARY KEY, name TEXT, room_id TEXT, assigned_to TEXT, freq TEXT DEFAULT 'weekly', diff TEXT DEFAULT 'medium', last_completed TEXT, approval_needed INTEGER DEFAULT 0, created_at TEXT);
+        CREATE TABLE IF NOT EXISTS history (id TEXT PRIMARY KEY, task_id TEXT, member_id TEXT, completed_at TEXT, pts INTEGER, coins_earned INTEGER);
+        CREATE TABLE IF NOT EXISTS approvals (id TEXT PRIMARY KEY, task_id TEXT, member_id TEXT, requested_at TEXT);
+    ''')
+    db.commit()
+    db.close()
+
+_ensure_db()
+
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
 # Use /tmp on Railway (read-only filesystem), local dir otherwise
 if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('RENDER'):
