@@ -8,10 +8,16 @@ import anthropic
 
 app = Flask(__name__)
 
-# Always init DB on import (works with both gunicorn and direct run)
+ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
+# Use /tmp on Railway (read-only filesystem), local dir otherwise
+if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('RENDER'):
+    DB = '/tmp/sweepy.db'
+else:
+    DB = os.path.join(os.path.dirname(__file__), 'sweepy.db')
+
+# Always init DB tables (works with both gunicorn and direct run)
 def _ensure_db():
-    import sqlite3 as _sq
-    db = _sq.connect(DB)
+    db = sqlite3.connect(DB)
     db.executescript('''
         CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT);
         CREATE TABLE IF NOT EXISTS members (id TEXT PRIMARY KEY, name TEXT, emoji TEXT, points INTEGER DEFAULT 0, coins INTEGER DEFAULT 0, streak INTEGER DEFAULT 0, streak_date TEXT, owned TEXT DEFAULT '[]');
@@ -24,13 +30,6 @@ def _ensure_db():
     db.close()
 
 _ensure_db()
-
-ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
-# Use /tmp on Railway (read-only filesystem), local dir otherwise
-if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('RENDER'):
-    DB = '/tmp/sweepy.db'
-else:
-    DB = os.path.join(os.path.dirname(__file__), 'sweepy.db')
 
 # ─── DB ───────────────────────────────────────────────────────────────────────
 def get_db():
