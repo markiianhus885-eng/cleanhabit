@@ -267,6 +267,21 @@ def assetlinks():
     return send_from_directory(
         os.path.join(os.path.dirname(__file__), 'static', '.well-known'), 'assetlinks.json')
 
+# ── HOUSEHOLD LOOKUP (public, no auth needed) ─────────────────
+@app.route('/api/household/lookup')
+def household_lookup():
+    token = request.args.get('token', '').strip().upper()
+    if len(token) != 6:
+        return jsonify({'error': 'invalid token'}), 400
+    db = get_db()
+    hh = db.execute("SELECT * FROM households WHERE token=?", [token]).fetchone()
+    if not hh:
+        return jsonify({'error': 'Nie znaleziono rodziny z tym kodem'}), 404
+    hh = dict(hh)
+    members = [{'id': r['id'], 'name': r['name'], 'emoji': r['emoji']}
+               for r in db.execute("SELECT id,name,emoji FROM members WHERE household_id=?", [hh['id']])]
+    return jsonify({'name': hh['name'], 'token': hh['token'], 'members': members})
+
 # ── AUTH ──────────────────────────────────────────────────────
 @app.route('/api/auth/register', methods=['POST'])
 def auth_register():
