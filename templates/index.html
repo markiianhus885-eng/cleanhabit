@@ -866,7 +866,7 @@ async function loadData(){
 }
 async function loadLeaderboard(){
   const lb = await GET(`/api/leaderboard?period=${state.lb_period}`);
-  renderLeaderboard(lb);
+  renderLeaderboard(Array.isArray(lb) ? lb : []);
 }
 
 // ─── AUTH ─────────────────────────────────────────────────────
@@ -1976,7 +1976,7 @@ async function renderLeaderboard(lb){
     </div>`;
   });
 
-  html += `<button class="fab" onclick="showAddMember()">+</button><div style="height:8px"></div>`;
+  html += `<div style="height:80px"></div>`;
   $('screen-lb').innerHTML = html;
 }
 
