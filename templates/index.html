@@ -539,6 +539,7 @@ body{
 <div id="screen-vhome"  class="screen"></div>
 <div id="screen-settings" class="screen"></div>
 <div id="screen-badges"   class="screen"></div>
+<div id="screen-goals"    class="screen"></div>
 
 <!-- BOTTOM NAV -->
 <nav class="bnav" id="bnav">
@@ -556,6 +557,9 @@ body{
   </button>
   <button class="bnav-btn" data-tab="cal">
     <div class="bnav-icon">📅</div>Kalendarz
+  </button>
+  <button class="bnav-btn" data-tab="goals">
+    <div class="bnav-icon" id="nav-icon-goals">🎯<div class="nav-badge" id="goals-badge" style="display:none">0</div></div>Cele
   </button>
   <button class="bnav-btn" data-tab="badges">
     <div class="bnav-icon">🏅</div>Odznaki
@@ -1234,6 +1238,7 @@ function setTab(tab){
   if(tab==='lb') loadLeaderboard();
   if(tab==='cal') renderCalendar();
   if(tab==='badges') renderBadges();
+  if(tab==='goals') renderGoals();
 }
 $('bnav').addEventListener('click', e=>{
   const btn = e.target.closest('[data-tab]');
@@ -1718,6 +1723,24 @@ function useSuggestion(name, diff){
 
 const DOW_PL = ['Pn','Wt','Śr','Cz','Pt','Sb','Nd'];
 
+const GOAL_TEMPLATES = [
+  {emoji:'🏎️', name:'Gokarty',             price:150, description:'Wypad na tory gokartowe!'},
+  {emoji:'🎬', name:'Kino',                price:80,  description:'Wieczór filmowy w kinie'},
+  {emoji:'🍕', name:'Pizza na wynos',      price:50,  description:'Zamawiamy ulubioną pizzę'},
+  {emoji:'🍽️', name:'Kolacja w restauracji',price:120,description:'Wspólna kolacja na mieście'},
+  {emoji:'🎳', name:'Kręgle',              price:90,  description:'Wieczór na kręgielni'},
+  {emoji:'🏊', name:'Aquapark',            price:200, description:'Cały dzień w aquaparku'},
+  {emoji:'🎲', name:'Gra planszowa',       price:30,  description:'Wieczór z grą planszową'},
+  {emoji:'🔐', name:'Escape room',         price:200, description:'Ucieczka z pokoju zagadek'},
+  {emoji:'🎮', name:'Nowa gra',            price:120, description:'Nowa gra do wspólnego grania'},
+  {emoji:'🍦', name:'Lody',               price:25,  description:'Wypad na ulubione lody'},
+  {emoji:'🚗', name:'Wycieczka',           price:300, description:'Weekendowy wypad samochodem'},
+  {emoji:'📺', name:'Netflix weekend',     price:20,  description:'Maraton seriali przez cały weekend'},
+  {emoji:'🎡', name:'Park rozrywki',       price:250, description:'Dzień w parku rozrywki'},
+  {emoji:'🧁', name:'Ciastka z cukierni',  price:35,  description:'Pyszne ciastka z ulubionej cukierni'},
+  {emoji:'🎯', name:'Paintball',          price:180, description:'Bitwa paintballowa z drużyną'},
+];
+
 function showAddTask(prefillName='', prefillDiff='medium'){
   const d = state.data;
   openModal(`
@@ -1906,6 +1929,7 @@ async function renderLeaderboard(lb){
 
     // Badges
     const badges = [];
+    if(m.is_admin) badges.push('<span class="badge badge-purple">👑 Właściciel</span>');
     if(lv>=1) badges.push('<span class="badge badge-green">🧹 Czyściciel</span>');
     if(lv>=3) badges.push('<span class="badge badge-gold">💎 Ekspert</span>');
     if(lv>=5) badges.push('<span class="badge">👑 Mistrz</span>');
@@ -2160,6 +2184,281 @@ async function executeBuy(itemId, price){
   await POST('/api/shop/buy',{memberId:selMbr,itemId,price});
   closeModal();
   await loadData();
+}
+
+// ═══════════════════════════════════════════
+// GOALS SCREEN
+// ═══════════════════════════════════════════
+function renderGoals(){
+  const d = state.data;
+  if(!d){ $('screen-goals').innerHTML=''; return; }
+
+  const isOwner = state.user?.role === 'admin';
+  const myMemberId = state.user?.member_id;
+  const goals = d.goals || [];
+  const members = d.members || [];
+
+  // Count pending (bought but not fulfilled) for badge
+  const pendingCount = goals.reduce((a,g)=>(a + (g.purchases||[]).filter(p=>!p.fulfilled).length),0);
+  const badge = $('goals-badge');
+  if(badge){ badge.style.display = isOwner && pendingCount > 0 ? 'flex' : 'none'; badge.textContent = pendingCount; }
+
+  // My member coins
+  const myMember = members.find(m => m.id === myMemberId);
+
+  let html = `
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>🎯 Cele rodziny</h1>
+      <span>Zbieraj monety i realizuj nagrody</span>
+    </div>
+    ${isOwner ? `<div class="topbar-right">
+      <div style="display:flex;align-items:center;gap:4px;background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.3);border-radius:100px;padding:4px 10px;font-size:11px;font-weight:800;color:#C084FC">
+        👑 Właściciel
+      </div>
+    </div>` : ''}
+  </div>`;
+
+  // Coin balance for current member
+  if(myMember){
+    html += `
+    <div style="margin:0 16px 16px;background:linear-gradient(135deg,#1e1065,#4c1d95);border-radius:18px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border:1px solid rgba(168,85,247,0.3)">
+      <div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.6);font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Twoje monety</div>
+        <div style="font-size:32px;font-weight:900;color:#FDE68A;margin-top:2px">🪙 ${myMember.coins}</div>
+      </div>
+      <div style="font-size:48px">${myMember.emoji}</div>
+    </div>`;
+  }
+
+  // Owner: pending purchases notification
+  const allPending = goals.flatMap(g=>(g.purchases||[]).filter(p=>!p.fulfilled).map(p=>({...p, goal:g})));
+  if(isOwner && allPending.length > 0){
+    html += `
+    <div style="margin:0 16px 16px;background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.3);border-radius:16px;padding:14px 16px">
+      <div style="font-size:13px;font-weight:800;color:var(--yellow);margin-bottom:10px">🔔 Zakupione usługi do zrealizowania (${allPending.length})</div>`;
+    allPending.forEach(p => {
+      const dt = new Date(p.purchased_at).toLocaleDateString('pl-PL',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+      html += `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(234,179,8,0.15)">
+        <span style="font-size:24px">${p.goal.emoji}</span>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700">${esc(p.goal.name)}</div>
+          <div style="font-size:11px;color:var(--muted2)">${p.member_emoji} ${esc(p.member_name)} · ${dt}</div>
+        </div>
+        <button class="btn btn-success btn-xs" onclick="fulfillPurchase('${p.id}')">✓ Zrealizuj</button>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // Goals list
+  if(goals.length === 0){
+    html += `<div class="empty"><div class="ico">🎯</div><p>${isOwner ? 'Dodaj pierwszy cel dla rodziny!' : 'Właściciel jeszcze nie dodał żadnych celów.'}</p></div>`;
+  } else {
+    html += `<div class="shdr"><h2>🏆 Dostępne nagrody</h2><span>${goals.length} celów</span></div>`;
+    goals.forEach(g => {
+      const myCoins = myMember?.coins || 0;
+      const canAfford = myCoins >= g.price;
+      const myPurchases = (g.purchases||[]).filter(p => p.member_id === myMemberId);
+      const hasBought = myPurchases.length > 0 && !myPurchases[myPurchases.length-1].fulfilled;
+      const totalBuyers = (g.purchases||[]).length;
+      const pct = Math.min(100, Math.round((myCoins / g.price) * 100));
+
+      html += `
+      <div style="margin:0 16px 12px;background:var(--card);border-radius:20px;border:1px solid ${hasBought?'rgba(168,85,247,0.4)':canAfford?'rgba(34,197,94,0.3)':'var(--border)'};padding:16px;transition:all 0.2s">
+        <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:14px">
+          <div style="width:56px;height:56px;border-radius:16px;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.2);display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0">${g.emoji}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:16px;font-weight:900">${esc(g.name)}</div>
+            ${g.description?`<div style="font-size:12px;color:var(--muted2);margin-top:3px;line-height:1.4">${esc(g.description)}</div>`:''}
+            <div style="margin-top:8px;display:flex;align-items:center;gap:6px">
+              <div style="font-size:18px;font-weight:900;color:#FDE68A">🪙 ${g.price}</div>
+              ${totalBuyers>0?`<div style="font-size:11px;color:var(--muted2);background:rgba(255,255,255,0.05);border-radius:100px;padding:2px 8px">${totalBuyers}× zakupiono</div>`:''}
+            </div>
+          </div>
+          ${isOwner?`<button onclick="deleteGoal('${g.id}')" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px;line-height:1">🗑️</button>`:''}
+        </div>
+
+        <!-- Progress bar -->
+        <div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted2);margin-bottom:4px">
+            <span>Twoje monety: ${myCoins}🪙</span>
+            <span>${pct}%</span>
+          </div>
+          <div class="pbar-track" style="height:6px">
+            <div class="pbar-fill" style="width:${pct}%;height:6px;background:${canAfford?'var(--green)':'var(--blue)'}"></div>
+          </div>
+          ${!canAfford?`<div style="font-size:10px;color:var(--muted2);margin-top:3px">Brakuje ${g.price - myCoins}🪙</div>`:''}
+        </div>
+
+        ${hasBought
+          ? `<div style="background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);border-radius:12px;padding:8px 12px;font-size:12px;color:#C084FC;font-weight:700;text-align:center">⏳ Zakupiono — czeka na realizację przez właściciela</div>`
+          : myMemberId
+            ? `<button onclick="buyGoal('${g.id}')" ${!canAfford?'disabled':''} style="
+                width:100%;padding:12px;border-radius:14px;border:none;cursor:${canAfford?'pointer':'not-allowed'};font-weight:800;font-size:14px;
+                background:${canAfford?'linear-gradient(135deg,#5b21b6,#7c3aed)':'rgba(255,255,255,0.04)'};
+                color:${canAfford?'#fff':'var(--muted2)'};
+                opacity:${canAfford?1:0.6};transition:all 0.15s;
+              ">${canAfford?'🎯 Kup usługę':'🔒 Za mało monet'}</button>`
+            : `<div style="font-size:12px;color:var(--muted2);text-align:center">Zaloguj się jako domownik żeby kupić</div>`
+        }
+      </div>`;
+    });
+  }
+
+  // Fulfilled purchases history (collapsed)
+  const fulfilled = goals.flatMap(g=>(g.purchases||[]).filter(p=>p.fulfilled).map(p=>({...p,goal:g})));
+  if(fulfilled.length > 0){
+    html += `
+    <div style="margin:8px 16px 16px">
+      <div style="font-size:12px;font-weight:800;color:var(--muted2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px">✅ Zrealizowane (${fulfilled.length})</div>`;
+    fulfilled.slice(0,5).forEach(p=>{
+      html+=`<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:20px">${p.goal.emoji}</span>
+        <div style="flex:1"><div style="font-size:12px;font-weight:700">${esc(p.goal.name)}</div>
+        <div style="font-size:11px;color:var(--muted2)">${p.member_emoji} ${esc(p.member_name)}</div></div>
+        <div style="font-size:11px;color:var(--green);font-weight:700">✓ Zrobione</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `<div style="height:80px"></div>`;
+  if(isOwner){
+    html += `<button class="fab" onclick="showAddGoal()" style="background:linear-gradient(135deg,#5b21b6,#7c3aed)">+</button>`;
+  }
+  $('screen-goals').innerHTML = html;
+}
+
+async function buyGoal(goalId){
+  const myMemberId = state.user?.member_id;
+  if(!myMemberId){ alert('Nie jesteś połączony z profilem domownika'); return; }
+  const goal = (state.data.goals||[]).find(g=>g.id===goalId);
+  if(!goal) return;
+  const myMember = state.data.members.find(m=>m.id===myMemberId);
+  openModal(`
+    <div style="text-align:center;padding:8px 0 16px">
+      <div style="font-size:56px;margin-bottom:12px">${goal.emoji}</div>
+      <h2 style="margin-bottom:6px">${esc(goal.name)}</h2>
+      ${goal.description?`<div style="font-size:13px;color:var(--muted2);margin-bottom:16px">${esc(goal.description)}</div>`:''}
+      <div style="font-size:15px;color:var(--muted2);margin-bottom:20px">
+        Kupić za <strong style="color:#FDE68A;font-size:20px">🪙 ${goal.price}</strong>?
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:20px;font-size:13px;color:var(--muted2)">
+        <span>Pozostanie: <strong style="color:#FDE68A">🪙 ${(myMember?.coins||0)-goal.price}</strong></span>
+      </div>
+      <div style="font-size:12px;color:var(--muted2);background:rgba(168,85,247,0.08);border-radius:12px;padding:10px;margin-bottom:20px;line-height:1.5">
+        🔔 Właściciel zostanie powiadomiony i musi to zrealizować w prawdziwym życiu!
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-ghost" style="flex:1;justify-content:center" onclick="closeModal()">Anuluj</button>
+        <button class="btn" style="flex:1;justify-content:center;background:linear-gradient(135deg,#5b21b6,#7c3aed);color:#fff;font-weight:800" onclick="confirmBuyGoal('${goalId}')">🎯 Kup!</button>
+      </div>
+    </div>
+  `);
+}
+async function confirmBuyGoal(goalId){
+  const r = await POST(`/api/goals/${goalId}/buy`, {memberId: state.user?.member_id});
+  closeModal();
+  if(r.error){ alert(r.error); return; }
+  await loadData();
+  renderGoals();
+  showFloat(window.innerWidth/2-60, window.innerHeight/2, '🎯 Zakupiono!');
+}
+async function fulfillPurchase(pid){
+  await POST(`/api/goal-purchases/${pid}/fulfill`, {});
+  await loadData();
+  renderGoals();
+}
+async function deleteGoal(gid){
+  if(!confirm('Usunąć ten cel?')) return;
+  await DEL(`/api/goals/${gid}`);
+  await loadData();
+  renderGoals();
+}
+
+function showAddGoal(){
+  openModal(`
+    <h2>Nowy cel rodziny</h2>
+    <div style="font-size:12px;color:var(--muted2);margin-bottom:16px">Stwórz nagrodę motywującą do sprzątania</div>
+
+    <!-- TEMPLATES -->
+    <div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:8px">Szybkie szablony</div>
+      <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px">
+        ${GOAL_TEMPLATES.map(t=>`
+        <button onclick="useGoalTemplate(${JSON.stringify(t).replace(/"/g,'&quot;')})" style="
+          flex-shrink:0;background:var(--bg3);border:1px solid var(--border);border-radius:12px;
+          padding:8px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;
+          min-width:68px;transition:all 0.15s;
+        ">
+          <span style="font-size:22px">${t.emoji}</span>
+          <span style="font-size:9px;font-weight:700;color:var(--text2);white-space:nowrap">${t.name}</span>
+          <span style="font-size:9px;color:var(--yellow)">🪙${t.price}</span>
+        </button>`).join('')}
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Emoji</label>
+      <div id="goal-emoji-grid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-bottom:4px">
+        ${['🎯','🎬','🍕','🏎️','🎳','🏊','🎲','🔐','🎮','🍦','🚗','📺','🎡','🧁','🎪','🎠'].map(e=>
+          `<button onclick="selectGoalEmoji('${e}',this)" style="aspect-ratio:1;border-radius:10px;border:1.5px solid var(--border);background:rgba(255,255,255,0.03);font-size:20px;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center">${e}</button>`
+        ).join('')}
+      </div>
+      <input class="inp" id="goal-emoji-custom" placeholder="lub wpisz własne emoji" maxlength="2" style="margin-top:6px"/>
+    </div>
+    <div class="field">
+      <label>Nazwa nagrody</label>
+      <input class="inp" id="goal-name" placeholder="np. Wyjście na gokarty"/>
+    </div>
+    <div class="field">
+      <label>Opis (opcjonalnie)</label>
+      <input class="inp" id="goal-desc" placeholder="np. Wypad na tory gokartowe w weekend"/>
+    </div>
+    <div class="field">
+      <label>Cena w monetach 🪙</label>
+      <input class="inp" id="goal-price" type="number" min="1" placeholder="np. 150"/>
+    </div>
+    <button class="btn" style="width:100%;justify-content:center;background:linear-gradient(135deg,#5b21b6,#7c3aed);color:#fff;font-weight:800;margin-top:4px" onclick="submitAddGoal()">
+      🎯 Dodaj cel
+    </button>
+  `);
+  window._selectedGoalEmoji = '🎯';
+}
+
+function selectGoalEmoji(emoji, btn){
+  window._selectedGoalEmoji = emoji;
+  document.querySelectorAll('#goal-emoji-grid button').forEach(b=>{
+    b.style.borderColor='var(--border)'; b.style.background='rgba(255,255,255,0.03)';
+  });
+  btn.style.borderColor='var(--purple)'; btn.style.background='rgba(168,85,247,0.15)';
+}
+
+function useGoalTemplate(t){
+  window._selectedGoalEmoji = t.emoji;
+  if($('goal-name')) $('goal-name').value = t.name;
+  if($('goal-desc')) $('goal-desc').value = t.description;
+  if($('goal-price')) $('goal-price').value = t.price;
+  // highlight emoji
+  document.querySelectorAll('#goal-emoji-grid button').forEach(b=>{
+    b.style.borderColor='var(--border)'; b.style.background='rgba(255,255,255,0.03)';
+    if(b.textContent.trim()===t.emoji){ b.style.borderColor='var(--purple)'; b.style.background='rgba(168,85,247,0.15)'; }
+  });
+}
+
+async function submitAddGoal(){
+  const emoji = $('goal-emoji-custom')?.value.trim() || window._selectedGoalEmoji || '🎯';
+  const name  = $('goal-name')?.value.trim();
+  const desc  = $('goal-desc')?.value.trim();
+  const price = parseInt($('goal-price')?.value)||0;
+  if(!name||price<1){ alert('Podaj nazwę i cenę!'); return; }
+  const r = await POST('/api/goals', {name, description:desc, emoji, price});
+  if(r.error){ alert(r.error); return; }
+  closeModal();
+  await loadData();
+  renderGoals();
 }
 
 // ═══════════════════════════════════════════

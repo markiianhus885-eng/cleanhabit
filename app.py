@@ -79,9 +79,26 @@ def _ensure_db():
             earned_at TEXT,
             UNIQUE(member_id, badge_key)
         );
+        CREATE TABLE IF NOT EXISTS goals (
+            id TEXT PRIMARY KEY,
+            household_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            description TEXT,
+            emoji TEXT DEFAULT '🎯',
+            price INTEGER NOT NULL,
+            created_by TEXT,
+            created_at TEXT
+        );
+        CREATE TABLE IF NOT EXISTS goal_purchases (
+            id TEXT PRIMARY KEY,
+            household_id TEXT NOT NULL,
+            goal_id TEXT NOT NULL,
+            member_id TEXT NOT NULL,
+            purchased_at TEXT,
+            fulfilled INTEGER DEFAULT 0
+        );
     ''')
     db.commit()
-    # safe migrations for existing DBs
     for migration in [
         "ALTER TABLE tasks ADD COLUMN specific_days TEXT DEFAULT NULL",
         "ALTER TABLE history ADD COLUMN type TEXT DEFAULT 'done'",
@@ -260,11 +277,28 @@ def get_all_data(household_id):
     for room in rooms:
         room['cleanliness'] = calc_cleanliness(room, tasks)
 
+    goals = [dict(r) for r in db.execute(
+        "SELECT * FROM goals WHERE household_id=? ORDER BY created_at DESC", [household_id])]
+    goal_purchases = [dict(r) for r in db.execute(
+        "SELECT gp.*, m.name as member_name, m.emoji as member_emoji "
+        "FROM goal_purchases gp JOIN members m ON gp.member_id=m.id "
+        "WHERE gp.household_id=? ORDER BY gp.purchased_at DESC", [household_id])]
+
+    # Attach purchases to each goal
+    for g in goals:
+        g['purchases'] = [p for p in goal_purchases if p['goal_id'] == g['id']]
+
+    # Get household admin user id
+    admin_user = db.execute(
+        "SELECT member_id FROM users WHERE household_id=? AND role='admin' LIMIT 1",
+        [household_id]).fetchone()
+
     return {
         'household': config.get('household', household['name'] if household else 'Moja Rodzina'),
         'household_token': household['token'] if household else '',
+        'household_admin_member': admin_user['member_id'] if admin_user else None,
         'members': members, 'rooms': rooms, 'tasks': tasks,
-        'history': history, 'approvals': approvals,
+        'history': history, 'approvals': approvals, 'goals': goals,
     }
 
 # ─── ROUTES ───────────────────────────────────────────────────
@@ -591,6 +625,8 @@ def leaderboard():
         m['period_pts'] = pts
         m['owned'] = json.loads(m['owned'] or '[]')
         m['achievements'] = get_member_achievements(db, m['id'], hid)
+        admin_row = db.execute("SELECT 1 FROM users WHERE household_id=? AND member_id=? AND role='admin'", [hid, m['id']]).fetchone()
+        m['is_admin'] = bool(admin_row)
         result.append(m)
     result.sort(key=lambda x: x['period_pts'], reverse=True)
     return jsonify(result)
@@ -657,6 +693,78 @@ def calendar_view():
             })
         result.append({'date': day_iso, 'is_today': day.date() == now.date(), 'tasks': day_tasks})
     return jsonify(result)
+
+# ── GOALS ─────────────────────────────────────────────────────
+def is_admin(hid):
+    u = current_user()
+    return u and u['role'] == 'admin' and u['household_id'] == hid
+
+@app.route('/api/goals', methods=['POST'])
+def create_goal():
+    err = require_auth(); hid = get_hid()
+    if err: return err
+    if not is_admin(hid):
+        return jsonify({'error': 'Tylko właściciel może tworzyć cele'}), 403
+    d = request.json or {}
+    name  = d.get('name', '').strip()
+    price = int(d.get('price', 0))
+    if not name or price < 1:
+        return jsonify({'error': 'Podaj nazwę i cenę'}), 400
+    u = current_user()
+    db = get_db()
+    db.execute(
+        "INSERT INTO goals(id,household_id,name,description,emoji,price,created_by,created_at) VALUES (?,?,?,?,?,?,?,?)",
+        [uid(), hid, name, d.get('description',''), d.get('emoji','🎯'), price,
+         u['member_id'] or '', datetime.now().isoformat()])
+    db.commit()
+    return jsonify({'ok': True})
+
+@app.route('/api/goals/<gid>', methods=['DELETE'])
+def delete_goal(gid):
+    err = require_auth(); hid = get_hid()
+    if err: return err
+    if not is_admin(hid):
+        return jsonify({'error': 'Tylko właściciel może usuwać cele'}), 403
+    db = get_db()
+    db.execute("DELETE FROM goal_purchases WHERE goal_id=? AND household_id=?", [gid, hid])
+    db.execute("DELETE FROM goals WHERE id=? AND household_id=?", [gid, hid])
+    db.commit()
+    return jsonify({'ok': True})
+
+@app.route('/api/goals/<gid>/buy', methods=['POST'])
+def buy_goal(gid):
+    err = require_auth(); hid = get_hid()
+    if err: return err
+    u = current_user()
+    member_id = (request.json or {}).get('memberId') or u.get('member_id')
+    if not member_id:
+        return jsonify({'error': 'Nie jesteś połączony z profilem domownika'}), 400
+    db = get_db()
+    goal = db.execute("SELECT * FROM goals WHERE id=? AND household_id=?", [gid, hid]).fetchone()
+    if not goal: return jsonify({'error': 'Nie znaleziono celu'}), 404
+    goal = dict(goal)
+    member = db.execute("SELECT * FROM members WHERE id=? AND household_id=?", [member_id, hid]).fetchone()
+    if not member: return jsonify({'error': 'Nie znaleziono profilu'}), 404
+    member = dict(member)
+    if member['coins'] < goal['price']:
+        return jsonify({'error': f'Za mało monet! Masz {member["coins"]}🪙, potrzebujesz {goal["price"]}🪙'}), 400
+    db.execute("UPDATE members SET coins=coins-? WHERE id=? AND household_id=?",
+               [goal['price'], member_id, hid])
+    db.execute("INSERT INTO goal_purchases(id,household_id,goal_id,member_id,purchased_at,fulfilled) VALUES (?,?,?,?,?,0)",
+               [uid(), hid, gid, member_id, datetime.now().isoformat()])
+    db.commit()
+    return jsonify({'ok': True, 'coins_left': member['coins'] - goal['price']})
+
+@app.route('/api/goal-purchases/<pid>/fulfill', methods=['POST'])
+def fulfill_purchase(pid):
+    err = require_auth(); hid = get_hid()
+    if err: return err
+    if not is_admin(hid):
+        return jsonify({'error': 'Tylko właściciel może oznaczać jako zrealizowane'}), 403
+    db = get_db()
+    db.execute("UPDATE goal_purchases SET fulfilled=1 WHERE id=? AND household_id=?", [pid, hid])
+    db.commit()
+    return jsonify({'ok': True})
 
 # ── VOICE ─────────────────────────────────────────────────────
 @app.route('/api/voice', methods=['POST'])
