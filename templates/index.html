@@ -622,9 +622,9 @@ body{
 
   <!-- LANG SELECT -->
   <div style="display:flex;gap:8px;margin-bottom:14px" id="lang-chips">
-    <button class="chip on" onclick="setLang('pl-PL',this)">🇵🇱 Polski</button>
-    <button class="chip" onclick="setLang('uk-UA',this)">🇺🇦 Українська</button>
-    <button class="chip" onclick="setLang('en-US',this)">🇬🇧 English</button>
+    <button class="chip on" onclick="setVoiceLang('pl-PL',this)">🇵🇱 Polski</button>
+    <button class="chip" onclick="setVoiceLang('uk-UA',this)">🇺🇦 Українська</button>
+    <button class="chip" onclick="setVoiceLang('en-US',this)">🇬🇧 English</button>
   </div>
 
   <!-- MIC BUTTON -->
@@ -3152,7 +3152,7 @@ function closeVoice() {
   document.getElementById('voice-panel').style.display = 'none';
   if (isRecording) stopRecording();
 }
-function setLang(lang, btn) {
+function setVoiceLang(lang, btn) {
   voiceLang = lang;
   document.querySelectorAll('#lang-chips .chip').forEach(c => c.classList.remove('on'));
   btn.classList.add('on');
