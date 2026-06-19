@@ -52,7 +52,8 @@ def _ensure_db():
             household_id TEXT NOT NULL,
             name TEXT, room_id TEXT, assigned_to TEXT,
             freq TEXT DEFAULT 'weekly', diff TEXT DEFAULT 'medium',
-            last_completed TEXT, approval_needed INTEGER DEFAULT 0, created_at TEXT
+            last_completed TEXT, approval_needed INTEGER DEFAULT 0, created_at TEXT,
+            specific_days TEXT DEFAULT NULL
         );
         CREATE TABLE IF NOT EXISTS history (
             id TEXT PRIMARY KEY,
@@ -79,6 +80,12 @@ def _ensure_db():
         );
     ''')
     db.commit()
+    # safe migrations for existing DBs
+    try:
+        db.execute("ALTER TABLE tasks ADD COLUMN specific_days TEXT DEFAULT NULL")
+        db.commit()
+    except Exception:
+        pass
     db.close()
 
 _ensure_db()
@@ -428,10 +435,14 @@ def add_task():
     err = require_auth(); hid = get_hid()
     if err: return err
     d = request.json or {}
+    specific_days = d.get('specificDays')  # e.g. "0,2,4" = Mon,Wed,Fri or None
+    if specific_days and not isinstance(specific_days, str):
+        specific_days = ','.join(str(x) for x in specific_days)
+    freq = d.get('freq', 'weekly') if not specific_days else 'custom'
     get_db().execute(
-        "INSERT INTO tasks(id,household_id,name,room_id,assigned_to,freq,diff,last_completed,approval_needed,created_at) VALUES (?,?,?,?,?,?,?,NULL,?,?)",
-        [uid(), hid, d['name'], d['roomId'], d['assignedTo'], d['freq'], d['diff'],
-         1 if d.get('approvalNeeded') else 0, datetime.now().isoformat()])
+        "INSERT INTO tasks(id,household_id,name,room_id,assigned_to,freq,diff,last_completed,approval_needed,created_at,specific_days) VALUES (?,?,?,?,?,?,?,NULL,?,?,?)",
+        [uid(), hid, d['name'], d['roomId'], d['assignedTo'], freq, d['diff'],
+         1 if d.get('approvalNeeded') else 0, datetime.now().isoformat(), specific_days])
     get_db().commit()
     return jsonify({'ok': True})
 
@@ -585,24 +596,35 @@ def calendar_view():
     for day_num in range(1, days_in_month + 1):
         day = datetime(year, month, day_num)
         day_iso = day.strftime('%Y-%m-%d')
+        # weekday: Mon=0 .. Sun=6
+        day_dow = day.weekday()
         day_tasks = []
         for t in tasks:
-            freq_days = FREQ_DAYS.get(t['freq'], 7)
             created = datetime.fromisoformat(t['created_at']) if t['created_at'] else now
             if created.date() > day.date():
                 continue
-            if t['last_completed']:
-                last = datetime.fromisoformat(t['last_completed'])
-                next_due = last + timedelta(days=freq_days)
-            else:
-                next_due = created
-            diff = (day.date() - next_due.date()).days
-            if not (0 <= diff < freq_days or freq_days == 1):
-                continue
             member = members.get(t['assigned_to'], {})
             room   = rooms.get(t['room_id'], {})
+
+            if t.get('specific_days'):
+                # show only on the chosen weekdays
+                chosen = [int(x) for x in t['specific_days'].split(',') if x.strip().isdigit()]
+                if day_dow not in chosen:
+                    continue
+            else:
+                freq_days = FREQ_DAYS.get(t['freq'], 7)
+                if t['last_completed']:
+                    last = datetime.fromisoformat(t['last_completed'])
+                    next_due = last + timedelta(days=freq_days)
+                else:
+                    next_due = created
+                diff = (day.date() - next_due.date()).days
+                if not (0 <= diff < freq_days or freq_days == 1):
+                    continue
+
             day_tasks.append({
                 'id': t['id'], 'name': t['name'], 'diff': t['diff'], 'freq': t['freq'],
+                'specific_days': t.get('specific_days'),
                 'member_name': member.get('name', '?'), 'member_emoji': member.get('emoji', '👤'),
                 'room_name': room.get('name', '?'),
                 'done': t['id'] in done_dates.get(day_iso, set()),

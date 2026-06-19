@@ -720,10 +720,27 @@ function lvProg(pts){ const l=getLevel(pts),c=LV_PTS[l],n=LV_PTS[l+1]; if(!n)ret
 function nextLvPts(pts){ const l=getLevel(pts); return LV_PTS[l+1]||null; }
 
 function isDue(task){
+  if(task.specific_days){
+    // due if today is one of the chosen weekdays AND not done today
+    const todayDow = (new Date().getDay()+6)%7; // Mon=0..Sun=6
+    const chosen = task.specific_days.split(',').map(Number);
+    if(!chosen.includes(todayDow)) return false;
+    if(!task.last_completed) return true;
+    const lastDate = new Date(task.last_completed).toDateString();
+    return lastDate !== new Date().toDateString();
+  }
   if(!task.last_completed) return true;
   const last = new Date(task.last_completed);
   const days = FREQ_DAYS[task.freq]||7;
   return (Date.now()-last.getTime()) >= days*86400000;
+}
+
+function fmtSchedule(task){
+  if(task.specific_days){
+    const names=['Pn','Wt','Śr','Cz','Pt','Sb','Nd'];
+    return task.specific_days.split(',').map(Number).sort().map(d=>names[d]).join(', ');
+  }
+  return FREQ[task.freq]||task.freq;
 }
 function daysSince(iso){
   if(!iso) return null;
@@ -1311,7 +1328,7 @@ function renderHome(d){
         <div class="task-meta">
           ${room?`<span>${room.emoji} ${esc(room.name)}</span><span class="dot">·</span>`:''}
           ${mbr?`<span>${mbr.emoji} ${esc(mbr.name)}</span><span class="dot">·</span>`:''}
-          <span>${FREQ[task.freq]}</span>
+          <span>${fmtSchedule(task)}</span>
         </div>
       </div>
       <div style="text-align:right;flex-shrink:0">
@@ -1421,7 +1438,7 @@ function openRoomDetail(roomId){
           </div>
           <div style="flex:1;min-width:0">
             <div style="font-size:14px;font-weight:700;text-decoration:${done?'line-through':'none'}">${esc(t.name)}</div>
-            <div style="font-size:12px;color:var(--muted2)">${mbr?.emoji||''} ${esc(mbr?.name||'?')} · ${FREQ[t.freq]} · ${DIFF_STARS[t.diff]}</div>
+            <div style="font-size:12px;color:var(--muted2)">${mbr?.emoji||''} ${esc(mbr?.name||'?')} · ${fmtSchedule(t)} · ${DIFF_STARS[t.diff]}</div>
           </div>
           <span class="pts-pill">+${DIFF_PTS[t.diff]} pkt</span>
         </div>`;
@@ -1546,7 +1563,7 @@ function renderTasks(d){
         <div class="task-meta">
           ${room?`<span>${room.emoji} ${esc(room.name)}</span><span class="dot">·</span>`:''}
           ${mbr?`<span>${mbr.emoji} ${esc(mbr.name)}</span><span class="dot">·</span>`:''}
-          <span>${FREQ[task.freq]}</span>
+          <span>${fmtSchedule(task)}</span>
           ${task.approval_needed?`<span class="dot">·</span><span style="color:var(--yellow)">🔒 akceptacja</span>`:''}
         </div>
       </div>
@@ -1587,6 +1604,8 @@ function useSuggestion(name, diff){
   setTimeout(()=>showAddTask(name, diff), 300);
 }
 
+const DOW_PL = ['Pn','Wt','Śr','Cz','Pt','Sb','Nd'];
+
 function showAddTask(prefillName='', prefillDiff='medium'){
   const d = state.data;
   openModal(`
@@ -1609,10 +1628,34 @@ function showAddTask(prefillName='', prefillDiff='medium'){
         ${d.members.map(m=>`<option value="${m.id}">${m.emoji} ${esc(m.name)}</option>`).join('')}
       </select>
     </div>
+
+    <!-- SCHEDULE MODE TABS -->
     <div class="field">
-      <label>Częstotliwość</label>
-      <div class="chips" id="task-freq-chips"></div>
+      <label>Harmonogram</label>
+      <div style="display:flex;background:var(--bg3);border-radius:12px;padding:3px;gap:2px;margin-bottom:12px">
+        <button id="sched-tab-freq" onclick="setSchedMode('freq')" style="
+          flex:1;padding:8px;border:none;border-radius:9px;cursor:pointer;font-size:12px;font-weight:700;
+          background:var(--blue);color:#fff;transition:all 0.2s;
+        ">🔄 Cyklicznie</button>
+        <button id="sched-tab-days" onclick="setSchedMode('days')" style="
+          flex:1;padding:8px;border:none;border-radius:9px;cursor:pointer;font-size:12px;font-weight:700;
+          background:transparent;color:var(--muted2);transition:all 0.2s;
+        ">📅 Konkretne dni</button>
+      </div>
+
+      <!-- FREQ mode -->
+      <div id="sched-freq-panel">
+        <div class="chips" id="task-freq-chips"></div>
+      </div>
+
+      <!-- DAYS mode -->
+      <div id="sched-days-panel" style="display:none">
+        <div style="font-size:11px;color:var(--muted2);margin-bottom:10px">Kliknij dni w których ma być wykonywane:</div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px" id="task-dow-grid"></div>
+        <div id="task-dow-hint" style="font-size:11px;color:var(--muted2);margin-top:8px;min-height:16px"></div>
+      </div>
     </div>
+
     <div class="field">
       <label>Trudność / Punkty</label>
       <div class="chips" id="task-diff-chips"></div>
@@ -1624,7 +1667,12 @@ function showAddTask(prefillName='', prefillDiff='medium'){
     <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px"
       onclick="submitAddTask()">Dodaj zadanie</button>
   `);
+
   let selFreq = 'weekly', selDiff = prefillDiff, selAppr = false;
+  let schedMode = 'freq';
+  let selDays = new Set(); // weekday indices 0=Mon..6=Sun
+
+  // freq chips
   const freqChips = $('task-freq-chips');
   Object.entries(FREQ).forEach(([v,l])=>{
     const b=document.createElement('button');
@@ -1633,6 +1681,29 @@ function showAddTask(prefillName='', prefillDiff='medium'){
     b.onclick=()=>{ selFreq=v; freqChips.querySelectorAll('.chip').forEach(c=>c.classList.remove('on')); b.classList.add('on'); };
     freqChips.appendChild(b);
   });
+
+  // day-of-week grid
+  const dowGrid = $('task-dow-grid');
+  DOW_PL.forEach((label,i)=>{
+    const isWe = i>=5;
+    const btn = document.createElement('button');
+    btn.style.cssText=`
+      aspect-ratio:1;border-radius:10px;border:2px solid var(--border);
+      background:var(--bg3);cursor:pointer;font-size:12px;font-weight:800;
+      color:${isWe?'var(--red)':'var(--text2)'};transition:all 0.15s;
+      display:flex;align-items:center;justify-content:center;
+    `;
+    btn.textContent=label;
+    btn.onclick=()=>{
+      if(selDays.has(i)){ selDays.delete(i); btn.style.background='var(--bg3)'; btn.style.borderColor='var(--border)'; btn.style.color=isWe?'var(--red)':'var(--text2)'; }
+      else { selDays.add(i); btn.style.background='rgba(14,165,233,0.2)'; btn.style.borderColor='var(--blue)'; btn.style.color='var(--blue2)'; }
+      const names=['Pn','Wt','Śr','Cz','Pt','Sb','Nd'];
+      $('task-dow-hint').textContent = selDays.size>0 ? 'Wybrane: '+[...selDays].sort().map(d=>names[d]).join(', ') : '';
+    };
+    dowGrid.appendChild(btn);
+  });
+
+  // diff chips
   const diffChips = $('task-diff-chips');
   Object.entries(DIFF_LBL).forEach(([v,l])=>{
     const b=document.createElement('button');
@@ -1649,10 +1720,30 @@ function showAddTask(prefillName='', prefillDiff='medium'){
     b.onclick=()=>{ selAppr=(v==='true'); apprChips.querySelectorAll('.chip').forEach(c=>c.classList.remove('on')); b.classList.add('on'); };
     apprChips.appendChild(b);
   });
-  window._getTaskForm=()=>({freq:selFreq,diff:selDiff,approvalNeeded:selAppr});
+
+  window.setSchedMode = (mode)=>{
+    schedMode = mode;
+    const isFreq = mode==='freq';
+    $('sched-tab-freq').style.background = isFreq?'var(--blue)':'transparent';
+    $('sched-tab-freq').style.color = isFreq?'#fff':'var(--muted2)';
+    $('sched-tab-days').style.background = isFreq?'transparent':'var(--blue)';
+    $('sched-tab-days').style.color = isFreq?'var(--muted2)':'#fff';
+    $('sched-freq-panel').style.display = isFreq?'block':'none';
+    $('sched-days-panel').style.display = isFreq?'none':'block';
+  };
+
+  window._getTaskForm=()=>{
+    if(schedMode==='days'){
+      if(selDays.size===0){ alert('Wybierz przynajmniej jeden dzień!'); return null; }
+      return {freq:'custom', diff:selDiff, approvalNeeded:selAppr, specificDays:[...selDays].sort().join(',')};
+    }
+    return {freq:selFreq, diff:selDiff, approvalNeeded:selAppr, specificDays:null};
+  };
 }
+
 async function submitAddTask(){
   const f = window._getTaskForm();
+  if(!f) return;
   const name=$('task-name').value.trim();
   const roomId=$('task-room').value;
   const assignedTo=$('task-member').value;
