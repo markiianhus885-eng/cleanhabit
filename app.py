@@ -352,134 +352,126 @@ def leaderboard():
 
 @app.route('/api/voice', methods=['POST'])
 def voice_command():
-    """Process voice command with Claude AI and execute action."""
+    """Process voice command using keyword matching (no AI required)."""
     body = request.json or {}
-    transcript = body.get('transcript', '').strip()
-    lang = body.get('lang', 'pl')
+    transcript = body.get('transcript', '').strip().lower()
     if not transcript:
         return jsonify({'error': 'empty transcript'}), 400
-
-    if not ANTHROPIC_API_KEY:
-        return jsonify({'error': 'no_api_key', 'message': 'Brak klucza API Anthropic. Ustaw go w Ustawieniach.'}), 400
 
     db = get_db()
     rooms   = [dict(r) for r in db.execute("SELECT id, name FROM rooms")]
     members = [dict(r) for r in db.execute("SELECT id, name FROM members")]
-    tasks   = [dict(r) for r in db.execute("SELECT id, name, room_id, assigned_to, last_completed FROM tasks")]
+    tasks   = [dict(r) for r in db.execute("SELECT id, name, room_id, assigned_to FROM tasks")]
 
-    rooms_list   = ', '.join([f"{r['name']} (id:{r['id']})" for r in rooms])
-    members_list = ', '.join([f"{m['name']} (id:{m['id']})" for m in members])
-    tasks_list   = '\n'.join([f"- {t['name']} (id:{t['id']}, pokój:{t['room_id']})" for t in tasks])
+    # ── Keyword sets ──────────────────────────────────────────
+    DONE_WORDS = [
+        # Polish
+        'posprzątałem','posprzątałam','odkurzyłem','odkurzyłam','umyłem','umyłam',
+        'wyczyściłem','wyczyściłam','zrobiłem','zrobiłam','skończyłem','skończyłam',
+        'gotowe','zrobione','done','wykonałem','wykonałam','wyprałem','wyprałam',
+        'pozmywałem','pozmywałam','wyniósłem','wyniosłam',
+        # Ukrainian
+        'прибрав','прибрала','помив','помила','почистив','почистила',
+        'зробив','зробила','закінчив','закінчила','пропилососив','пропилососила',
+    ]
+    WANT_WORDS = [
+        # Polish
+        'chcę','chce','chciałbym','chciałabym','muszę','musze','powinienem','powinnam',
+        'zamierzam','planuję','planuje','będę','bede','trzeba','należy','dodaj',
+        # Ukrainian
+        'хочу','маю','треба','потрібно','збираюся','планую','додай',
+    ]
+    ROOM_WORDS = {
+        'salon':['salon','salonie','salonu','вітальня','вітальні'],
+        'kuchnia':['kuchni','kuchnia','kuchnię','кухня','кухні'],
+        'łazienka':['łazienka','łazienki','łazience','ванна','ванній','ванну'],
+        'sypialnia':['sypialnia','sypialni','спальня','спальні'],
+        'toaleta':['toaleta','toalety','toalecie','туалет','туалеті'],
+        'przedpokój':['przedpokój','przedpokoju','передпокій'],
+        'garaż':['garaż','garażu','гараж'],
+        'balkon':['balkon','balkonie','балкон'],
+    }
+    TASK_WORDS = {
+        'odkurzanie':['odkurzyć','odkurzić','odkurz','odkurzanie','пилосос','пилососити'],
+        'zmywanie':['zmyć','zmywanie','zmywać','naczynia','поми','помити посуд'],
+        'mycie podłóg':['podłogi','podłogę','mop','umyć podłogę','помити підлогу'],
+        'mycie toalety':['toaletę','toalety','umyć toaletę','туалет помити'],
+        'wycieranie kurzu':['kurz','kurzu','wytrzeć','витерти пил'],
+        'wyniesienie śmieci':['śmieci','śmietnik','wynieść','винести сміття'],
+        'pranie':['pranie','prać','wypra','прання','постирати'],
+        'mycie okien':['okna','okien','okno','помити вікна'],
+        'sprzątanie':['posprzątać','sprzątać','sprzątanie','прибирання','прибрати'],
+    }
 
-    system_prompt = """Jesteś asystentem zarządzającym listą domowych obowiązków (chores app).
-Rozumiesz języki: polski i ukraiński.
-Analizujesz polecenie głosowe i zwracasz JSON z akcją do wykonania.
+    def find_room(text):
+        for room in rooms:
+            rname = room['name'].lower()
+            if rname in text: return room
+            for key, aliases in ROOM_WORDS.items():
+                if key in rname or any(a in text for a in aliases):
+                    return room
+        return rooms[0] if rooms else None
 
-Dostępne akcje:
-1. add_task – dodaj nowe zadanie
-2. complete_task – oznacz zadanie jako wykonane (gdy ktoś mówi że coś zrobił/sprzątnął/odkurzył itp.)
-3. add_room – dodaj nowy pokój
-4. unknown – nie rozumiem polecenia
+    def find_task(text):
+        best, best_score = None, 0
+        for t in tasks:
+            tname = t['name'].lower()
+            score = sum(1 for w in tname.split() if w in text)
+            score += sum(1 for aliases in TASK_WORDS.values() for a in aliases if a in text and any(k in tname for k in TASK_WORDS))
+            if score > best_score:
+                best_score, best = score, t
+        return best
 
-Odpowiadaj WYŁĄCZNIE w formacie JSON, bez żadnego dodatkowego tekstu:
+    def guess_task_name(text):
+        for name, aliases in TASK_WORDS.items():
+            if any(a in text for a in aliases):
+                return name.capitalize()
+        return 'Sprzątanie'
 
-Dla add_task:
-{"action": "add_task", "task_name": "...", "room_id": "...", "member_id": "...", "freq": "weekly", "diff": "medium", "message": "krótki opis po polsku co zrobiłeś"}
+    is_done = any(w in transcript for w in DONE_WORDS)
+    is_want = any(w in transcript for w in WANT_WORDS)
 
-Dla complete_task:
-{"action": "complete_task", "task_id": "...", "message": "..."}
-
-Dla add_room:
-{"action": "add_room", "room_name": "...", "emoji": "🏠", "message": "..."}
-
-Dla unknown:
-{"action": "unknown", "message": "Nie rozumiem polecenia. Spróbuj powiedzieć np. 'Chcę posprzątać salon' lub 'Odkurzyłem salon'."}
-
-Zasady:
-- Jeśli ktoś mówi że CHCE coś zrobić / ma zamiar / planuje → add_task
-- Jeśli ktoś mówi że JUŻ zrobił / skończył / posprzątał / odkurzył / umył itp. → complete_task
-- Dopasuj room_id do najbliższego pasującego pokoju z listy
-- Dopasuj member_id jeśli wspomniano imię, inaczej użyj pierwszego z listy
-- freq: daily/every2/weekly/biweekly/monthly
-- diff: easy/medium/hard"""
-
-    user_prompt = f"""Polecenie głosowe: "{transcript}"
-
-Dostępne pokoje: {rooms_list}
-Dostępne osoby: {members_list}
-Dostępne zadania:
-{tasks_list}
-
-Zwróć JSON z akcją."""
-
-    try:
-        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-        msg = client.messages.create(
-            model='claude-haiku-4-5-20251001',
-            max_tokens=512,
-            system=system_prompt,
-            messages=[{'role': 'user', 'content': user_prompt}]
-        )
-        raw = msg.content[0].text.strip()
-        # Extract JSON if wrapped in markdown
-        if '```' in raw:
-            raw = raw.split('```')[1].strip()
-            if raw.startswith('json'): raw = raw[4:].strip()
-        result = json.loads(raw)
-    except json.JSONDecodeError:
-        return jsonify({'error': 'parse_error', 'raw': raw}), 500
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-    # Execute action
-    action = result.get('action')
-    if action == 'add_task':
-        room_id     = result.get('room_id') or (rooms[0]['id'] if rooms else '')
-        member_id   = result.get('member_id') or (members[0]['id'] if members else '')
-        task_name   = result.get('task_name', 'Nowe zadanie')
-        freq        = result.get('freq', 'weekly')
-        diff        = result.get('diff', 'medium')
-        task_id = uid()
-        db.execute("INSERT INTO tasks(id,name,room_id,assigned_to,freq,diff,last_completed,approval_needed,created_at) VALUES (?,?,?,?,?,?,NULL,0,?)",
-                   [task_id, task_name, room_id, member_id, freq, diff, datetime.now().isoformat()])
-        db.commit()
-        result['executed'] = True
-
-    elif action == 'complete_task':
-        task_id = result.get('task_id')
-        task = None
-        if task_id:
-            task = db.execute("SELECT * FROM tasks WHERE id=?", [task_id]).fetchone()
-        if task:
-            task = dict(task)
+    if is_done:
+        # Try to find matching task
+        matched = find_task(transcript)
+        room = find_room(transcript)
+        if matched:
+            task = dict(db.execute("SELECT * FROM tasks WHERE id=?", [matched['id']]).fetchone())
             pts = DIFF_PTS.get(task['diff'], 1)
-            member_id = task['assigned_to']
-            member = db.execute("SELECT * FROM members WHERE id=?", [member_id]).fetchone()
+            member_id = task['assigned_to'] or (members[0]['id'] if members else None)
             today = datetime.now().strftime('%Y-%m-%d')
-            if member:
-                m = dict(member)
-                streak = m['streak'] if m['streak_date'] == today else m['streak'] + 1
-                db.execute("UPDATE members SET points=points+?,coins=coins+?,streak=?,streak_date=? WHERE id=?",
-                           [pts, pts, streak, today, member_id])
-            db.execute("UPDATE tasks SET last_completed=? WHERE id=?", [datetime.now().isoformat(), task_id])
+            if member_id:
+                member = db.execute("SELECT * FROM members WHERE id=?", [member_id]).fetchone()
+                if member:
+                    m = dict(member)
+                    streak = m['streak'] + 1 if m['streak_date'] != today else m['streak']
+                    db.execute("UPDATE members SET points=points+?,coins=coins+?,streak=?,streak_date=? WHERE id=?",
+                               [pts, pts, streak, today, member_id])
+            db.execute("UPDATE tasks SET last_completed=? WHERE id=?", [datetime.now().isoformat(), matched['id']])
             boost = min(pts*8, 22)
             db.execute("UPDATE rooms SET cleanliness=MIN(100,cleanliness+?),last_cleaned=? WHERE id=?",
                        [boost, datetime.now().isoformat(), task['room_id']])
             db.execute("INSERT INTO history(id,task_id,member_id,completed_at,pts,coins_earned) VALUES (?,?,?,?,?,?)",
-                       [uid(), task_id, member_id, datetime.now().isoformat(), pts, pts])
+                       [uid(), matched['id'], member_id, datetime.now().isoformat(), pts, pts])
             db.commit()
-            result['executed'] = True
-            result['pts_earned'] = pts
+            return jsonify({'action':'complete_task','message':f'✅ Oznaczono "{matched["name"]}" jako wykonane! +{pts} pkt','pts_earned':pts})
+        else:
+            return jsonify({'action':'unknown','message':'Nie znalazłem pasującego zadania na liście. Dodaj je najpierw w zakładce Zadania.'})
 
-    elif action == 'add_room':
-        room_name = result.get('room_name', 'Nowy pokój')
-        emoji = result.get('emoji', '🏠')
-        db.execute("INSERT INTO rooms(id,name,emoji,cleanliness,last_cleaned,color) VALUES (?,?,?,100,NULL,'#38BDF8')",
-                   [uid(), room_name, emoji])
+    elif is_want:
+        room = find_room(transcript)
+        task_name = guess_task_name(transcript)
+        room_id = room['id'] if room else (rooms[0]['id'] if rooms else '')
+        member_id = members[0]['id'] if members else ''
+        task_id = uid()
+        db.execute("INSERT INTO tasks(id,name,room_id,assigned_to,freq,diff,last_completed,approval_needed,created_at) VALUES (?,?,?,?,?,?,NULL,0,?)",
+                   [task_id, task_name, room_id, member_id, 'weekly', 'medium', datetime.now().isoformat()])
         db.commit()
-        result['executed'] = True
+        room_name = room['name'] if room else ''
+        return jsonify({'action':'add_task','message':f'➕ Dodano zadanie "{task_name}" w pokoju {room_name}!'})
 
-    return jsonify(result)
+    else:
+        return jsonify({'action':'unknown','message':'Nie rozumiem. Powiedz np. "Chcę odkurzyć salon" lub "Posprzątałem kuchnię".'})
 
 
 @app.route('/api/config/apikey', methods=['POST'])
