@@ -720,10 +720,10 @@ const BADGES_DEF = {
 };
 
 const BADGE_CATEGORIES = [
-  {label:'Pierwsze kroki', keys:['first_step','tasks_10','tasks_50','tasks_100']},
-  {label:'Serie dni',      keys:['streak_3','streak_7','streak_30']},
-  {label:'Wyczyn dnia',    keys:['daily_5','early_bird','night_owl']},
-  {label:'Mistrzostwo',    keys:['perfect_room','hard_worker','week_champ','month_champ']},
+  {label:'badge_cat_first',  keys:['first_step','tasks_10','tasks_50','tasks_100']},
+  {label:'badge_cat_streak', keys:['streak_3','streak_7','streak_30']},
+  {label:'badge_cat_daily',  keys:['daily_5','early_bird','night_owl']},
+  {label:'badge_cat_master', keys:['perfect_room','hard_worker','week_champ','month_champ']},
 ];
 
 const SHOP_ITEMS = [
@@ -844,6 +844,28 @@ const LANGS = {
     home_no_tasks_add:'Brak zadań na dziś.\nDodaj zadania w zakładce Pokoje!',
     home_all_done:'Wszystkie zadania na dziś gotowe!\nRewelacyjna robota!',
     home_effort:'Punkty aktywności',
+    tasks_title:'Zadania', tasks_total:'łącznie',
+    filter_all:'Wszystkie', filter_today:'Na dziś', filter_done:'Wykonane',
+    task_no_filter:'Brak zadań dla wybranych filtrów',
+    task_suggestions:'Sugestie gotowych zadań',
+    task_delete_confirm:'Usunąć zadanie?', task_acceptance:'akceptacja',
+    cal_free_day:'Brak zadań — wolny dzień! 🎉',
+    cal_days:'Pn,Wt,Śr,Cz,Pt,Sb,Nd',
+    lb_cleaner:'🧹 Czyściciel', lb_expert:'💎 Ekspert', lb_master:'👑 Mistrz',
+    lb_week_streak:'💪 Tygodniowa seria', lb_to_next:'do nast.', lb_level:'Poz.',
+    goals_subtitle:'Zbieraj monety i realizuj nagrody',
+    goals_my_coins:'Twoje monety', goals_pending_list:'Zakupione usługi do zrealizowania',
+    goals_add_first:'Dodaj pierwszy cel dla rodziny!',
+    goals_no_member:'Właściciel jeszcze nie dodał żadnych celów.',
+    goals_available:'Dostępne nagrody', goals_my_coins_label:'Twoje monety:',
+    goals_missing:'Brakuje', goals_purchased:'zakupiono',
+    goals_waiting:'⏳ Zakupiono — czeka na realizację przez właściciela',
+    goals_login_to_buy:'Zaloguj się jako domownik żeby kupić',
+    goals_fulfilled_section:'Zrealizowane',
+    badges_earned_title:'Zdobyte odznaki', badges_pct:'ukończono',
+    badges_all_filter:'👨‍👩‍👧 Wszyscy',
+    badge_cat_first:'Pierwsze kroki', badge_cat_streak:'Serie dni',
+    badge_cat_daily:'Wyczyn dnia', badge_cat_master:'Mistrzostwo',
   },
   en: {
     nav_home:'Today', nav_rooms:'Rooms', nav_tasks:'Tasks', nav_lb:'Ranking',
@@ -917,6 +939,28 @@ const LANGS = {
     home_no_tasks_add:'No tasks for today.\nAdd tasks in the Rooms tab!',
     home_all_done:'All tasks for today done!\nAmazing job!',
     home_effort:'Effort Points Today',
+    tasks_title:'Tasks', tasks_total:'total',
+    filter_all:'All', filter_today:'Today', filter_done:'Done',
+    task_no_filter:'No tasks for selected filters',
+    task_suggestions:'Task suggestions',
+    task_delete_confirm:'Delete task?', task_acceptance:'approval',
+    cal_free_day:'No tasks — free day! 🎉',
+    cal_days:'Mo,Tu,We,Th,Fr,Sa,Su',
+    lb_cleaner:'🧹 Cleaner', lb_expert:'💎 Expert', lb_master:'👑 Master',
+    lb_week_streak:'💪 Weekly streak', lb_to_next:'to next', lb_level:'Lv.',
+    goals_subtitle:'Collect coins and earn rewards',
+    goals_my_coins:'Your coins', goals_pending_list:'Purchases awaiting fulfillment',
+    goals_add_first:'Add the first goal for your family!',
+    goals_no_member:'Owner has not added any goals yet.',
+    goals_available:'Available rewards', goals_my_coins_label:'Your coins:',
+    goals_missing:'Missing', goals_purchased:'purchased',
+    goals_waiting:'⏳ Purchased — awaiting fulfillment by owner',
+    goals_login_to_buy:'Sign in as a member to buy',
+    goals_fulfilled_section:'Fulfilled',
+    badges_earned_title:'Earned badges', badges_pct:'completed',
+    badges_all_filter:'👨‍👩‍👧 All',
+    badge_cat_first:'First steps', badge_cat_streak:'Day streaks',
+    badge_cat_daily:'Daily feat', badge_cat_master:'Mastery',
   },
   uk: {
     nav_home:'Сьогодні', nav_rooms:'Кімнати', nav_tasks:'Завдання', nav_lb:'Рейтинг',
@@ -990,6 +1034,28 @@ const LANGS = {
     home_no_tasks_add:'Немає завдань на сьогодні.\nДодайте завдання у вкладці Кімнати!',
     home_all_done:'Всі завдання на сьогодні виконані!\nФантастична робота!',
     home_effort:'Очки зусиль сьогодні',
+    tasks_title:'Завдання', tasks_total:'всього',
+    filter_all:'Всі', filter_today:'Сьогодні', filter_done:'Виконані',
+    task_no_filter:'Немає завдань для вибраних фільтрів',
+    task_suggestions:'Пропозиції завдань',
+    task_delete_confirm:'Видалити завдання?', task_acceptance:'підтвердження',
+    cal_free_day:'Немає завдань — вільний день! 🎉',
+    cal_days:'Пн,Вт,Ср,Чт,Пт,Сб,Нд',
+    lb_cleaner:'🧹 Прибиральник', lb_expert:'💎 Експерт', lb_master:'👑 Майстер',
+    lb_week_streak:'💪 Тижнева серія', lb_to_next:'до наст.', lb_level:'Рів.',
+    goals_subtitle:'Збирайте монети та отримуйте нагороди',
+    goals_my_coins:'Ваші монети', goals_pending_list:'Покупки, що очікують виконання',
+    goals_add_first:'Додайте першу ціль для сім\'ї!',
+    goals_no_member:'Власник ще не додав жодних цілей.',
+    goals_available:'Доступні нагороди', goals_my_coins_label:'Ваші монети:',
+    goals_missing:'Не вистачає', goals_purchased:'куплено',
+    goals_waiting:'⏳ Куплено — очікує виконання власника',
+    goals_login_to_buy:'Увійдіть як мешканець щоб купити',
+    goals_fulfilled_section:'Виконані',
+    badges_earned_title:'Отримані значки', badges_pct:'завершено',
+    badges_all_filter:'👨‍👩‍👧 Всі',
+    badge_cat_first:'Перші кроки', badge_cat_streak:'Серії днів',
+    badge_cat_daily:'Подвиг дня', badge_cat_master:'Майстерність',
   }
 };
 
@@ -1385,9 +1451,9 @@ let calMonth = new Date().getMonth(); // 0-based
 async function renderCalendar(){
   const month = await GET(`/api/calendar?year=${calYear}&month=${calMonth+1}`);
   const today = new Date().toISOString().slice(0,10);
-  const MONTHS_PL = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec',
-                     'Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
-  const DOW = ['Pn','Wt','Śr','Cz','Pt','Sb','Nd'];
+  const _locale = _lang==='en'?'en-GB':_lang==='uk'?'uk-UA':'pl-PL';
+  const MONTHS_PL = Array.from({length:12},(_,i)=>new Date(calYear,i,1).toLocaleDateString(_locale,{month:'long'}).replace(/^./,c=>c.toUpperCase()));
+  const DOW = t('cal_days').split(',');
 
   // Build day map
   const dayMap = {};
@@ -1402,7 +1468,7 @@ async function renderCalendar(){
   let html = `
   <div class="topbar" style="padding-bottom:8px">
     <div class="topbar-left">
-      <h1>📅 Kalendarz</h1>
+      <h1>📅 ${t('nav_cal')}</h1>
     </div>
   </div>
 
@@ -1512,7 +1578,7 @@ function calDayClick(iso){
   <div style="background:var(--card);border-radius:16px;border:1px solid var(--border);padding:14px">
     <div style="font-weight:800;font-size:14px;margin-bottom:10px;color:var(--blue2)">📅 ${dateLabel}</div>`;
   if(tasks.length === 0){
-    html += `<div style="font-size:13px;color:var(--muted2);text-align:center;padding:10px 0">🎉 Brak zadań — wolny dzień!</div>`;
+    html += `<div style="font-size:13px;color:var(--muted2);text-align:center;padding:10px 0">${t('cal_free_day')}</div>`;
   } else {
     for(const t of tasks){
       html += `<div style="
@@ -1992,27 +2058,27 @@ function renderTasks(d){
   let html = `
   <div class="topbar">
     <div class="topbar-left">
-      <h1>Zadania</h1>
-      <span>${d.tasks.length} łącznie</span>
+      <h1>${t('tasks_title')}</h1>
+      <span>${d.tasks.length} ${t('tasks_total')}</span>
     </div>
   </div>
   <div style="padding:0 16px;margin-bottom:10px">
     <div class="chips" style="margin-bottom:8px">
       ${['all','today','done'].map(v=>`
         <button class="chip${state.filter_task===v?' on':''}" onclick="state.filter_task='${v}';renderTasks(state.data)">
-          ${v==='all'?'Wszystkie':v==='today'?'Na dziś':'Wykonane'}
+          ${v==='all'?t('filter_all'):v==='today'?t('filter_today'):t('filter_done')}
         </button>`).join('')}
     </div>
     <div class="chips">
       ${['all','easy','medium','hard'].map(v=>`
         <button class="chip${state.diff_filter===v?' on':''}" onclick="state.diff_filter='${v}';renderTasks(state.data)">
-          ${v==='all'?'Wszystkie':v==='easy'?'⭐ Łatwe':v==='medium'?'⭐⭐ Średnie':'⭐⭐⭐ Trudne'}
+          ${v==='all'?t('filter_all'):v==='easy'?`⭐ ${t('diff_easy')}`:v==='medium'?`⭐⭐ ${t('diff_medium')}`:`⭐⭐⭐ ${t('diff_hard')}`}
         </button>`).join('')}
     </div>
   </div>`;
 
   if(tasks.length===0){
-    html += `<div class="empty"><div class="ico">📝</div><p>Brak zadań dla wybranych filtrów</p></div>`;
+    html += `<div class="empty"><div class="ico">📝</div><p>${t('task_no_filter')}</p></div>`;
   }
 
   tasks.forEach(task=>{
@@ -2033,14 +2099,14 @@ function renderTasks(d){
           ${room?`<span>${room.emoji} ${esc(room.name)}</span><span class="dot">·</span>`:''}
           ${mbr?`<span>${mbr.emoji} ${esc(mbr.name)}</span><span class="dot">·</span>`:''}
           <span>${fmtSchedule(task)}</span>
-          ${task.approval_needed?`<span class="dot">·</span><span style="color:var(--yellow)">🔒 akceptacja</span>`:''}
+          ${task.approval_needed?`<span class="dot">·</span><span style="color:var(--yellow)">🔒 ${t('task_acceptance')}</span>`:''}
         </div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">
-        <span class="pts-pill">+${pts} pkt</span>
+        <span class="pts-pill">+${pts} ${t('points_abbr')}</span>
         <span class="coin-pill">🪙 +${pts}</span>
         <button class="btn btn-ghost btn-xs" style="color:var(--red);padding:3px 7px;font-size:11px;margin-top:2px"
-          onclick="if(confirm('Usunąć zadanie?'))deleteTask('${task.id}')">✕</button>
+          onclick="if(confirm(t('task_delete_confirm')))deleteTask('${task.id}')">✕</button>
       </div>
     </div>`;
   });
@@ -2048,7 +2114,7 @@ function renderTasks(d){
   html += `
   <div style="padding:12px 16px">
     <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="showSuggestions()">
-      💡 Sugestie gotowych zadań
+      💡 ${t('task_suggestions')}
     </button>
   </div>
   <button class="fab" onclick="showAddTask()">+</button>
@@ -2290,13 +2356,13 @@ async function renderLeaderboard(lb){
 
     // Badges
     const badges = [];
-    if(m.is_admin) badges.push('<span class="badge badge-purple">👑 Właściciel</span>');
-    if(lv>=1) badges.push('<span class="badge badge-green">🧹 Czyściciel</span>');
-    if(lv>=3) badges.push('<span class="badge badge-gold">💎 Ekspert</span>');
-    if(lv>=5) badges.push('<span class="badge">👑 Mistrz</span>');
-    if(m.streak>=3) badges.push(`<span class="badge badge-red">🔥 Seria ${m.streak}</span>`);
-    if(m.streak>=7) badges.push('<span class="badge badge-purple">💪 Tygodniowa seria</span>');
-    if(m.points>=500) badges.push('<span class="badge badge-gold">💫 500 pkt</span>');
+    if(m.is_admin) badges.push(`<span class="badge badge-purple">👑 ${t('lb_owner')}</span>`);
+    if(lv>=1) badges.push(`<span class="badge badge-green">${t('lb_cleaner')}</span>`);
+    if(lv>=3) badges.push(`<span class="badge badge-gold">${t('lb_expert')}</span>`);
+    if(lv>=5) badges.push(`<span class="badge">${t('lb_master')}</span>`);
+    if(m.streak>=3) badges.push(`<span class="badge badge-red">🔥 ${t('home_streak_lbl')} ${m.streak}</span>`);
+    if(m.streak>=7) badges.push(`<span class="badge badge-purple">${t('lb_week_streak')}</span>`);
+    if(m.points>=500) badges.push(`<span class="badge badge-gold">💫 500 ${t('points_abbr')}</span>`);
 
     html += `
     <div class="lb-card" onclick="openMemberDetail('${m.id}')">
@@ -2311,8 +2377,8 @@ async function renderLeaderboard(lb){
           ${m.streak>0?`<span style="font-size:13px;color:var(--orange)">🔥 ${m.streak}</span>`:''}
         </div>
         <div style="font-size:11px;color:var(--muted2);margin-bottom:7px">
-          <span class="level-pill">${LV_ICONS[lv]} ${LV_NAMES[lv]} · Poz. ${lv}</span>
-          ${nxt?`<span style="margin-left:6px">${nxt-m.points} do nast.</span>`:''}
+          <span class="level-pill">${LV_ICONS[lv]} ${LV_NAMES[lv]} · ${t('lb_level')} ${lv}</span>
+          ${nxt?`<span style="margin-left:6px">${nxt-m.points} ${t('lb_to_next')}</span>`:''}
         </div>
         <div class="pbar-track" style="height:5px">
           <div class="pbar-fill" style="width:${prog}%;height:5px;background:${barGrad}"></div>
@@ -2321,7 +2387,7 @@ async function renderLeaderboard(lb){
       </div>
       <div class="lb-right">
         <div class="lb-pts" style="color:${i===0?'var(--yellow)':i===1?'#94A3B8':i===2?'#D97706':'var(--blue2)'}">${periodPts}</div>
-        <div class="lb-lbl">PUNKTY</div>
+        <div class="lb-lbl">${t('lb_pts')}</div>
         <div class="lb-coins">🪙 ${m.coins}</div>
       </div>
     </div>`;
@@ -2350,9 +2416,9 @@ function openMemberDetail(memberId){
   const isAdmin = state.user?.role === 'admin';
 
   const badges=[];
-  if(lv>=1) badges.push('<span class="badge badge-green">🧹 Czyściciel</span>');
+  if(lv>=1) badges.push(`<span class="badge badge-green">${t('lb_cleaner')}</span>`);
   if(lv>=2) badges.push('<span class="badge">⭐ Pro</span>');
-  if(lv>=3) badges.push('<span class="badge badge-gold">💎 Ekspert</span>');
+  if(lv>=3) badges.push(`<span class="badge badge-gold">${t('lb_expert')}</span>`);
   if(lv>=5) badges.push('<span class="badge">👑 Mistrz</span>');
   if(lv>=7) badges.push('<span class="badge badge-purple">🏆 Legenda</span>');
   if(m.streak>=3) badges.push(`<span class="badge badge-red">🔥 Seria ${m.streak}</span>`);
@@ -2405,11 +2471,11 @@ function openMemberDetail(memberId){
   <div style="background:linear-gradient(135deg,var(--bluedark),var(--blue2));padding:28px 20px 24px;text-align:center;margin-bottom:0">
     <div style="font-size:72px;margin-bottom:10px">${m.emoji}</div>
     <div style="font-size:24px;font-weight:900;color:#fff">${esc(m.name)}</div>
-    <div style="margin-top:8px"><span class="level-pill" style="font-size:13px;background:rgba(255,255,255,0.15);color:#fff">${LV_ICONS[lv]} ${LV_NAMES[lv]} · Poziom ${lv}</span></div>
+    <div style="margin-top:8px"><span class="level-pill" style="font-size:13px;background:rgba(255,255,255,0.15);color:#fff">${LV_ICONS[lv]} ${LV_NAMES[lv]} · ${t('prof_level')} ${lv}</span></div>
     <div style="display:flex;justify-content:center;gap:28px;margin-top:18px">
-      <div><div style="font-size:26px;font-weight:900;color:#fff">${m.points}</div><div style="font-size:10px;color:rgba(255,255,255,0.7);text-transform:uppercase;font-weight:700">Punkty</div></div>
-      <div><div style="font-size:26px;font-weight:900;color:#fff">🪙 ${m.coins}</div><div style="font-size:10px;color:rgba(255,255,255,0.7);text-transform:uppercase;font-weight:700">Monety</div></div>
-      <div><div style="font-size:26px;font-weight:900;color:#fff">🔥 ${m.streak}</div><div style="font-size:10px;color:rgba(255,255,255,0.7);text-transform:uppercase;font-weight:700">Seria</div></div>
+      <div><div style="font-size:26px;font-weight:900;color:#fff">${m.points}</div><div style="font-size:10px;color:rgba(255,255,255,0.7);text-transform:uppercase;font-weight:700">${t('prof_points')}</div></div>
+      <div><div style="font-size:26px;font-weight:900;color:#fff">🪙 ${m.coins}</div><div style="font-size:10px;color:rgba(255,255,255,0.7);text-transform:uppercase;font-weight:700">${t('prof_coins')}</div></div>
+      <div><div style="font-size:26px;font-weight:900;color:#fff">🔥 ${m.streak}</div><div style="font-size:10px;color:rgba(255,255,255,0.7);text-transform:uppercase;font-weight:700">${t('prof_streak')}</div></div>
     </div>
   </div>
 
@@ -2627,12 +2693,12 @@ function renderGoals(){
   let html = `
   <div class="topbar">
     <div class="topbar-left">
-      <h1>🎯 Cele rodziny</h1>
-      <span>Zbieraj monety i realizuj nagrody</span>
+      <h1>🎯 ${t('goals_title')}</h1>
+      <span>${t('goals_subtitle')}</span>
     </div>
     ${isOwner ? `<div class="topbar-right">
       <div style="display:flex;align-items:center;gap:4px;background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.3);border-radius:100px;padding:4px 10px;font-size:11px;font-weight:800;color:#C084FC">
-        👑 Właściciel
+        👑 ${t('lb_owner')}
       </div>
     </div>` : ''}
   </div>`;
@@ -2642,7 +2708,7 @@ function renderGoals(){
     html += `
     <div style="margin:0 16px 16px;background:linear-gradient(135deg,#1e1065,#4c1d95);border-radius:18px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border:1px solid rgba(168,85,247,0.3)">
       <div>
-        <div style="font-size:12px;color:rgba(255,255,255,0.6);font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Twoje monety</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.6);font-weight:700;text-transform:uppercase;letter-spacing:0.5px">${t('goals_my_coins')}</div>
         <div style="font-size:32px;font-weight:900;color:#FDE68A;margin-top:2px">🪙 ${myMember.coins}</div>
       </div>
       <div style="font-size:48px">${myMember.emoji}</div>
@@ -2654,9 +2720,9 @@ function renderGoals(){
   if(isOwner && allPending.length > 0){
     html += `
     <div style="margin:0 16px 16px;background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.3);border-radius:16px;padding:14px 16px">
-      <div style="font-size:13px;font-weight:800;color:var(--yellow);margin-bottom:10px">🔔 Zakupione usługi do zrealizowania (${allPending.length})</div>`;
+      <div style="font-size:13px;font-weight:800;color:var(--yellow);margin-bottom:10px">🔔 ${t('goals_pending_list')} (${allPending.length})</div>`;
     allPending.forEach(p => {
-      const dt = new Date(p.purchased_at).toLocaleDateString('pl-PL',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+      const dt = new Date(p.purchased_at).toLocaleDateString(_lang==='en'?'en-GB':_lang==='uk'?'uk-UA':'pl-PL',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
       html += `
       <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(234,179,8,0.15)">
         <span style="font-size:24px">${p.goal.emoji}</span>
@@ -2664,7 +2730,7 @@ function renderGoals(){
           <div style="font-size:13px;font-weight:700">${esc(p.goal.name)}</div>
           <div style="font-size:11px;color:var(--muted2)">${p.member_emoji} ${esc(p.member_name)} · ${dt}</div>
         </div>
-        <button class="btn btn-success btn-xs" onclick="fulfillPurchase('${p.id}')">✓ Zrealizuj</button>
+        <button class="btn btn-success btn-xs" onclick="fulfillPurchase('${p.id}')">✓ ${t('goals_fulfill')}</button>
       </div>`;
     });
     html += `</div>`;
@@ -2672,9 +2738,9 @@ function renderGoals(){
 
   // Goals list
   if(goals.length === 0){
-    html += `<div class="empty"><div class="ico">🎯</div><p>${isOwner ? 'Dodaj pierwszy cel dla rodziny!' : 'Właściciel jeszcze nie dodał żadnych celów.'}</p></div>`;
+    html += `<div class="empty"><div class="ico">🎯</div><p>${isOwner ? t('goals_add_first') : t('goals_no_member')}</p></div>`;
   } else {
-    html += `<div class="shdr"><h2>🏆 Dostępne nagrody</h2><span>${goals.length} celów</span></div>`;
+    html += `<div class="shdr"><h2>🏆 ${t('goals_available')}</h2><span>${goals.length}</span></div>`;
     goals.forEach(g => {
       const myCoins = myMember?.coins || 0;
       const canAfford = myCoins >= g.price;
@@ -2692,7 +2758,7 @@ function renderGoals(){
             ${g.description?`<div style="font-size:12px;color:var(--muted2);margin-top:3px;line-height:1.4">${esc(g.description)}</div>`:''}
             <div style="margin-top:8px;display:flex;align-items:center;gap:6px">
               <div style="font-size:18px;font-weight:900;color:#FDE68A">🪙 ${g.price}</div>
-              ${totalBuyers>0?`<div style="font-size:11px;color:var(--muted2);background:rgba(255,255,255,0.05);border-radius:100px;padding:2px 8px">${totalBuyers}× zakupiono</div>`:''}
+              ${totalBuyers>0?`<div style="font-size:11px;color:var(--muted2);background:rgba(255,255,255,0.05);border-radius:100px;padding:2px 8px">${totalBuyers}× ${t('goals_purchased')}</div>`:''}
             </div>
           </div>
           ${isOwner?`<button onclick="deleteGoal('${g.id}')" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px;line-height:1">🗑️</button>`:''}
@@ -2701,25 +2767,25 @@ function renderGoals(){
         <!-- Progress bar -->
         <div style="margin-bottom:12px">
           <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted2);margin-bottom:4px">
-            <span>Twoje monety: ${myCoins}🪙</span>
+            <span>${t('goals_my_coins_label')} ${myCoins}🪙</span>
             <span>${pct}%</span>
           </div>
           <div class="pbar-track" style="height:6px">
             <div class="pbar-fill" style="width:${pct}%;height:6px;background:${canAfford?'var(--green)':'var(--blue)'}"></div>
           </div>
-          ${!canAfford?`<div style="font-size:10px;color:var(--muted2);margin-top:3px">Brakuje ${g.price - myCoins}🪙</div>`:''}
+          ${!canAfford?`<div style="font-size:10px;color:var(--muted2);margin-top:3px">${t('goals_missing')} ${g.price - myCoins}🪙</div>`:''}
         </div>
 
         ${hasBought
-          ? `<div style="background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);border-radius:12px;padding:8px 12px;font-size:12px;color:#C084FC;font-weight:700;text-align:center">⏳ Zakupiono — czeka na realizację przez właściciela</div>`
+          ? `<div style="background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);border-radius:12px;padding:8px 12px;font-size:12px;color:#C084FC;font-weight:700;text-align:center">${t('goals_waiting')}</div>`
           : myMemberId
             ? `<button onclick="buyGoal('${g.id}')" ${!canAfford?'disabled':''} style="
                 width:100%;padding:12px;border-radius:14px;border:none;cursor:${canAfford?'pointer':'not-allowed'};font-weight:800;font-size:14px;
                 background:${canAfford?'linear-gradient(135deg,#5b21b6,#7c3aed)':'rgba(255,255,255,0.04)'};
                 color:${canAfford?'#fff':'var(--muted2)'};
                 opacity:${canAfford?1:0.6};transition:all 0.15s;
-              ">${canAfford?'🎯 Kup usługę':'🔒 Za mało monet'}</button>`
-            : `<div style="font-size:12px;color:var(--muted2);text-align:center">Zaloguj się jako domownik żeby kupić</div>`
+              ">${canAfford?`🎯 ${t('goals_buy')}`:`🔒 ${t('goals_not_enough')}`}</button>`
+            : `<div style="font-size:12px;color:var(--muted2);text-align:center">${t('goals_login_to_buy')}</div>`
         }
       </div>`;
     });
@@ -2730,13 +2796,13 @@ function renderGoals(){
   if(fulfilled.length > 0){
     html += `
     <div style="margin:8px 16px 16px">
-      <div style="font-size:12px;font-weight:800;color:var(--muted2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px">✅ Zrealizowane (${fulfilled.length})</div>`;
+      <div style="font-size:12px;font-weight:800;color:var(--muted2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px">✅ ${t('goals_fulfilled_section')} (${fulfilled.length})</div>`;
     fulfilled.slice(0,5).forEach(p=>{
       html+=`<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">
         <span style="font-size:20px">${p.goal.emoji}</span>
         <div style="flex:1"><div style="font-size:12px;font-weight:700">${esc(p.goal.name)}</div>
         <div style="font-size:11px;color:var(--muted2)">${p.member_emoji} ${esc(p.member_name)}</div></div>
-        <div style="font-size:11px;color:var(--green);font-weight:700">✓ Zrobione</div>
+        <div style="font-size:11px;color:var(--green);font-weight:700">✓ ${t('goals_done')}</div>
       </div>`;
     });
     html += `</div>`;
@@ -2901,25 +2967,25 @@ function renderBadges(){
 
   let html = `
   <div class="topbar">
-    <div class="topbar-left"><h1>🏅 Kolekcja odznak</h1></div>
+    <div class="topbar-left"><h1>🏅 ${t('badges_title')}</h1></div>
   </div>
 
   <!-- Progress bar overall -->
   <div style="margin:0 16px 20px">
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
-      <div style="font-weight:800;font-size:16px">Zdobyte odznaki</div>
+      <div style="font-weight:800;font-size:16px">${t('badges_earned_title')}</div>
       <div style="font-size:20px;font-weight:900;color:var(--yellow)">${totalEarned} / ${totalAll}</div>
     </div>
     <div class="pbar-track" style="height:10px">
       <div class="pbar-fill" style="height:10px;width:${pct}%;background:linear-gradient(90deg,var(--yellow),var(--amber))"></div>
     </div>
-    <div style="font-size:11px;color:var(--muted2);margin-top:5px">${pct}% ukończono</div>
+    <div style="font-size:11px;color:var(--muted2);margin-top:5px">${pct}% ${t('badges_pct')}</div>
   </div>`;
 
   // Member filter chips
   html += `
   <div style="padding:0 16px;margin-bottom:18px;display:flex;gap:8px;overflow-x:auto;padding-bottom:4px">
-    <button class="chip on" onclick="badgeFilterMember(null,this)" id="badge-chip-all">👨‍👩‍👧 Wszyscy</button>
+    <button class="chip on" onclick="badgeFilterMember(null,this)" id="badge-chip-all">${t('badges_all_filter')}</button>
     ${d.members.map(m=>`
       <button class="chip" onclick="badgeFilterMember('${m.id}',this)" id="badge-chip-${m.id}"
         style="white-space:nowrap">${m.emoji} ${esc(m.name)}</button>`).join('')}
@@ -2929,7 +2995,7 @@ function renderBadges(){
   for(const cat of BADGE_CATEGORIES){
     html += `
     <div style="padding:0 16px;margin-bottom:6px">
-      <div style="font-size:12px;font-weight:800;color:var(--muted2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px">${cat.label}</div>
+      <div style="font-size:12px;font-weight:800;color:var(--muted2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px">${t(cat.label)}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">`;
 
     for(const key of cat.keys){
@@ -2937,7 +3003,7 @@ function renderBadges(){
       const earned = earnedByKey[key] || [];
       const isEarned = earned.length > 0;
       const firstEarned = earned[0];
-      const earnedDate = firstEarned ? new Date(firstEarned.earned_at).toLocaleDateString('pl-PL') : null;
+      const earnedDate = firstEarned ? new Date(firstEarned.earned_at).toLocaleDateString(_lang==='en'?'en-GB':_lang==='uk'?'uk-UA':'pl-PL') : null;
       const earnerNames = earned.map(e=>e.member.emoji+' '+e.member.name).join(', ');
 
       html += `
