@@ -745,18 +745,45 @@ const SHOP_ITEMS = [
   {id:'s16',name:'Pies',        emoji:'🐶', price:200},
 ];
 
-const TASK_SUGGESTIONS = [
-  {name:'Odkurzanie',diff:'medium'},{name:'Mycie podłóg',diff:'hard'},
-  {name:'Wycieranie kurzu',diff:'easy'},{name:'Mycie okien',diff:'hard'},
-  {name:'Zmywanie naczyń',diff:'easy'},{name:'Czyszczenie zlewu',diff:'easy'},
-  {name:'Mycie toalety',diff:'medium'},{name:'Czyszczenie wanny',diff:'hard'},
-  {name:'Zmiana pościeli',diff:'medium'},{name:'Pranie',diff:'medium'},
-  {name:'Prasowanie',diff:'medium'},{name:'Wyrzucenie śmieci',diff:'easy'},
-  {name:'Mycie lodówki',diff:'hard'},{name:'Czyszczenie kuchenki',diff:'medium'},
-  {name:'Wycieranie luster',diff:'easy'},{name:'Czyszczenie mikrofalówki',diff:'easy'},
-  {name:'Mycie kafelek',diff:'hard'},{name:'Odkurzanie kanapy',diff:'medium'},
-  {name:'Porządkowanie szaf',diff:'hard'},{name:'Mycie drzwi',diff:'medium'},
-];
+const _TASK_SUGG = {
+  pl:[
+    {name:'Odkurzanie',diff:'medium'},{name:'Mycie podłóg',diff:'hard'},
+    {name:'Wycieranie kurzu',diff:'easy'},{name:'Mycie okien',diff:'hard'},
+    {name:'Zmywanie naczyń',diff:'easy'},{name:'Czyszczenie zlewu',diff:'easy'},
+    {name:'Mycie toalety',diff:'medium'},{name:'Czyszczenie wanny',diff:'hard'},
+    {name:'Zmiana pościeli',diff:'medium'},{name:'Pranie',diff:'medium'},
+    {name:'Prasowanie',diff:'medium'},{name:'Wyrzucenie śmieci',diff:'easy'},
+    {name:'Mycie lodówki',diff:'hard'},{name:'Czyszczenie kuchenki',diff:'medium'},
+    {name:'Wycieranie luster',diff:'easy'},{name:'Czyszczenie mikrofalówki',diff:'easy'},
+    {name:'Mycie kafelek',diff:'hard'},{name:'Odkurzanie kanapy',diff:'medium'},
+    {name:'Porządkowanie szaf',diff:'hard'},{name:'Mycie drzwi',diff:'medium'},
+  ],
+  en:[
+    {name:'Vacuuming',diff:'medium'},{name:'Mopping floors',diff:'hard'},
+    {name:'Dusting',diff:'easy'},{name:'Washing windows',diff:'hard'},
+    {name:'Doing dishes',diff:'easy'},{name:'Cleaning the sink',diff:'easy'},
+    {name:'Cleaning the toilet',diff:'medium'},{name:'Cleaning the bathtub',diff:'hard'},
+    {name:'Changing bedsheets',diff:'medium'},{name:'Laundry',diff:'medium'},
+    {name:'Ironing',diff:'medium'},{name:'Taking out trash',diff:'easy'},
+    {name:'Cleaning the fridge',diff:'hard'},{name:'Cleaning the stove',diff:'medium'},
+    {name:'Wiping mirrors',diff:'easy'},{name:'Cleaning the microwave',diff:'easy'},
+    {name:'Scrubbing tiles',diff:'hard'},{name:'Vacuuming the sofa',diff:'medium'},
+    {name:'Organizing wardrobes',diff:'hard'},{name:'Wiping doors',diff:'medium'},
+  ],
+  uk:[
+    {name:'Пилосос',diff:'medium'},{name:'Миття підлог',diff:'hard'},
+    {name:'Витирання пилу',diff:'easy'},{name:'Миття вікон',diff:'hard'},
+    {name:'Миття посуду',diff:'easy'},{name:'Чищення раковини',diff:'easy'},
+    {name:'Миття туалету',diff:'medium'},{name:'Чищення ванни',diff:'hard'},
+    {name:'Зміна постільної білизни',diff:'medium'},{name:'Прання',diff:'medium'},
+    {name:'Прасування',diff:'medium'},{name:'Винесення сміття',diff:'easy'},
+    {name:'Миття холодильника',diff:'hard'},{name:'Чищення плити',diff:'medium'},
+    {name:'Протирання дзеркал',diff:'easy'},{name:'Чищення мікрохвильовки',diff:'easy'},
+    {name:'Чищення кахелю',diff:'hard'},{name:'Пилосос дивану',diff:'medium'},
+    {name:'Упорядкування шаф',diff:'hard'},{name:'Протирання дверей',diff:'medium'},
+  ],
+};
+function getTaskSuggestions(){ return _TASK_SUGG[_lang] || _TASK_SUGG.pl; }
 
 // ─── I18N ─────────────────────────────────────────────────────
 const LANGS = {
@@ -796,6 +823,7 @@ const LANGS = {
     // rooms
     room_new:'Nowy pokój', room_name:'Nazwa pokoju', room_clean:'Czysty',
     room_dirty:'Brudny', room_add:'Dodaj pokój',
+    room_name_ph:'np. Salon', room_icon:'Ikona',
     // leaderboard
     lb_title:'Leaderboard', lb_members:'domowników', lb_week:'Ten tydzień',
     lb_month:'Ten miesiąc', lb_all:'Wszystkie czasy', lb_pts:'PUNKTY', lb_no_members:'Brak domowników.',
@@ -929,6 +957,7 @@ const LANGS = {
     task_one_time_badge:'once',
     room_new:'New room', room_name:'Room name', room_clean:'Clean',
     room_dirty:'Dirty', room_add:'Add room',
+    room_name_ph:'e.g. Living room', room_icon:'Icon',
     lb_title:'Leaderboard', lb_members:'members', lb_week:'This week',
     lb_month:'This month', lb_all:'All time', lb_pts:'POINTS', lb_no_members:'No members.',
     lb_owner:'Owner',
@@ -1055,6 +1084,7 @@ const LANGS = {
     task_one_time_badge:'раз',
     room_new:'Нова кімната', room_name:'Назва кімнати', room_clean:'Чисто',
     room_dirty:'Брудно', room_add:'Додати кімнату',
+    room_name_ph:'напр. Вітальня', room_icon:'Іконка',
     lb_title:'Рейтинг', lb_members:'мешканців', lb_week:'Цього тижня',
     lb_month:'Цього місяця', lb_all:'За весь час', lb_pts:'БАЛИ', lb_no_members:'Немає мешканців.',
     lb_owner:'Власник',
@@ -2100,17 +2130,17 @@ function openRoomDetail(roomId){
 
 function showAddRoom(){
   openModal(`
-    <h2>Nowy pokój</h2>
+    <h2>${t('room_new')}</h2>
     <div class="field">
-      <label>Nazwa pokoju</label>
-      <input class="inp" id="room-name" placeholder="np. Salon" />
+      <label>${t('room_name')}</label>
+      <input class="inp" id="room-name" placeholder="${t('room_name_ph')}" />
     </div>
     <div class="field">
-      <label>Ikona</label>
+      <label>${t('room_icon')}</label>
       <div class="egrid" id="room-emoji-grid"></div>
     </div>
     <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px"
-      onclick="submitAddRoom()">Dodaj pokój</button>
+      onclick="submitAddRoom()">${t('room_add')}</button>
   `);
   let selEmoji = '🛋️';
   const grid = $('room-emoji-grid');
@@ -2216,13 +2246,13 @@ function renderTasks(d){
 }
 
 function showSuggestions(){
-  const rows = TASK_SUGGESTIONS.map(s=>`
+  const rows = getTaskSuggestions().map(s=>`
     <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border);cursor:pointer"
       onclick="useSuggestion('${esc(s.name)}','${s.diff}')">
       <span style="font-size:14px;font-weight:600">${esc(s.name)}</span>
       <div style="display:flex;gap:8px;align-items:center">
         <span class="tag ${s.diff==='easy'?'tag-g':s.diff==='medium'?'tag-y':'tag-r'}">${DIFF_LBL[s.diff]}</span>
-        <span style="color:var(--blue2);font-size:13px;font-weight:700">+${DIFF_PTS[s.diff]} pkt</span>
+        <span style="color:var(--blue2);font-size:13px;font-weight:700">+${DIFF_PTS[s.diff]} ${t('points_abbr')}</span>
       </div>
     </div>`).join('');
   openModal(`<h2>💡 ${t('task_suggestions')}</h2>${rows}`);
@@ -2234,23 +2264,60 @@ function useSuggestion(name, diff){
 
 const DOW_PL = ['Pn','Wt','Śr','Cz','Pt','Sb','Nd'];
 
-const GOAL_TEMPLATES = [
-  {emoji:'🏎️', name:'Gokarty',             price:150, description:'Wypad na tory gokartowe!'},
-  {emoji:'🎬', name:'Kino',                price:80,  description:'Wieczór filmowy w kinie'},
-  {emoji:'🍕', name:'Pizza na wynos',      price:50,  description:'Zamawiamy ulubioną pizzę'},
-  {emoji:'🍽️', name:'Kolacja w restauracji',price:120,description:'Wspólna kolacja na mieście'},
-  {emoji:'🎳', name:'Kręgle',              price:90,  description:'Wieczór na kręgielni'},
-  {emoji:'🏊', name:'Aquapark',            price:200, description:'Cały dzień w aquaparku'},
-  {emoji:'🎲', name:'Gra planszowa',       price:30,  description:'Wieczór z grą planszową'},
-  {emoji:'🔐', name:'Escape room',         price:200, description:'Ucieczka z pokoju zagadek'},
-  {emoji:'🎮', name:'Nowa gra',            price:120, description:'Nowa gra do wspólnego grania'},
-  {emoji:'🍦', name:'Lody',               price:25,  description:'Wypad na ulubione lody'},
-  {emoji:'🚗', name:'Wycieczka',           price:300, description:'Weekendowy wypad samochodem'},
-  {emoji:'📺', name:'Netflix weekend',     price:20,  description:'Maraton seriali przez cały weekend'},
-  {emoji:'🎡', name:'Park rozrywki',       price:250, description:'Dzień w parku rozrywki'},
-  {emoji:'🧁', name:'Ciastka z cukierni',  price:35,  description:'Pyszne ciastka z ulubionej cukierni'},
-  {emoji:'🎯', name:'Paintball',          price:180, description:'Bitwa paintballowa z drużyną'},
-];
+const _GOAL_TPL = {
+  pl:[
+    {emoji:'🏎️',name:'Gokarty',price:150,description:'Wypad na tory gokartowe!'},
+    {emoji:'🎬',name:'Kino',price:80,description:'Wieczór filmowy w kinie'},
+    {emoji:'🍕',name:'Pizza na wynos',price:50,description:'Zamawiamy ulubioną pizzę'},
+    {emoji:'🍽️',name:'Kolacja w restauracji',price:120,description:'Wspólna kolacja na mieście'},
+    {emoji:'🎳',name:'Kręgle',price:90,description:'Wieczór na kręgielni'},
+    {emoji:'🏊',name:'Aquapark',price:200,description:'Cały dzień w aquaparku'},
+    {emoji:'🎲',name:'Gra planszowa',price:30,description:'Wieczór z grą planszową'},
+    {emoji:'🔐',name:'Escape room',price:200,description:'Ucieczka z pokoju zagadek'},
+    {emoji:'🎮',name:'Nowa gra',price:120,description:'Nowa gra do wspólnego grania'},
+    {emoji:'🍦',name:'Lody',price:25,description:'Wypad na ulubione lody'},
+    {emoji:'🚗',name:'Wycieczka',price:300,description:'Weekendowy wypad samochodem'},
+    {emoji:'📺',name:'Netflix weekend',price:20,description:'Maraton seriali przez cały weekend'},
+    {emoji:'🎡',name:'Park rozrywki',price:250,description:'Dzień w parku rozrywki'},
+    {emoji:'🧁',name:'Ciastka z cukierni',price:35,description:'Pyszne ciastka z ulubionej cukierni'},
+    {emoji:'🎯',name:'Paintball',price:180,description:'Bitwa paintballowa z drużyną'},
+  ],
+  en:[
+    {emoji:'🏎️',name:'Go-karting',price:150,description:'Trip to the go-kart track!'},
+    {emoji:'🎬',name:'Cinema',price:80,description:'Movie night at the cinema'},
+    {emoji:'🍕',name:'Pizza night',price:50,description:'Order our favourite pizza'},
+    {emoji:'🍽️',name:'Restaurant dinner',price:120,description:'Family dinner out'},
+    {emoji:'🎳',name:'Bowling',price:90,description:'Evening at the bowling alley'},
+    {emoji:'🏊',name:'Water park',price:200,description:'Full day at the water park'},
+    {emoji:'🎲',name:'Board game night',price:30,description:'Evening with a board game'},
+    {emoji:'🔐',name:'Escape room',price:200,description:'Escape from the puzzle room'},
+    {emoji:'🎮',name:'New game',price:120,description:'A new game to play together'},
+    {emoji:'🍦',name:'Ice cream',price:25,description:'Trip for favourite ice cream'},
+    {emoji:'🚗',name:'Road trip',price:300,description:'Weekend trip by car'},
+    {emoji:'📺',name:'Netflix weekend',price:20,description:'Series marathon all weekend'},
+    {emoji:'🎡',name:'Amusement park',price:250,description:'Day at the amusement park'},
+    {emoji:'🧁',name:'Bakery treats',price:35,description:'Delicious cakes from the bakery'},
+    {emoji:'🎯',name:'Paintball',price:180,description:'Paintball battle with the team'},
+  ],
+  uk:[
+    {emoji:'🏎️',name:'Картинг',price:150,description:'Поїздка на картодром!'},
+    {emoji:'🎬',name:'Кіно',price:80,description:'Кіновечір у кінотеатрі'},
+    {emoji:'🍕',name:'Піца додому',price:50,description:'Замовляємо улюблену піцу'},
+    {emoji:'🍽️',name:'Вечеря в ресторані',price:120,description:'Спільна вечеря в місті'},
+    {emoji:'🎳',name:'Боулінг',price:90,description:'Вечір у боулінг-клубі'},
+    {emoji:'🏊',name:'Аквапарк',price:200,description:'Цілий день в аквапарку'},
+    {emoji:'🎲',name:'Настільна гра',price:30,description:'Вечір з настільною грою'},
+    {emoji:'🔐',name:'Квест-кімната',price:200,description:'Вихід з кімнати загадок'},
+    {emoji:'🎮',name:'Нова гра',price:120,description:'Нова гра для спільного грання'},
+    {emoji:'🍦',name:'Морозиво',price:25,description:'Поїздка за улюбленим морозивом'},
+    {emoji:'🚗',name:'Поїздка',price:300,description:'Виїзд на вихідні'},
+    {emoji:'📺',name:'Netflix-вихідні',price:20,description:'Марафон серіалів на вихідних'},
+    {emoji:'🎡',name:'Парк розваг',price:250,description:'День у парку розваг'},
+    {emoji:'🧁',name:'Тістечка з кондитерської',price:35,description:'Смачні тістечка з улюбленої кондитерської'},
+    {emoji:'🎯',name:'Пейнтбол',price:180,description:'Пейнтбольна битва з командою'},
+  ],
+};
+function getGoalTemplates(){ return _GOAL_TPL[_lang] || _GOAL_TPL.pl; }
 
 function showAddTask(prefillName='', prefillDiff='medium'){
   const d = state.data;
@@ -2964,7 +3031,7 @@ function showAddGoal(){
     <div style="margin-bottom:16px">
       <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:8px">${t('modal_goal_templates')}</div>
       <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px">
-        ${GOAL_TEMPLATES.map(t=>`
+        ${getGoalTemplates().map(t=>`
         <button onclick="useGoalTemplate(${JSON.stringify(t).replace(/"/g,'&quot;')})" style="
           flex-shrink:0;background:var(--bg3);border:1px solid var(--border);border-radius:12px;
           padding:8px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;
