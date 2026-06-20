@@ -836,9 +836,14 @@ const LANGS = {
     diff_easy:'Łatwe', diff_medium:'Średnie', diff_hard:'Trudne',
     cleanliness_perfect:'Idealnie czysty!', cleanliness_good:'Czysto!',
     cleanliness_ok:'Nieźle', cleanliness_dirty:'Do sprzątania', cleanliness_filthy:'Pilne!',
-    cleanliness_msg_good:'Niezłe porządki!', cleanliness_msg_ok:'Jeszcze trochę do zrobienia',
-    cleanliness_msg_dirty:'Czas się zabrać do roboty!', cleanliness_msg_filthy:'Czas wziąć się za robotę!',
+    cleanliness_msg_shine:'Dom lśni czystością!', cleanliness_msg_good:'Niezłe porządki!',
+    cleanliness_msg_ok:'Jeszcze trochę do zrobienia',
+    cleanliness_msg_dirty:'Czas się zabrać do roboty!', cleanliness_msg_filthy:'"Co to za zapach?" – Czas działać!',
     avg_clean:'Średnia czystość', leader:'Lider',
+    rooms_title:'Twoje pokoje', rooms_count:'pomieszczeń', rooms_empty:'Brak pokojów.\nDodaj pierwszy!',
+    home_no_tasks_add:'Brak zadań na dziś.\nDodaj zadania w zakładce Pokoje!',
+    home_all_done:'Wszystkie zadania na dziś gotowe!\nRewelacyjna robota!',
+    home_effort:'Punkty aktywności',
   },
   en: {
     nav_home:'Today', nav_rooms:'Rooms', nav_tasks:'Tasks', nav_lb:'Ranking',
@@ -904,9 +909,14 @@ const LANGS = {
     diff_easy:'Easy', diff_medium:'Medium', diff_hard:'Hard',
     cleanliness_perfect:'Perfectly clean!', cleanliness_good:'Clean!',
     cleanliness_ok:'Not bad', cleanliness_dirty:'Needs cleaning', cleanliness_filthy:'Urgent!',
-    cleanliness_msg_good:'Nice and tidy!', cleanliness_msg_ok:'A bit more to do',
-    cleanliness_msg_dirty:'Time to get to work!', cleanliness_msg_filthy:'Time to clean up!',
+    cleanliness_msg_shine:'The house is sparkling!', cleanliness_msg_good:'Nice and tidy!',
+    cleanliness_msg_ok:'A bit more to do',
+    cleanliness_msg_dirty:'Time to get to work!', cleanliness_msg_filthy:'"What\'s that smell?" – Time to act!',
     avg_clean:'Avg cleanliness', leader:'Leader',
+    rooms_title:'Your rooms', rooms_count:'rooms', rooms_empty:'No rooms yet.\nAdd the first one!',
+    home_no_tasks_add:'No tasks for today.\nAdd tasks in the Rooms tab!',
+    home_all_done:'All tasks for today done!\nAmazing job!',
+    home_effort:'Effort Points Today',
   },
   uk: {
     nav_home:'Сьогодні', nav_rooms:'Кімнати', nav_tasks:'Завдання', nav_lb:'Рейтинг',
@@ -972,9 +982,14 @@ const LANGS = {
     diff_easy:'Легко', diff_medium:'Середньо', diff_hard:'Важко',
     cleanliness_perfect:'Ідеально чисто!', cleanliness_good:'Чисто!',
     cleanliness_ok:'Непогано', cleanliness_dirty:'Треба прибрати', cleanliness_filthy:'Терміново!',
-    cleanliness_msg_good:'Гарний порядок!', cleanliness_msg_ok:'Ще трохи роботи',
-    cleanliness_msg_dirty:'Час братися за роботу!', cleanliness_msg_filthy:'Час прибирати!',
+    cleanliness_msg_shine:'Дім блищить чистотою!', cleanliness_msg_good:'Гарний порядок!',
+    cleanliness_msg_ok:'Ще трохи роботи',
+    cleanliness_msg_dirty:'Час братися за роботу!', cleanliness_msg_filthy:'"Що це за запах?" – Час діяти!',
     avg_clean:'Середня чистота', leader:'Лідер',
+    rooms_title:'Ваші кімнати', rooms_count:'кімнат', rooms_empty:'Немає кімнат.\nДодайте першу!',
+    home_no_tasks_add:'Немає завдань на сьогодні.\nДодайте завдання у вкладці Кімнати!',
+    home_all_done:'Всі завдання на сьогодні виконані!\nФантастична робота!',
+    home_effort:'Очки зусиль сьогодні',
   }
 };
 
@@ -1004,10 +1019,10 @@ function cleanTagClass(p){ return p>=70?'tag-g':p>=45?'tag-y':p>=25?'tag-o':'tag
 function cleanHeroClass(p){ return p>=70?'hero hero-blue':p>=45?'hero hero-teal':p>=25?'hero hero-amber':'hero hero-red'; }
 function cleanHeroEmoji(p){ return p>=70?'✨':p>=45?'🧹':p>=25?'😓':'🆘'; }
 function cleanHeroMsg(p){
-  if(p>=70) return 'Dom lśni czystością!';
-  if(p>=45) return 'Całkiem czysto, tak trzymaj!';
-  if(p>=25) return 'Czas na sprzątanie!';
-  return '"Co to za zapach?" – Czas działać!';
+  if(p>=70) return t('cleanliness_msg_shine');
+  if(p>=45) return t('cleanliness_msg_good');
+  if(p>=25) return t('cleanliness_msg_dirty');
+  return t('cleanliness_msg_filthy');
 }
 
 function getLevel(pts){ let l=0; LV_PTS.forEach((t,i)=>{ if(pts>=t)l=i; }); return l; }
@@ -1622,7 +1637,7 @@ function renderHome(d){
   <div class="topbar">
     <div class="topbar-left">
       <h1>🏠 ${esc(d.household)}</h1>
-      <span>${new Date().toLocaleDateString('pl-PL',{weekday:'long',day:'numeric',month:'long'})}</span>
+      <span>${new Date().toLocaleDateString(_lang==='en'?'en-GB':_lang==='uk'?'uk-UA':'pl-PL',{weekday:'long',day:'numeric',month:'long'})}</span>
     </div>
     <div class="topbar-right">
       <div class="coins-badge">🪙 ${totalCoins}</div>
@@ -1731,9 +1746,9 @@ function renderHome(d){
   html += `<div class="shdr" style="margin-top:4px"><h2>📋 ${t('home_todo')}</h2><span>${pending.length} ${t('home_tasks_lbl').toLowerCase()}</span></div>`;
 
   if(pending.length===0 && doneTodayIds.length===0 && expiredTasks.length===0){
-    html += `<div class="empty"><div class="ico">☀️</div><p>Brak zadań na dziś.<br>Dodaj zadania w zakładce Pokoje!</p></div>`;
+    html += `<div class="empty"><div class="ico">☀️</div><p>${t('home_no_tasks_add').replace('\n','<br>')}</p></div>`;
   } else if(pending.length===0 && expiredTasks.length===0){
-    html += `<div class="empty"><div class="ico">🎉</div><p>Wszystkie zadania na dziś gotowe!<br><strong>Rewelacyjna robota!</strong></p></div>`;
+    html += `<div class="empty"><div class="ico">🎉</div><p>${t('home_all_done').replace('\n','<br><strong>').replace(/$/,'</strong>')}</p></div>`;
   }
 
   pending.forEach(task=>{
@@ -1826,13 +1841,13 @@ function renderRooms(d){
   let html = `
   <div class="topbar">
     <div class="topbar-left">
-      <h1>Twoje pokoje</h1>
-      <span>${d.rooms.length} pomieszczeń</span>
+      <h1>${t('rooms_title')}</h1>
+      <span>${d.rooms.length} ${t('rooms_count')}</span>
     </div>
   </div>`;
 
   if(d.rooms.length===0){
-    html += `<div class="empty"><div class="ico">🏠</div><p>Brak pokojów.<br>Dodaj pierwszy!</p></div>`;
+    html += `<div class="empty"><div class="ico">🏠</div><p>${t('rooms_empty').replace('\n','<br>')}</p></div>`;
   }
 
   d.rooms.forEach(room=>{
