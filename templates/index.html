@@ -676,6 +676,7 @@ body{
 ═══════════════════════════════════════════ */
 
 // ─── CONSTANTS ────────────────────────────────────────────────
+function getFreq(key){ return t('freq_'+key)||{daily:'Codziennie',every2:'Co 2 dni',weekly:'Co tydzień',biweekly:'Co 2 tyg.',monthly:'Co miesiąc'}[key]||key; }
 const FREQ = {daily:'Codziennie',every2:'Co 2 dni',weekly:'Co tydzień',biweekly:'Co 2 tyg.',monthly:'Co miesiąc'};
 const FREQ_DAYS = {daily:1,every2:2,weekly:7,biweekly:14,monthly:30};
 const DIFF_PTS = {easy:1,medium:2,hard:3};
@@ -847,7 +848,7 @@ const LANGS = {
     yes:'Tak', no:'Nie', save:'Zapisz', cancel:'Anuluj', add:'Dodaj', delete:'Usuń',
     confirm_reset:'Zresetować wszystkie dane?',
     token_copied:'Skopiowano!', points_abbr:'pkt',
-    freq_daily:'Codziennie', freq_weekly:'Co tydzień', freq_biweekly:'Co 2 tyg.',
+    freq_daily:'Codziennie', freq_every2:'Co 2 dni', freq_weekly:'Co tydzień', freq_biweekly:'Co 2 tyg.',
     freq_monthly:'Co miesiąc', freq_quarterly:'Co kwartał',
     diff_easy:'Łatwe', diff_medium:'Średnie', diff_hard:'Trudne',
     cleanliness_perfect:'Idealnie czysty!', cleanliness_good:'Czysto!',
@@ -975,7 +976,7 @@ const LANGS = {
     yes:'Yes', no:'No', save:'Save', cancel:'Cancel', add:'Add', delete:'Delete',
     confirm_reset:'Reset all data?',
     token_copied:'Copied!', points_abbr:'pts',
-    freq_daily:'Daily', freq_weekly:'Weekly', freq_biweekly:'Every 2 wks',
+    freq_daily:'Daily', freq_every2:'Every 2 days', freq_weekly:'Weekly', freq_biweekly:'Every 2 wks',
     freq_monthly:'Monthly', freq_quarterly:'Quarterly',
     diff_easy:'Easy', diff_medium:'Medium', diff_hard:'Hard',
     cleanliness_perfect:'Perfectly clean!', cleanliness_good:'Clean!',
@@ -1031,6 +1032,7 @@ const LANGS = {
     modal_task_schedule:'Schedule', modal_task_approval:'Requires approval?',
     modal_task_cyclic:'🔄 Recurring', modal_task_once:'⚡ One-time',
     modal_task_sched_freq:'🔄 Recurring', modal_task_sched_days:'📅 Specific days',
+    freq_daily:'Daily', freq_every2:'Every 2 days', freq_weekly:'Weekly', freq_biweekly:'Every 2 weeks', freq_monthly:'Monthly',
     modal_task_days_hint:'Click the days it should be done:',
     modal_task_add_btn:'Add task',
     modal_new_goal:'New family goal', modal_goal_subtitle:'Create a reward to motivate cleaning',
@@ -1103,7 +1105,7 @@ const LANGS = {
     yes:'Так', no:'Ні', save:'Зберегти', cancel:'Скасувати', add:'Додати', delete:'Видалити',
     confirm_reset:'Скинути всі дані?',
     token_copied:'Скопійовано!', points_abbr:'бал',
-    freq_daily:'Щодня', freq_weekly:'Щотижня', freq_biweekly:'Кожні 2 тиж.',
+    freq_daily:'Щодня', freq_every2:'Кожні 2 дні', freq_weekly:'Щотижня', freq_biweekly:'Кожні 2 тиж.',
     freq_monthly:'Щомісяця', freq_quarterly:'Щокварталу',
     diff_easy:'Легко', diff_medium:'Середньо', diff_hard:'Важко',
     cleanliness_perfect:'Ідеально чисто!', cleanliness_good:'Чисто!',
@@ -1263,7 +1265,7 @@ function fmtSchedule(task){
     const names=['Pn','Wt','Śr','Cz','Pt','Sb','Nd'];
     return task.specific_days.split(',').map(Number).sort().map(d=>names[d]).join(', ');
   }
-  return FREQ[task.freq]||task.freq;
+  return getFreq(task.freq);
 }
 function daysSince(iso){
   if(!iso) return null;
@@ -2373,10 +2375,10 @@ function showAddTask(prefillName='', prefillDiff='medium'){
 
   // freq chips
   const freqChips = $('task-freq-chips');
-  Object.entries(FREQ).forEach(([v,l])=>{
+  Object.keys(FREQ).forEach(v=>{
     const b=document.createElement('button');
     b.className=`chip${v===selFreq?' on':''}`;
-    b.textContent=l;
+    b.textContent=getFreq(v);
     b.onclick=()=>{ selFreq=v; freqChips.querySelectorAll('.chip').forEach(c=>c.classList.remove('on')); b.classList.add('on'); };
     freqChips.appendChild(b);
   });
