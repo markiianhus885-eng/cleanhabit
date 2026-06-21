@@ -849,7 +849,7 @@ const LANGS = {
     set_stats:'Statystyki rodziny', set_done_total:'Wykonanych zadań', set_pts_total:'Łącznie punktów',
     set_coins_total:'Monety łącznie', set_members:'Domownicy', set_rooms:'Pokoje',
     set_logout_btn:'Wyloguj się', set_reset:'Resetuj wszystkie dane', set_lang:'Język',
-    set_pts_suffix:'pkt',
+    set_pts_suffix:'pkt', set_members_title:'Domownicy', set_add_member:'Dodaj domownika',
     // profile screen
     prof_points:'Punkty', prof_coins:'Monety', prof_streak:'Seria', prof_level:'Poziom',
     prof_progress:'Postęp do poziomu', prof_badges:'Odznaki', prof_activity:'Aktywność (28 dni)',
@@ -978,7 +978,7 @@ const LANGS = {
     set_stats:'Family stats', set_done_total:'Tasks completed', set_pts_total:'Total points',
     set_coins_total:'Total coins', set_members:'Members', set_rooms:'Rooms',
     set_logout_btn:'Sign out', set_reset:'Reset all data', set_lang:'Language',
-    set_pts_suffix:'pts',
+    set_pts_suffix:'pts', set_members_title:'Family members', set_add_member:'Add member',
     prof_points:'Points', prof_coins:'Coins', prof_streak:'Streak', prof_level:'Level',
     prof_progress:'Progress to level', prof_badges:'Badges', prof_activity:'Activity (28 days)',
     prof_history:'Task history', prof_delete:'Remove member', prof_delete_confirm:'Remove',
@@ -1105,7 +1105,7 @@ const LANGS = {
     set_stats:'Статистика сім\'ї', set_done_total:'Виконано завдань', set_pts_total:'Всього балів',
     set_coins_total:'Монет разом', set_members:'Мешканці', set_rooms:'Кімнати',
     set_logout_btn:'Вийти з акаунту', set_reset:'Скинути всі дані', set_lang:'Мова',
-    set_pts_suffix:'бал',
+    set_pts_suffix:'бал', set_members_title:'Мешканці', set_add_member:'Додати мешканця',
     prof_points:'Бали', prof_coins:'Монети', prof_streak:'Серія', prof_level:'Рівень',
     prof_progress:'Прогрес до рівня', prof_badges:'Значки', prof_activity:'Активність (28 днів)',
     prof_history:'Історія завдань', prof_delete:'Видалити мешканця', prof_delete_confirm:'Видалити',
@@ -3387,7 +3387,7 @@ function renderSettings(d){
 
 function showAddMemberProfile(){
   const EMOJIS=['😀','😎','🥳','🤩','😍','🧑','👦','👧','👩','👨','🧒','👴','👵','🐱','🐶','🦊','🐼','🐨'];
-  showModal(`
+  openModal(`
     <h2 style="margin:0 0 16px;font-size:18px">👤 ${t('set_add_member')||'Dodaj domownika'}</h2>
     <div style="font-size:13px;color:var(--muted2);margin-bottom:14px">Stwórz profil dla nowego członka rodziny. Poda on kod rodziny przy rejestracji i wybierze siebie z listy.</div>
     <label class="lbl">${t('modal_task_name')||'Imię'}</label>
