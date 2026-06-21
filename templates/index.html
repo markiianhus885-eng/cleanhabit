@@ -611,64 +611,51 @@ body{
 <!-- AI VOICE PANEL -->
 <div id="voice-panel" style="
   position:fixed;bottom:calc(var(--navh)+16px);left:16px;right:16px;
-  background:var(--bg2);border:1px solid var(--border);border-radius:24px;
-  padding:20px;z-index:150;display:none;
+  background:var(--bg2);border:1px solid var(--border);border-radius:20px;
+  padding:14px;z-index:150;display:none;
   box-shadow:0 8px 40px rgba(0,0,0,0.6);
 ">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-    <div style="font-weight:800;font-size:16px">🤖 Asystent AI</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <div style="font-weight:800;font-size:14px">🤖 Asystent AI</div>
     <button onclick="closeVoice()" style="background:none;border:none;color:var(--muted2);font-size:22px;cursor:pointer;line-height:1">×</button>
   </div>
 
   <!-- LANG SELECT -->
-  <div style="display:flex;gap:8px;margin-bottom:14px" id="lang-chips">
+  <div style="display:flex;gap:6px;margin-bottom:10px" id="lang-chips">
     <button class="chip on" onclick="setVoiceLang('pl-PL',this)">🇵🇱 Polski</button>
     <button class="chip" onclick="setVoiceLang('uk-UA',this)">🇺🇦 Українська</button>
     <button class="chip" onclick="setVoiceLang('en-US',this)">🇬🇧 English</button>
   </div>
 
-  <!-- MIC BUTTON -->
-  <div style="text-align:center;margin-bottom:16px">
+  <!-- MIC + STATUS w jednej linii -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
     <button id="mic-btn" onclick="toggleRecording()" style="
-      width:80px;height:80px;border-radius:50%;border:none;cursor:pointer;
+      width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;flex-shrink:0;
       background:linear-gradient(135deg,var(--bluedark),var(--blue2));
-      font-size:36px;color:#fff;
-      box-shadow:0 4px 28px rgba(14,165,233,0.5);
-      transition:all 0.2s;display:flex;align-items:center;justify-content:center;margin:0 auto;
+      font-size:26px;color:#fff;
+      box-shadow:0 4px 20px rgba(14,165,233,0.5);
+      transition:all 0.2s;display:flex;align-items:center;justify-content:center;
     ">🎤</button>
-    <div id="rec-status" style="font-size:13px;color:var(--muted2);margin-top:10px">Naciśnij i mów</div>
+    <div id="rec-status" style="font-size:13px;color:var(--muted2)">Naciśnij i mów</div>
   </div>
 
   <!-- TRANSCRIPT -->
   <div id="voice-transcript" style="
-    background:rgba(255,255,255,0.04);border-radius:14px;padding:12px 14px;
-    min-height:48px;font-size:14px;color:var(--text2);margin-bottom:14px;
+    background:rgba(255,255,255,0.04);border-radius:12px;padding:10px 12px;
+    font-size:13px;color:var(--text2);margin-bottom:10px;
     border:1px solid var(--border);display:none;line-height:1.5;
   "></div>
 
   <!-- SEND BUTTON -->
   <button id="voice-send" onclick="sendVoiceCommand()" style="
-    width:100%;padding:13px;border-radius:14px;border:none;
+    width:100%;padding:11px;border-radius:12px;border:none;
     background:linear-gradient(135deg,var(--bluedark),var(--blue2));
-    color:#fff;font-size:14px;font-weight:700;cursor:pointer;
+    color:#fff;font-size:13px;font-weight:700;cursor:pointer;
     display:none;
   ">✨ Wyślij do AI</button>
 
   <!-- RESULT -->
-  <div id="voice-result" style="display:none;margin-top:12px"></div>
-
-  <!-- EXAMPLES -->
-  <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
-    <div style="font-size:11px;color:var(--muted2);font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Przykłady</div>
-    <div style="display:flex;flex-direction:column;gap:5px">
-      ${['Chcę odkurzyć salon','Posprzątałem kuchnię','Хочу прибрати ванну','Я прибрав спальню'].map(ex=>`
-      <button onclick="useExample('${ex}')" style="
-        background:rgba(255,255,255,0.04);border:1px solid var(--border);
-        border-radius:10px;padding:8px 12px;text-align:left;cursor:pointer;
-        color:var(--text2);font-size:12px;transition:all 0.15s;
-      ">"${ex}"</button>`).join('')}
-    </div>
-  </div>
+  <div id="voice-result" style="display:none;margin-top:10px"></div>
 </div>
 
 <!-- MIC FAB (always visible) -->
