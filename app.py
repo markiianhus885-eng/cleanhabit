@@ -598,9 +598,14 @@ def complete_task(tid):
     task = db.execute("SELECT * FROM tasks WHERE id=? AND household_id=?", [tid, hid]).fetchone()
     if not task: return jsonify({'error': 'not found'}), 404
     task = dict(task)
-    member_id = data.get('memberId') or task['assigned_to']
+    u = current_user()
+    member_id = data.get('memberId') or task['assigned_to'] or (u.get('member_id') if u else None)
     member = db.execute("SELECT * FROM members WHERE id=? AND household_id=?", [member_id, hid]).fetchone()
+    if not member:
+        # fallback: first member of household
+        member = db.execute("SELECT * FROM members WHERE household_id=? ORDER BY created_at ASC LIMIT 1", [hid]).fetchone()
     if not member: return jsonify({'error': 'member not found'}), 404
+    member_id = member['id']
 
     if task['approval_needed']:
         if not db.execute("SELECT 1 FROM approvals WHERE task_id=? AND household_id=?", [tid, hid]).fetchone():
