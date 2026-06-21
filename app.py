@@ -258,8 +258,20 @@ def calc_cleanliness(room, tasks):
     return round(min(100, max(0, base)))
 
 # ─── DATA ─────────────────────────────────────────────────────
+def cleanup_one_time(db, household_id):
+    """Remove one-time tasks completed on a previous day. They remain visible in
+    'Done' on their completion day, then disappear. last_completed is stored as a
+    naive ISO string (YYYY-MM-DD...), so a date-prefix string compare is safe."""
+    today = datetime.now().strftime('%Y-%m-%d')
+    db.execute(
+        "DELETE FROM tasks WHERE household_id=? AND COALESCE(one_time,0)=1 "
+        "AND last_completed IS NOT NULL AND substr(last_completed,1,10) < ?",
+        [household_id, today])
+    db.commit()
+
 def get_all_data(household_id):
     db = get_db()
+    cleanup_one_time(db, household_id)
     config   = {r['key']: r['value'] for r in db.execute(
         "SELECT key, value FROM config WHERE household_id=?", [household_id])}
     members  = [dict(r) for r in db.execute(
@@ -627,9 +639,8 @@ def complete_task(tid):
                [min(pts*8, 22), now_iso, task['room_id'], hid])
     db.execute("INSERT INTO history(id,household_id,task_id,member_id,completed_at,pts,coins_earned) VALUES (?,?,?,?,?,?,?)",
                [uid(), hid, tid, member_id, now_iso, pts, pts])
-    # Delete one-time tasks after completion
-    if task.get('one_time'):
-        db.execute("DELETE FROM tasks WHERE id=? AND household_id=?", [tid, hid])
+    # One-time tasks stay visible in "Done" for the rest of the day; they are
+    # swept the next day by cleanup_one_time() (called from get_all_data).
     db.commit()
 
     all_tasks = [dict(r) for r in db.execute("SELECT * FROM tasks WHERE household_id=?", [hid])]
@@ -646,6 +657,8 @@ def complete_task(tid):
 def approve_task(aid):
     err = require_auth(); hid = get_hid()
     if err: return err
+    if not is_admin(hid):
+        return jsonify({'error': 'Tylko właściciel lub admin może zatwierdzać'}), 403
     db = get_db()
     approval = db.execute("SELECT * FROM approvals WHERE id=? AND household_id=?", [aid, hid]).fetchone()
     if not approval: return jsonify({'error': 'not found'}), 404
@@ -937,28 +950,33 @@ def voice_command():
         'pozmywałem','pozmywałam','wyniósłem','wyniosłam',
         'прибрав','прибрала','помив','помила','почистив','почистила',
         'зробив','зробила','закінчив','закінчила',
+        # English
+        'cleaned','washed','vacuumed','wiped','did','finished','done','completed',
+        'tidied','mopped','swept','took out','i have',
     ]
     WANT_WORDS = [
         'chcę','chce','chciałbym','chciałabym','muszę','musze','powinienem','powinnam',
         'zamierzam','planuję','będę','trzeba','należy','dodaj',
         'хочу','маю','треба','потрібно','збираюся','планую','додай',
+        # English
+        'want','need','should','will','add','have to','gonna','going to',"i'll",
     ]
     ROOM_MAP = {
-        'salon':['salon','salonie','вітальня'],
-        'kuchnia':['kuchni','kuchnia','кухня'],
-        'łazienka':['łazienka','łazienki','ванна'],
-        'sypialnia':['sypialnia','sypialni','спальня'],
-        'toaleta':['toaleta','toalety','туалет'],
+        'salon':['salon','salonie','вітальня','living room','living','lounge'],
+        'kuchnia':['kuchni','kuchnia','кухня','kitchen'],
+        'łazienka':['łazienka','łazienki','ванна','bathroom','bath'],
+        'sypialnia':['sypialnia','sypialni','спальня','bedroom'],
+        'toaleta':['toaleta','toalety','туалет','toilet'],
     }
     TASK_MAP = {
-        'odkurzanie':['odkurzyć','odkurz','пилосос'],
-        'zmywanie naczyń':['zmyć','naczynia','посуд'],
-        'mycie podłóg':['podłogi','podłogę','підлогу'],
-        'wycieranie kurzu':['kurz','пил'],
-        'wyniesienie śmieci':['śmieci','сміття'],
-        'pranie':['pranie','прання'],
-        'mycie okien':['okna','вікна'],
-        'sprzątanie':['posprzątać','спrzątać','прибирання'],
+        'odkurzanie':['odkurzyć','odkurz','пилосос','vacuum','hoover'],
+        'zmywanie naczyń':['zmyć','naczynia','посуд','dishes','wash dishes','dishwasher'],
+        'mycie podłóg':['podłogi','podłogę','підлогу','floor','floors','mop'],
+        'wycieranie kurzu':['kurz','пил','dust'],
+        'wyniesienie śmieci':['śmieci','сміття','trash','garbage','rubbish','bin'],
+        'pranie':['pranie','прання','laundry','washing'],
+        'mycie okien':['okna','вікна','window','windows'],
+        'sprzątanie':['posprzątać','спrzątać','прибирання','clean','tidy','tidy up'],
     }
 
     def find_member(text):

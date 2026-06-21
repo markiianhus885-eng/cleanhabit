@@ -5,3 +5,7 @@ sweepy.db
 .env
 *.log
 .DS_Store
+
+# Flutter build artifacts (flutter_app has its own .gitignore too)
+flutter_app/build/
+flutter_app/.dart_tool/
