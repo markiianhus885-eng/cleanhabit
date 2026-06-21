@@ -411,6 +411,11 @@ class HouseholdData {
   }
 
   bool get amAdmin => currentUser?.isAdmin ?? false;
+
+  /// True only for the household creator (owner) — the member whose id equals
+  /// [adminMemberId]. Owner-only powers: delete goals, assign the admin role.
+  bool get amOwner =>
+      currentUser?.memberId != null && currentUser!.memberId == adminMemberId;
 }
 
 // ── Levels (mirror templates/index.html) ──

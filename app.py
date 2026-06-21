@@ -508,7 +508,7 @@ def del_member(mid):
 def set_member_role(mid):
     err = require_auth(); hid = get_hid()
     if err: return err
-    if not is_admin(hid):
+    if not is_owner(hid):
         return jsonify({'error': 'Tylko właściciel może zmieniać role'}), 403
     db = get_db()
     # Prevent changing original creator's role
@@ -861,6 +861,17 @@ def is_admin(hid):
     u = current_user()
     return u and u['role'] == 'admin' and u['household_id'] == hid
 
+def is_owner(hid):
+    """True only for the household creator (earliest admin). Owner-only powers:
+    delete goals, assign/change the admin role."""
+    u = current_user()
+    if not u or not u.get('member_id'):
+        return False
+    creator = get_db().execute(
+        "SELECT member_id FROM users WHERE household_id=? AND role='admin' "
+        "ORDER BY created_at ASC LIMIT 1", [hid]).fetchone()
+    return bool(creator) and creator['member_id'] == u['member_id']
+
 @app.route('/api/goals', methods=['POST'])
 def create_goal():
     err = require_auth(); hid = get_hid()
@@ -885,7 +896,7 @@ def create_goal():
 def delete_goal(gid):
     err = require_auth(); hid = get_hid()
     if err: return err
-    if not is_admin(hid):
+    if not is_owner(hid):
         return jsonify({'error': 'Tylko właściciel może usuwać cele'}), 403
     db = get_db()
     db.execute("DELETE FROM goal_purchases WHERE goal_id=? AND household_id=?", [gid, hid])

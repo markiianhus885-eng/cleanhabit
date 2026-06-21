@@ -161,7 +161,7 @@ class _FamilyScreenState extends State<FamilyScreen> {
                     style: TextStyle(color: c.textSecondary)),
               )
             else ...[
-              if (hasAccount)
+              if (hasAccount && data.amOwner)
                 ListTile(
                   leading: Icon(
                       m.isAdmin

@@ -140,7 +140,7 @@ class _GoalCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (data.amAdmin)
+                if (data.amOwner)
                   GestureDetector(
                     onTap: () => _confirmDelete(context, app),
                     child: Icon(Icons.delete_outline, color: c.textFaint),
