@@ -814,6 +814,7 @@ const LANGS = {
     room_new:'Nowy pokój', room_name:'Nazwa pokoju', room_clean:'Czysty',
     room_dirty:'Brudny', room_add:'Dodaj pokój',
     room_name_ph:'np. Salon', room_icon:'Ikona',
+    room_never:'Nigdy nie czyszczony', room_today:'Czyszczony dzisiaj', room_yesterday:'Czyszczony wczoraj', room_days_ago:'dni temu', room_cleaned_ago:'Czyszczony', room_tasks_count:'zadań',
     // leaderboard
     lb_title:'Leaderboard', lb_members:'domowników', lb_week:'Ten tydzień',
     lb_month:'Ten miesiąc', lb_all:'Wszystkie czasy', lb_pts:'PUNKTY', lb_no_members:'Brak domowników.',
@@ -949,6 +950,7 @@ const LANGS = {
     room_new:'New room', room_name:'Room name', room_clean:'Clean',
     room_dirty:'Dirty', room_add:'Add room',
     room_name_ph:'e.g. Living room', room_icon:'Icon',
+    room_never:'Never cleaned', room_today:'Cleaned today', room_yesterday:'Cleaned yesterday', room_days_ago:'days ago', room_cleaned_ago:'Cleaned', room_tasks_count:'tasks',
     lb_title:'Leaderboard', lb_members:'members', lb_week:'This week',
     lb_month:'This month', lb_all:'All time', lb_pts:'POINTS', lb_no_members:'No members.',
     lb_owner:'Owner',
@@ -1078,6 +1080,7 @@ const LANGS = {
     room_new:'Нова кімната', room_name:'Назва кімнати', room_clean:'Чисто',
     room_dirty:'Брудно', room_add:'Додати кімнату',
     room_name_ph:'напр. Вітальня', room_icon:'Іконка',
+    room_never:'Ніколи не прибирали', room_today:'Прибрано сьогодні', room_yesterday:'Прибрано вчора', room_days_ago:'днів тому', room_cleaned_ago:'Прибрано', room_tasks_count:'завдань',
     lb_title:'Рейтинг', lb_members:'мешканців', lb_week:'Цього тижня',
     lb_month:'Цього місяця', lb_all:'За весь час', lb_pts:'БАЛИ', lb_no_members:'Немає мешканців.',
     lb_owner:'Власник',
@@ -1197,7 +1200,7 @@ const h = s => s; // no XSS risk since we control all data
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
 function cleanColor(p){ return p>=70?'#22C55E':p>=45?'#F59E0B':p>=25?'#F97316':'#EF4444'; }
-function cleanLabel(p){ return p>=70?'Czysto ✓':p>=45?'Znośnie':p>=25?'Brudno':'Wymaga uwagi!'; }
+function cleanLabel(p){ return p>=70?t('cleanliness_good')+' ✓':p>=45?t('cleanliness_ok'):p>=25?t('cleanliness_dirty'):t('cleanliness_filthy'); }
 function cleanTagClass(p){ return p>=70?'tag-g':p>=45?'tag-y':p>=25?'tag-o':'tag-r'; }
 function cleanHeroClass(p){ return p>=70?'hero hero-blue':p>=45?'hero hero-teal':p>=25?'hero hero-amber':'hero hero-red'; }
 function cleanHeroEmoji(p){ return p>=70?'✨':p>=45?'🧹':p>=25?'😓':'🆘'; }
@@ -1274,11 +1277,11 @@ function daysSince(iso){
   return Math.floor((Date.now()-new Date(iso).getTime())/86400000);
 }
 function fmtSince(iso){
-  if(!iso) return 'Nigdy nie czyszczony';
+  if(!iso) return t('room_never');
   const d=daysSince(iso);
-  if(d===0) return 'Czyszczony dzisiaj';
-  if(d===1) return 'Czyszczony wczoraj';
-  return `Czyszczony ${d} dni temu`;
+  if(d===0) return t('room_today');
+  if(d===1) return t('room_yesterday');
+  return `${t('room_cleaned_ago')} ${d} ${t('room_days_ago')}`;
 }
 function fmtDt(iso){
   const d=new Date(iso);
@@ -2053,8 +2056,8 @@ function renderRooms(d){
           <div class="pbar-fill" style="width:${room.cleanliness}%;height:8px;background:${col}"></div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <span class="tag tag-b">${roomTasks.length} zadań</span>
-          ${overdue.length>0?`<span class="tag tag-r">${overdue.length} zaległe</span>`:''}
+          <span class="tag tag-b">${roomTasks.length} ${t('room_tasks_count')}</span>
+          ${overdue.length>0?`<span class="tag tag-r">${overdue.length} ${t('home_missed')||'zaległe'}</span>`:''}
         </div>
       </div>
     </div>`;
