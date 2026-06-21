@@ -291,15 +291,21 @@ def get_all_data(household_id):
     for g in goals:
         g['purchases'] = [p for p in goal_purchases if p['goal_id'] == g['id']]
 
-    # Get household admin user id
+    # Get original creator (earliest admin)
     admin_user = db.execute(
-        "SELECT member_id FROM users WHERE household_id=? AND role='admin' LIMIT 1",
+        "SELECT member_id FROM users WHERE household_id=? AND role='admin' ORDER BY created_at ASC LIMIT 1",
         [household_id]).fetchone()
+
+    # Get roles for all members who have accounts
+    member_users = db.execute(
+        "SELECT member_id, role FROM users WHERE household_id=?", [household_id]).fetchall()
+    members_roles = {r['member_id']: r['role'] for r in member_users}
 
     return {
         'household': config.get('household', household['name'] if household else 'Moja Rodzina'),
         'household_token': household['token'] if household else '',
         'household_admin_member': admin_user['member_id'] if admin_user else None,
+        'members_roles': members_roles,
         'members': members, 'rooms': rooms, 'tasks': tasks,
         'history': history, 'approvals': approvals, 'goals': goals,
     }
@@ -469,9 +475,44 @@ def add_member():
 def del_member(mid):
     err = require_auth(); hid = get_hid()
     if err: return err
+    if not is_admin(hid):
+        return jsonify({'error': 'Tylko właściciel może usuwać domowników'}), 403
     db = get_db()
+    # Find original creator member_id
+    creator = db.execute(
+        "SELECT member_id FROM users WHERE household_id=? AND role='admin' ORDER BY created_at ASC LIMIT 1",
+        [hid]).fetchone()
+    if creator and creator['member_id'] == mid:
+        return jsonify({'error': 'Nie można usunąć twórcy rodziny'}), 403
     db.execute("DELETE FROM members WHERE id=? AND household_id=?", [mid, hid])
     db.execute("UPDATE tasks SET assigned_to='' WHERE assigned_to=? AND household_id=?", [mid, hid])
+    db.commit()
+    return jsonify({'ok': True})
+
+@app.route('/api/members/<mid>/role', methods=['PUT'])
+def set_member_role(mid):
+    err = require_auth(); hid = get_hid()
+    if err: return err
+    if not is_admin(hid):
+        return jsonify({'error': 'Tylko właściciel może zmieniać role'}), 403
+    db = get_db()
+    # Prevent changing original creator's role
+    creator = db.execute(
+        "SELECT member_id FROM users WHERE household_id=? AND role='admin' ORDER BY created_at ASC LIMIT 1",
+        [hid]).fetchone()
+    d = request.json or {}
+    new_role = d.get('role', 'member')
+    if new_role not in ('admin', 'member'):
+        return jsonify({'error': 'Nieprawidłowa rola'}), 400
+    # Find user linked to this member
+    target_user = db.execute(
+        "SELECT id FROM users WHERE member_id=? AND household_id=?", [mid, hid]).fetchone()
+    if not target_user:
+        return jsonify({'error': 'Ten domownik nie ma konta'}), 404
+    # Cannot demote original creator
+    if creator and creator['member_id'] == mid and new_role != 'admin':
+        return jsonify({'error': 'Nie można zmienić roli twórcy rodziny'}), 403
+    db.execute("UPDATE users SET role=? WHERE id=?", [new_role, target_user['id']])
     db.commit()
     return jsonify({'ok': True})
 
