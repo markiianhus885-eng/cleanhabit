@@ -3,12 +3,15 @@ import json
 import hashlib
 import random
 import string
+import secrets
 from datetime import datetime, timedelta
 from flask import Flask, jsonify, request, g, session
 import os
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'cleanhouse-secret-2026-xK9mP')
+# Use the SECRET_KEY env var in production. If it is missing, fall back to a
+# random per-process key (no secret is hard-coded in the source).
+app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
 
 if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('RENDER'):
     # Use persistent volume if available, fallback to /tmp
