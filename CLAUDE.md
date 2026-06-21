@@ -78,6 +78,6 @@ npm publish
 
 ## Android APK
 
-Keystore: `C:\Users\Admin\android.keystore`, hasło: `cleanhouse123`  
+Keystore: `C:\Users\Admin\android.keystore` (hasło lokalnie, NIE w repo).  
 Package ID: `com.cleanhouse.app`  
 Aby przebudować: `cd C:\Users\Admin\twa-app && bubblewrap build`
