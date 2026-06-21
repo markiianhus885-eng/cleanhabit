@@ -682,6 +682,7 @@ const FREQ = {daily:'Codziennie',every2:'Co 2 dni',weekly:'Co tydzień',biweekly
 const FREQ_DAYS = {daily:1,every2:2,weekly:7,biweekly:14,monthly:30};
 const DIFF_PTS = {easy:1,medium:2,hard:3};
 const DIFF_LBL = {easy:'Łatwe',medium:'Średnie',hard:'Trudne'};
+function getDiff(key){ return t('diff_'+key)||DIFF_LBL[key]||key; }
 const DIFF_STARS = {easy:'⭐',medium:'⭐⭐',hard:'⭐⭐⭐'};
 
 const LV_PTS = [0,50,150,350,700,1200,2000,3500,5000];
@@ -2244,7 +2245,7 @@ function showSuggestions(){
       onclick="useSuggestion('${esc(s.name)}','${s.diff}')">
       <span style="font-size:14px;font-weight:600">${esc(s.name)}</span>
       <div style="display:flex;gap:8px;align-items:center">
-        <span class="tag ${s.diff==='easy'?'tag-g':s.diff==='medium'?'tag-y':'tag-r'}">${DIFF_LBL[s.diff]}</span>
+        <span class="tag ${s.diff==='easy'?'tag-g':s.diff==='medium'?'tag-y':'tag-r'}">${getDiff(s.diff)}</span>
         <span style="color:var(--blue2);font-size:13px;font-weight:700">+${DIFF_PTS[s.diff]} ${t('points_abbr')}</span>
       </div>
     </div>`).join('');
@@ -2407,10 +2408,10 @@ function showAddTask(prefillName='', prefillDiff='medium'){
 
   // diff chips
   const diffChips = $('task-diff-chips');
-  Object.entries(DIFF_LBL).forEach(([v,l])=>{
+  Object.keys(DIFF_LBL).forEach(v=>{
     const b=document.createElement('button');
     b.className=`chip${v===selDiff?' on':''}`;
-    b.textContent=`${DIFF_STARS[v]} ${l} (${DIFF_PTS[v]} pkt)`;
+    b.textContent=`${DIFF_STARS[v]} ${getDiff(v)} (${DIFF_PTS[v]} ${t('points_abbr')||'pkt'})`;
     b.onclick=()=>{ selDiff=v; diffChips.querySelectorAll('.chip').forEach(c=>c.classList.remove('on')); b.classList.add('on'); };
     diffChips.appendChild(b);
   });
