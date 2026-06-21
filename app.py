@@ -441,7 +441,10 @@ def auth_me():
 def api_data():
     err = require_auth()
     if err: return err
-    return jsonify(get_all_data(get_hid()))
+    u = current_user()
+    data = get_all_data(get_hid())
+    data['current_user'] = {k: u[k] for k in ('id','username','household_id','member_id','role') if k in u} if u else {}
+    return jsonify(data)
 
 @app.route('/api/household', methods=['PUT'])
 def api_household():
