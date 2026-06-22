@@ -55,23 +55,21 @@ class _TasksScreenState extends State<TasksScreen> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 90),
             children: [
-              Text(context.t('tasks_title'),
+              Text(context.t('quest_board'),
                   style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.w800,
                       color: c.textPrimary,
                       letterSpacing: -0.5)),
               const SizedBox(height: 2),
-              Text(
-                  context.t('tasks_sub',
-                      {'n': data.tasks.length, 'd': data.doneTodayCount}),
+              Text(context.t('quest_board_sub'),
                   style: TextStyle(fontSize: 13.5, color: c.textSecondary)),
               const SizedBox(height: 14),
 
               _segmented(c),
               const SizedBox(height: 14),
               _diffChips(c),
-              const SizedBox(height: 6),
+              const SizedBox(height: 12),
 
               if (list.isEmpty)
                 Padding(
@@ -82,7 +80,10 @@ class _TasksScreenState extends State<TasksScreen> {
                   ),
                 )
               else
-                for (final t in list) _TaskRow(task: t, data: data),
+                for (final t in list) ...[
+                  _TaskRow(task: t, data: data),
+                  const SizedBox(height: 12),
+                ],
             ],
           ),
         ),
@@ -194,105 +195,44 @@ class _TaskRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.ch;
     final app = context.read<AppState>();
     final done = task.doneToday;
+    final qi = questIcon(context, task);
+    final xp = task.points * 20;
+    final assignee = task.assignedTo.isNotEmpty
+        ? data.memberById(task.assignedTo)
+        : null;
 
-    return Container(
-      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: c.divider))),
-      padding: const EdgeInsets.symmetric(vertical: 15),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          GestureDetector(
-            onTap: done ? null : () => completeTaskFlow(context, app, task),
-            child: done
-                ? Container(
-                    width: 24,
-                    height: 24,
-                    decoration:
-                        BoxDecoration(color: c.accent, shape: BoxShape.circle),
-                    child:
-                        const Icon(Icons.check, size: 14, color: Colors.white),
-                  )
-                : Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: c.textFaint, width: 2),
-                    ),
-                  ),
-          ),
-          const SizedBox(width: 13),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(task.name,
-                    style: TextStyle(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w600,
-                      color: done ? c.textFaint : c.textPrimary,
-                      decoration: done
-                          ? TextDecoration.lineThrough
-                          : TextDecoration.none,
-                    )),
-                const SizedBox(height: 3),
-                Row(children: [
-                  Text(freqLabel(context, task.freq),
-                      style: TextStyle(fontSize: 12.5, color: c.textFaint)),
-                  const SizedBox(width: 6),
-                  Container(
-                      width: 3,
-                      height: 3,
-                      decoration: BoxDecoration(
-                          color: c.textFaint, shape: BoxShape.circle)),
-                  const SizedBox(width: 6),
-                  DifficultyBolts(level: task.diffLevel, size: 11),
-                  if (task.assignedTo.isNotEmpty &&
-                      data.memberById(task.assignedTo) != null) ...[
-                    const SizedBox(width: 8),
-                    Text(data.memberById(task.assignedTo)!.emoji,
-                        style: const TextStyle(fontSize: 12)),
-                  ],
-                ]),
-              ],
+    return GestureDetector(
+      onLongPress: () => _confirmDelete(context, app, task),
+      child: QuestTile(
+        icon: qi.icon,
+        iconColor: qi.color,
+        title: task.name,
+        done: done,
+        doneLabel: context.t('claimed_xp', {'n': xp}),
+        onTap: done ? null : () => completeTaskFlow(context, app, task),
+        trailing: done
+            ? null
+            : GoButton(
+                label: context.t('go'),
+                onTap: () => completeTaskFlow(context, app, task),
+              ),
+        subtitle: Row(
+          children: [
+            RewardTags(xp: xp, coins: task.points),
+            const SizedBox(width: 7),
+            DiffTag(
+              diffLevel: task.diffLevel,
+              quickLabel: context.t('q_quick'),
+              epicLabel: context.t('q_epic'),
             ),
-          ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              if (done)
-                Text(context.t('done'),
-                    style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: c.textFaint))
-              else ...[
-                Text('+${task.points} ${context.t('pts')}',
-                    style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: c.successPillText)),
-                const SizedBox(height: 2),
-                Row(mainAxisSize: MainAxisSize.min, children: [
-                  const CoinDot(size: 12),
-                  const SizedBox(width: 4),
-                  Text('+${task.points}',
-                      style: TextStyle(fontSize: 11.5, color: c.textFaint)),
-                ]),
-              ],
+            if (assignee != null) ...[
+              const SizedBox(width: 7),
+              Text(assignee.emoji, style: const TextStyle(fontSize: 13)),
             ],
-          ),
-          // delete
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            onPressed: () => _confirmDelete(context, app, task),
-            icon: Icon(Icons.close, size: 18, color: c.textFaint),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

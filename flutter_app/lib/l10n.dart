@@ -29,10 +29,34 @@ class L10n {
   static const Map<String, List<String>> _m = {
     // nav
     'nav_today': ['Today', 'Dziś', 'Сьогодні'],
-    'nav_tasks': ['Tasks', 'Zadania', 'Завдання'],
+    'nav_tasks': ['Quests', 'Zadania', 'Завдання'],
     'nav_rooms': ['Rooms', 'Pokoje', 'Кімнати'],
     'nav_family': ['Family', 'Rodzina', 'Сім\'я'],
     'nav_more': ['More', 'Więcej', 'Більше'],
+
+    // gamification / quests
+    'quests': ['Quests', 'Zadania', 'Завдання'],
+    'quest_board': ['Quest board', 'Tablica zadań', 'Дошка завдань'],
+    'quest_board_sub': [
+      'pick a quest, earn xp & coins',
+      'wybierz zadanie, zdobywaj xp i monety',
+      'обери завдання, заробляй xp і монети'
+    ],
+    'todays_quests': ['Today\'s quests', 'Dzisiejsze zadania', 'Сьогоднішні завдання'],
+    'level_label': ['Level {lvl} · {name}', 'Poziom {lvl} · {name}', 'Рівень {lvl} · {name}'],
+    'xp_to_next': ['{xp} xp to level {lvl}', '{xp} xp do poziomu {lvl}', '{xp} xp до рівня {lvl}'],
+    'daily_goal': ['Daily goal', 'Cel dzienny', 'Денна ціль'],
+    'day_streak': ['day streak', 'dni z rzędu', 'днів поспіль'],
+    'coins_lc': ['coins', 'monety', 'монети'],
+    'see_all': ['see all', 'zobacz wszystkie', 'усі'],
+    'shortcuts': ['shortcuts', 'skróty', 'швидкі дії'],
+    'sc_rewards': ['rewards', 'nagrody', 'нагороди'],
+    'q_all': ['all', 'wszystkie', 'усі'],
+    'q_quick': ['quick', 'szybkie', 'швидкі'],
+    'q_epic': ['epic', 'epickie', 'епічні'],
+    'claimed_xp': ['claimed +{n} xp 🎉', 'zdobyto +{n} xp 🎉', 'отримано +{n} xp 🎉'],
+    'go': ['go', 'start', 'вперед'],
+    'xp': ['xp', 'xp', 'xp'],
 
     // common
     'cancel': ['Cancel', 'Anuluj', 'Скасувати'],

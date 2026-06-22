@@ -8,7 +8,7 @@ import 'package:path_provider/path_provider.dart';
 /// Auth is the backend's cookie session: a [PersistCookieJar] keeps the
 /// session cookie on disk so the user stays logged in across restarts.
 class Api {
-  static const String baseUrl = 'https://web-production-65a7a.up.railway.app';
+  static const String baseUrl = 'https://cleanhouse.myroapp.org';
 
   late final Dio _dio;
   late final PersistCookieJar _jar;

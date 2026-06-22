@@ -22,10 +22,10 @@ class TodayScreen extends StatelessWidget {
     final me = data.me;
     final name = me?.name ?? data.currentUser?.username ?? 'there';
     final coins = me?.coins ?? 0;
-    final avg = data.avgCleanliness;
-    final leader = data.members.isNotEmpty && data.members.first.points > 0
-        ? data.members.first
-        : null;
+    final streak = me?.streak ?? 0;
+    final pts = me?.points ?? 0;
+    final lvl = levelOf(pts);
+    final toNext = ptsToNext(pts);
 
     final dueTasks = data.dueTodayTasks;
 
@@ -35,35 +35,35 @@ class TodayScreen extends StatelessWidget {
         color: c.accent,
         onRefresh: app.refresh,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 6, 20, 24),
+          padding: const EdgeInsets.fromLTRB(20, 6, 20, 96),
           children: [
             // ── Header ──
             Row(
               children: [
                 Container(
-                  width: 46,
-                  height: 46,
+                  width: 44,
+                  height: 44,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: c.accent,
-                    borderRadius: BorderRadius.circular(15),
+                    gradient: c.accentGradient,
+                    borderRadius: BorderRadius.circular(14),
                   ),
                   child: Text(
                     me?.emoji ?? name.characters.first.toUpperCase(),
-                    style: const TextStyle(fontSize: 22, color: Colors.white),
+                    style: const TextStyle(fontSize: 20, color: Colors.white),
                   ),
                 ),
-                const SizedBox(width: 13),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(context.t(greetingKey()),
-                          style:
-                              TextStyle(fontSize: 13, color: c.textSecondary)),
+                          style: TextStyle(
+                              fontSize: 12, color: c.textSecondary)),
                       Text(name,
                           style: TextStyle(
-                              fontSize: 19,
+                              fontSize: 16,
                               fontWeight: FontWeight.w700,
                               color: c.textPrimary)),
                     ],
@@ -71,79 +71,94 @@ class TodayScreen extends StatelessWidget {
                 ),
                 Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                   decoration: BoxDecoration(
                     color: c.card,
                     borderRadius: BorderRadius.circular(999),
+                    boxShadow: Theme.of(context).brightness == Brightness.light
+                        ? const [
+                            BoxShadow(
+                                color: Color(0x143C2D78),
+                                blurRadius: 18,
+                                spreadRadius: -10,
+                                offset: Offset(0, 8))
+                          ]
+                        : null,
                   ),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    const CoinDot(),
+                    const CoinDot(size: 15),
                     const SizedBox(width: 6),
                     Text('$coins',
                         style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w800,
                             color: c.textPrimary)),
                   ]),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
 
-            // ── Hero card ──
-            AppCard(
-              radius: 24,
+            // ── Level hero + streak/coin chips ──
+            IntrinsicHeight(
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  ProgressRing(
-                    value: avg / 100,
-                    center: Icon(
-                      avg >= 100 ? Icons.check_rounded : Icons.cleaning_services,
-                      color: c.accent,
-                      size: 24,
+                  Expanded(
+                    child: LevelHeroCard(
+                      pts: pts,
+                      levelLabel: context.t(
+                          'level_label', {'lvl': lvl, 'name': levelName(pts)}),
+                      toNextLabel: toNext == null
+                          ? context.t('max_level')
+                          : context.t(
+                              'xp_to_next', {'xp': toNext, 'lvl': lvl + 1}),
                     ),
                   ),
-                  const SizedBox(width: 18),
-                  Expanded(
+                  const SizedBox(width: 13),
+                  SizedBox(
+                    width: 96,
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(context.t(cleanlinessKey(avg)),
-                            style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w700,
-                                color: c.textPrimary)),
-                        const SizedBox(height: 3),
-                        Text(context.t('avg_clean', {'n': avg}),
-                            style: TextStyle(
-                                fontSize: 13.5, color: c.textSecondary)),
-                        if (leader != null) ...[
-                          const SizedBox(height: 9),
-                          Pill(
-                            text: context.t('leader', {'name': leader.name}),
-                            bg: c.successPillBg,
-                            fg: c.successPillText,
-                            leading: Icon(Icons.star_rounded,
-                                size: 13, color: c.accent),
+                        Expanded(
+                          child: StatChip(
+                            icon: const FlameIcon(),
+                            value: '$streak',
+                            label: context.t('day_streak'),
                           ),
-                        ],
+                        ),
+                        const SizedBox(height: 13),
+                        Expanded(
+                          child: StatChip(
+                            icon: const CoinDot(size: 15),
+                            value: '$coins',
+                            label: context.t('coins_lc'),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFF4CBD8), Color(0xFFEFB9CC)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            valueColor: const Color(0xFF9C3460),
+                            labelColor: const Color(0xFFB5557C),
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 22),
 
             // ── Effort today ──
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(context.t('effort_today'),
+                Text(context.t('daily_goal'),
                     style: TextStyle(
                         fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                         color: c.textPrimary)),
                 Row(crossAxisAlignment: CrossAxisAlignment.baseline,
                     textBaseline: TextBaseline.alphabetic,
@@ -151,16 +166,16 @@ class TodayScreen extends StatelessWidget {
                       Text('${data.effortToday}',
                           style: TextStyle(
                               fontSize: 15,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w800,
                               color: c.accent)),
-                      Text(' / $kDailyEffortTarget ${context.t('pts')}',
+                      Text(' / $kDailyEffortTarget ${context.t('xp')}',
                           style:
                               TextStyle(fontSize: 13, color: c.textSecondary)),
                     ]),
               ],
             ),
             const SizedBox(height: 9),
-            BarMeter(value: data.effortToday / kDailyEffortTarget),
+            BarMeter(value: data.effortToday / kDailyEffortTarget, height: 9),
             const SizedBox(height: 18),
 
             // ── Stats ──
@@ -197,16 +212,16 @@ class TodayScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(context.t('todays_tasks'),
+                Text(context.t('todays_quests'),
                     style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
                         color: c.textPrimary)),
                 Text(context.t('n_total', {'n': dueTasks.length}),
                     style: TextStyle(fontSize: 13, color: c.textSecondary)),
               ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 12),
             if (dueTasks.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 28),
@@ -219,11 +234,10 @@ class TodayScreen extends StatelessWidget {
                 ]),
               )
             else
-              for (int i = 0; i < dueTasks.length; i++)
-                _TodayRow(
-                  task: dueTasks[i],
-                  last: i == dueTasks.length - 1,
-                ),
+              for (int i = 0; i < dueTasks.length; i++) ...[
+                _TodayRow(task: dueTasks[i]),
+                if (i != dueTasks.length - 1) const SizedBox(height: 12),
+              ],
           ],
         ),
       ),
@@ -325,79 +339,30 @@ class _ApprovalRow extends StatelessWidget {
 
 class _TodayRow extends StatelessWidget {
   final Task task;
-  final bool last;
-  const _TodayRow({required this.task, required this.last});
+  const _TodayRow({required this.task});
 
   @override
   Widget build(BuildContext context) {
-    final c = context.ch;
     final app = context.read<AppState>();
     final done = task.doneToday;
+    final qi = questIcon(context, task);
+    final xp = task.points * 20; // points → xp scale
 
-    return Container(
-      decoration: BoxDecoration(
-        border: last
-            ? null
-            : Border(bottom: BorderSide(color: c.divider)),
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      child: Row(
+    return QuestTile(
+      icon: qi.icon,
+      iconColor: qi.color,
+      title: task.name,
+      done: done,
+      doneLabel: context.t('claimed_xp', {'n': xp}),
+      onTap: done ? null : () => completeTaskFlow(context, app, task),
+      subtitle: Row(
         children: [
-          GestureDetector(
-            onTap: done ? null : () => completeTaskFlow(context, app, task),
-            child: done
-                ? Container(
-                    width: 24,
-                    height: 24,
-                    decoration:
-                        BoxDecoration(color: c.accent, shape: BoxShape.circle),
-                    child: const Icon(Icons.check,
-                        size: 14, color: Colors.white),
-                  )
-                : Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: c.textFaint, width: 2),
-                    ),
-                  ),
-          ),
-          const SizedBox(width: 13),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  task.name,
-                  style: TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w600,
-                    color: done ? c.textFaint : c.textPrimary,
-                    decoration:
-                        done ? TextDecoration.lineThrough : TextDecoration.none,
-                  ),
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  '${freqLabel(context, task.freq)} · ${diffLabel(context, task.diff)}',
-                  style: TextStyle(fontSize: 12.5, color: c.textFaint),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-            decoration: BoxDecoration(
-              color: done ? c.pageBg : c.successPillBg,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text('+${task.points}',
-                style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                    color: done ? c.textFaint : c.successPillText)),
+          RewardTags(xp: xp, coins: task.points),
+          const SizedBox(width: 7),
+          DiffTag(
+            diffLevel: task.diffLevel,
+            quickLabel: context.t('q_quick'),
+            epicLabel: context.t('q_epic'),
           ),
         ],
       ),
