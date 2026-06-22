@@ -13,8 +13,9 @@ app = Flask(__name__)
 # random per-process key (no secret is hard-coded in the source).
 app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
 
-if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('RENDER'):
-    # Use persistent volume if available, fallback to /tmp
+if os.environ.get('DATABASE_PATH'):
+    DB = os.environ['DATABASE_PATH']
+elif os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('RENDER'):
     _data_dir = os.environ.get('RAILWAY_VOLUME_MOUNT_PATH', '/tmp')
     DB = os.path.join(_data_dir, 'sweepy.db')
 else:
@@ -946,7 +947,7 @@ def fulfill_purchase(pid):
 def claude_intent(transcript, rooms, members, tasks):
     """Turn a free-form voice command into a structured intent via Claude.
     Uses ANTHROPIC_API_KEY; model overridable with CLAUDE_MODEL (default
-    claude-opus-4-8). Returns a dict or None → caller falls back to keywords."""
+    claude-haiku-4-5-20251001). Returns a dict or None → caller falls back to keywords."""
     api_key = os.environ.get('ANTHROPIC_API_KEY')
     if not api_key:
         return None
@@ -971,7 +972,7 @@ def claude_intent(transcript, rooms, members, tasks):
     try:
         client = anthropic.Anthropic(api_key=api_key)
         msg = client.messages.create(
-            model=os.environ.get('CLAUDE_MODEL', 'claude-opus-4-8'),
+            model=os.environ.get('CLAUDE_MODEL', 'claude-haiku-4-5-20251001'),
             max_tokens=300,
             system=system,
             messages=[{"role": "user", "content": prompt}],
