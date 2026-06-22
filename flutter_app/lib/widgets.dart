@@ -718,6 +718,37 @@ class QuestTile extends StatelessWidget {
   }
 }
 
+/// Rounded gradient "+" button for screen headers (replaces floating FABs).
+class HeaderAddButton extends StatelessWidget {
+  final VoidCallback onTap;
+  final IconData icon;
+  const HeaderAddButton({super.key, required this.onTap, this.icon = Icons.add});
+  @override
+  Widget build(BuildContext context) {
+    final c = context.ch;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 42,
+        height: 42,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          gradient: c.accentGradient,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+                color: c.accentGradB.withValues(alpha: 0.5),
+                blurRadius: 16,
+                spreadRadius: -6,
+                offset: const Offset(0, 8)),
+          ],
+        ),
+        child: Icon(icon, color: c.onAccent, size: 24),
+      ),
+    );
+  }
+}
+
 /// Small solid "go" action button used on quest tiles.
 class GoButton extends StatelessWidget {
   final String label;
