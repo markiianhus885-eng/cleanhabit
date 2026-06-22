@@ -942,40 +942,45 @@ def fulfill_purchase(pid):
     db.commit()
     return jsonify({'ok': True})
 
-# ── GEMINI (smart parsing for the voice assistant; optional) ──
-def gemini_intent(transcript, rooms, members, tasks):
-    """Turn a free-form voice command into a structured intent via Gemini.
-    Returns a dict or None (no API key / any error → caller falls back to keywords)."""
-    api_key = os.environ.get('GEMINI_API_KEY')
+# ── CLAUDE (smart parsing for the voice assistant; optional) ──
+def claude_intent(transcript, rooms, members, tasks):
+    """Turn a free-form voice command into a structured intent via Claude.
+    Uses ANTHROPIC_API_KEY; model overridable with CLAUDE_MODEL (default
+    claude-opus-4-8). Returns a dict or None → caller falls back to keywords."""
+    api_key = os.environ.get('ANTHROPIC_API_KEY')
     if not api_key:
         return None
-    import urllib.request
+    try:
+        import anthropic
+    except Exception:
+        return None
     rooms_txt   = "\n".join(f"- id={r['id']} | {r['name']}" for r in rooms) or "(none)"
     members_txt = "\n".join(f"- id={m['id']} | {m['name']}" for m in members) or "(none)"
     tasks_txt   = "\n".join(f"- id={t['id']} | {t['name']} | room_id={t['room_id']}" for t in tasks) or "(none)"
-    prompt = (
+    system = (
         "You are the voice assistant of a family chore app. The user speaks English, Polish or "
-        "Ukrainian. Decide what to do and reply with JSON only.\n\n"
-        f"ROOMS:\n{rooms_txt}\n\nMEMBERS:\n{members_txt}\n\nEXISTING TASKS:\n{tasks_txt}\n\n"
-        f'USER SAID: "{transcript}"\n\n'
+        "Ukrainian. Decide what to do and reply with a JSON object ONLY — no prose, no markdown. "
         'Schema: {"action":"add_task|complete_task|unknown","task_id":"","task_name":"",'
-        '"room_id":"","member_id":"","diff":"easy|medium|hard"}\n'
-        "Rules: if the user reports they DID/finished a chore → complete_task and set task_id to the "
-        "closest existing task. If they WANT/need to do or add a chore → add_task with a short "
-        "task_name in the user's language. Otherwise unknown. Use empty strings when not applicable."
+        '"room_id":"","member_id":"","diff":"easy|medium|hard"}. '
+        "If the user reports they DID/finished a chore → action complete_task and set task_id to the "
+        "closest existing task id. If they WANT/need to do or add a chore → action add_task with a "
+        "short task_name in the user's language. Otherwise action unknown. Use empty strings when not applicable."
     )
-    payload = json.dumps({
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"responseMimeType": "application/json", "temperature": 0.2},
-    }).encode()
-    url = ("https://generativelanguage.googleapis.com/v1beta/models/"
-           f"gemini-2.0-flash:generateContent?key={api_key}")
+    prompt = (f"ROOMS:\n{rooms_txt}\n\nMEMBERS:\n{members_txt}\n\nEXISTING TASKS:\n{tasks_txt}\n\n"
+              f'USER SAID: "{transcript}"\n\nReturn only the JSON object.')
     try:
-        req = urllib.request.Request(url, data=payload,
-                                     headers={'Content-Type': 'application/json'})
-        with urllib.request.urlopen(req, timeout=12) as resp:
-            data = json.loads(resp.read().decode())
-        text = data['candidates'][0]['content']['parts'][0]['text']
+        client = anthropic.Anthropic(api_key=api_key)
+        msg = client.messages.create(
+            model=os.environ.get('CLAUDE_MODEL', 'claude-opus-4-8'),
+            max_tokens=300,
+            system=system,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        text = "".join(b.text for b in msg.content if b.type == "text").strip()
+        # Be tolerant if the model wraps the JSON in fences/prose.
+        start, end = text.find('{'), text.rfind('}')
+        if start != -1 and end != -1:
+            text = text[start:end + 1]
         intent = json.loads(text)
         return intent if isinstance(intent, dict) else None
     except Exception:
@@ -1083,8 +1088,8 @@ def voice_command():
             if any(a in text for a in aliases): return name.capitalize()
         return 'Sprzątanie'
 
-    # ── Smart parsing via Gemini (falls back to keyword logic below) ──
-    intent = gemini_intent(transcript, rooms, members, tasks)
+    # ── Smart parsing via Claude (falls back to keyword logic below) ──
+    intent = claude_intent(transcript, rooms, members, tasks)
     if intent and intent.get('action') in ('add_task', 'complete_task'):
         gm = next((m for m in members if m['id'] == intent.get('member_id')), None) or find_member(transcript)
         if intent['action'] == 'complete_task':
