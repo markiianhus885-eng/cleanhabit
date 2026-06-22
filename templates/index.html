@@ -88,6 +88,12 @@ body{
 .topbar-left h1{font-size:26px;font-weight:800;letter-spacing:-0.5px;line-height:1;}
 .topbar-left span{font-size:13px;color:var(--text2);opacity:0.7;display:block;margin-top:2px;}
 .topbar-right{display:flex;align-items:center;gap:8px;}
+.add-btn{width:42px;height:42px;border-radius:14px;border:none;
+  background:linear-gradient(135deg,var(--blue2),var(--bluedark));
+  color:#fff;font-size:26px;font-weight:500;line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 8px 18px -6px rgba(109,123,230,0.6);transition:transform 0.15s;}
+.add-btn:active{transform:scale(0.9);}
 
 /* ──────────────── BOTTOM NAV ──────────────── */
 .bnav{
@@ -2031,6 +2037,9 @@ function renderRooms(d){
       <h1>${t('rooms_title')}</h1>
       <span>${d.rooms.length} ${t('rooms_count')}</span>
     </div>
+    <div class="topbar-right">
+      <button class="add-btn" onclick="showAddRoom()">+</button>
+    </div>
   </div>`;
 
   if(d.rooms.length===0){
@@ -2065,7 +2074,6 @@ function renderRooms(d){
   });
 
   html += `
-  <button class="fab" onclick="showAddRoom()">+</button>
   <div style="height:8px"></div>`;
   $('screen-rooms').innerHTML = html;
 }
@@ -2182,6 +2190,9 @@ function renderTasks(d){
       <h1>${t('tasks_title')}</h1>
       <span>${d.tasks.length} ${t('tasks_total')}</span>
     </div>
+    <div class="topbar-right">
+      <button class="add-btn" onclick="showAddTask()">+</button>
+    </div>
   </div>
   <div style="padding:0 16px;margin-bottom:10px">
     <div class="chips" style="margin-bottom:8px">
@@ -2238,7 +2249,6 @@ function renderTasks(d){
       💡 ${t('task_suggestions')}
     </button>
   </div>
-  <button class="fab" onclick="showAddTask()">+</button>
   <div style="height:8px"></div>`;
   $('screen-tasks').innerHTML = html;
 }
