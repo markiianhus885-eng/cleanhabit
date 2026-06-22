@@ -6,12 +6,42 @@ import string
 import secrets
 from datetime import datetime, timedelta
 from flask import Flask, jsonify, request, g, session
+from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.middleware.proxy_fix import ProxyFix
 import os
 
 app = Flask(__name__)
+# Behind the Cloudflare tunnel/cloudflared, trust one proxy hop so request.is_secure
+# reflects X-Forwarded-Proto (https) and remote_addr reflects the real client IP
+# (X-Forwarded-For) — needed for Secure cookies and per-IP rate limiting.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
+
 # Use the SECRET_KEY env var in production. If it is missing, fall back to a
 # random per-process key (no secret is hard-coded in the source).
 app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
+
+# Harden the session cookie. SESSION_COOKIE_SECURE defaults on (primary access is
+# HTTPS via Cloudflare). For plain-HTTP LAN access (http://<pi>:5000) set
+# COOKIE_SECURE=0 in the environment, otherwise the browser will drop the cookie.
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+    SESSION_COOKIE_SECURE=os.environ.get('COOKIE_SECURE', '1') == '1',
+)
+
+# Basic per-IP rate limiting (in-memory). Guards brute-force on login and abuse of
+# the Claude-backed /api/voice endpoint, which spends the owner's API credits.
+try:
+    from flask_limiter import Limiter
+    from flask_limiter.util import get_remote_address
+    limiter = Limiter(key_func=get_remote_address, app=app, default_limits=[])
+except Exception:  # pragma: no cover - if the package is missing, no-op decorator
+    class _NoLimit:
+        def limit(self, *a, **k):
+            def deco(f):
+                return f
+            return deco
+    limiter = _NoLimit()
 
 if os.environ.get('DATABASE_PATH'):
     DB = os.environ['DATABASE_PATH']
@@ -136,7 +166,23 @@ def uid():
     return str(uuid.uuid4())[:8]
 
 def hash_pw(pw):
+    """Legacy unsalted SHA-256 — kept only to verify old accounts before upgrade."""
     return hashlib.sha256(pw.encode()).hexdigest()
+
+def make_pw(pw):
+    """Create a salted password hash for new/updated passwords."""
+    return generate_password_hash(pw)
+
+def verify_pw(stored, pw):
+    """Verify a password against either the new salted hash or a legacy SHA-256.
+    Returns (ok, needs_upgrade)."""
+    if not stored:
+        return False, False
+    if stored.startswith(('pbkdf2:', 'scrypt:', 'argon2')):
+        return check_password_hash(stored, pw), False
+    # Legacy: constant-time compare of unsalted SHA-256, flag for rehash on success.
+    ok = secrets.compare_digest(stored, hash_pw(pw))
+    return ok, ok
 
 def gen_token():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -357,6 +403,7 @@ def household_lookup():
 MEMBER_EMOJIS = ['😊','😎','🤩','🥳','😄','🦸','🧑','👦','👧','👨','👩','🧔','👴','👵','🐱','🐶','🦊','🐸','🐼','🦁']
 
 @app.route('/api/auth/register', methods=['POST'])
+@limiter.limit('10 per hour')
 def auth_register():
     d = request.json or {}
     username     = d.get('username', '').strip().lower()
@@ -415,7 +462,7 @@ def auth_register():
 
     user_id = uid()
     db.execute("INSERT INTO users(id,username,password_hash,household_id,member_id,role,created_at) VALUES (?,?,?,?,?,?,?)",
-               [user_id, username, hash_pw(password), household_id, member_id, role, datetime.now().isoformat()])
+               [user_id, username, make_pw(password), household_id, member_id, role, datetime.now().isoformat()])
     db.commit()
     session['user_id'] = user_id
     user = dict(db.execute("SELECT id,username,household_id,member_id,role FROM users WHERE id=?", [user_id]).fetchone())
@@ -423,15 +470,20 @@ def auth_register():
     return jsonify({'ok': True, 'user': user, 'household': household})
 
 @app.route('/api/auth/login', methods=['POST'])
+@limiter.limit('10 per minute')
 def auth_login():
     d = request.json or {}
     username = d.get('username', '').strip().lower()
     password = d.get('password', '').strip()
     db = get_db()
-    row = db.execute("SELECT * FROM users WHERE username=? AND password_hash=?",
-                     [username, hash_pw(password)]).fetchone()
-    if not row:
+    row = db.execute("SELECT * FROM users WHERE username=?", [username]).fetchone()
+    ok, needs_upgrade = verify_pw(row['password_hash'], password) if row else (False, False)
+    if not row or not ok:
         return jsonify({'error': 'Błędna nazwa użytkownika lub hasło'}), 401
+    if needs_upgrade:
+        # Transparently migrate the legacy SHA-256 hash to a salted one.
+        db.execute("UPDATE users SET password_hash=? WHERE id=?", [make_pw(password), row['id']])
+        db.commit()
     session['user_id'] = row['id']
     user = dict(db.execute("SELECT id,username,household_id,member_id,role FROM users WHERE id=?",
                             [row['id']]).fetchone())
@@ -1008,6 +1060,7 @@ def _voice_complete(db, hid, task, member_id):
 
 # ── VOICE ─────────────────────────────────────────────────────
 @app.route('/api/voice', methods=['POST'])
+@limiter.limit('30 per hour;6 per minute')
 def voice_command():
     err = require_auth(); hid = get_hid()
     if err: return err
@@ -1166,4 +1219,7 @@ def voice_command():
 
 if __name__ == '__main__':
     _ensure_db()
-    app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)
+    # Debug is OFF by default — the Werkzeug debugger is a remote-code-execution
+    # risk if ever exposed. Enable explicitly with FLASK_DEBUG=1 for local dev.
+    debug = os.environ.get('FLASK_DEBUG', '0') == '1'
+    app.run(debug=debug, host='0.0.0.0', port=5000, use_reloader=False)
