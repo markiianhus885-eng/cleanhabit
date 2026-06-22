@@ -307,7 +307,10 @@ class L10n {
 
 extension L10nContext on BuildContext {
   String t(String key, [Map<String, Object>? args]) {
-    final lang = watch<AppState>().lang;
+    // Use read (not watch): the root MaterialApp rebuilds the whole tree on
+    // language change, so widgets re-translate anyway. watch here would crash
+    // when t() is called from event handlers (e.g. dialogs/onPressed).
+    final lang = read<AppState>().lang;
     return L10n.tr(lang, key, args);
   }
 }
