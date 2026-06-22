@@ -942,6 +942,64 @@ def fulfill_purchase(pid):
     db.commit()
     return jsonify({'ok': True})
 
+# ── GEMINI (smart parsing for the voice assistant; optional) ──
+def gemini_intent(transcript, rooms, members, tasks):
+    """Turn a free-form voice command into a structured intent via Gemini.
+    Returns a dict or None (no API key / any error → caller falls back to keywords)."""
+    api_key = os.environ.get('GEMINI_API_KEY')
+    if not api_key:
+        return None
+    import urllib.request
+    rooms_txt   = "\n".join(f"- id={r['id']} | {r['name']}" for r in rooms) or "(none)"
+    members_txt = "\n".join(f"- id={m['id']} | {m['name']}" for m in members) or "(none)"
+    tasks_txt   = "\n".join(f"- id={t['id']} | {t['name']} | room_id={t['room_id']}" for t in tasks) or "(none)"
+    prompt = (
+        "You are the voice assistant of a family chore app. The user speaks English, Polish or "
+        "Ukrainian. Decide what to do and reply with JSON only.\n\n"
+        f"ROOMS:\n{rooms_txt}\n\nMEMBERS:\n{members_txt}\n\nEXISTING TASKS:\n{tasks_txt}\n\n"
+        f'USER SAID: "{transcript}"\n\n'
+        'Schema: {"action":"add_task|complete_task|unknown","task_id":"","task_name":"",'
+        '"room_id":"","member_id":"","diff":"easy|medium|hard"}\n'
+        "Rules: if the user reports they DID/finished a chore → complete_task and set task_id to the "
+        "closest existing task. If they WANT/need to do or add a chore → add_task with a short "
+        "task_name in the user's language. Otherwise unknown. Use empty strings when not applicable."
+    )
+    payload = json.dumps({
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"responseMimeType": "application/json", "temperature": 0.2},
+    }).encode()
+    url = ("https://generativelanguage.googleapis.com/v1beta/models/"
+           f"gemini-2.0-flash:generateContent?key={api_key}")
+    try:
+        req = urllib.request.Request(url, data=payload,
+                                     headers={'Content-Type': 'application/json'})
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            data = json.loads(resp.read().decode())
+        text = data['candidates'][0]['content']['parts'][0]['text']
+        intent = json.loads(text)
+        return intent if isinstance(intent, dict) else None
+    except Exception:
+        return None
+
+def _voice_complete(db, hid, task, member_id):
+    """Award a completion (points/coins/streak/history/cleanliness/badges)."""
+    pts = DIFF_PTS.get(task['diff'], 1)
+    now_iso = datetime.now().isoformat()
+    today = datetime.now().strftime('%Y-%m-%d')
+    member = db.execute("SELECT * FROM members WHERE id=? AND household_id=?", [member_id, hid]).fetchone()
+    if member:
+        m = dict(member)
+        streak = m['streak'] + 1 if m['streak_date'] != today else m['streak']
+        db.execute("UPDATE members SET points=points+?,coins=coins+?,streak=?,streak_date=? WHERE id=? AND household_id=?",
+                   [pts, pts, streak, today, member_id, hid])
+    db.execute("UPDATE tasks SET last_completed=? WHERE id=? AND household_id=?", [now_iso, task['id'], hid])
+    db.execute("UPDATE rooms SET cleanliness=MIN(100,cleanliness+?),last_cleaned=? WHERE id=? AND household_id=?",
+               [min(pts * 8, 22), now_iso, task['room_id'], hid])
+    db.execute("INSERT INTO history(id,household_id,task_id,member_id,completed_at,pts,coins_earned) VALUES (?,?,?,?,?,?,?)",
+               [uid(), hid, task['id'], member_id, now_iso, pts, pts])
+    db.commit()
+    return pts, check_achievements(db, member_id, hid)
+
 # ── VOICE ─────────────────────────────────────────────────────
 @app.route('/api/voice', methods=['POST'])
 def voice_command():
@@ -1024,6 +1082,37 @@ def voice_command():
         for name, aliases in TASK_MAP.items():
             if any(a in text for a in aliases): return name.capitalize()
         return 'Sprzątanie'
+
+    # ── Smart parsing via Gemini (falls back to keyword logic below) ──
+    intent = gemini_intent(transcript, rooms, members, tasks)
+    if intent and intent.get('action') in ('add_task', 'complete_task'):
+        gm = next((m for m in members if m['id'] == intent.get('member_id')), None) or find_member(transcript)
+        if intent['action'] == 'complete_task':
+            trow = db.execute("SELECT * FROM tasks WHERE id=? AND household_id=?",
+                              [intent.get('task_id', ''), hid]).fetchone()
+            if trow:
+                task = dict(trow)
+                member_id = (gm or {}).get('id') or task['assigned_to'] or ''
+                if member_id:
+                    pts, new_badges = _voice_complete(db, hid, task, member_id)
+                    who = (gm or {}).get('name', '?')
+                    return jsonify({'action': 'complete_task',
+                                    'message': f'✅ {who}: "{task["name"]}" +{pts}',
+                                    'new_badges': new_badges})
+            # no matching task → fall through to keyword logic
+        else:  # add_task
+            room_id = intent.get('room_id') or ''
+            if not any(r['id'] == room_id for r in rooms):
+                room_id = rooms[0]['id'] if rooms else ''
+            member_id = (gm or {}).get('id') or (members[0]['id'] if members else '')
+            diff = intent.get('diff') if intent.get('diff') in ('easy', 'medium', 'hard') else 'medium'
+            name = (intent.get('task_name') or '').strip()[:60] or 'Sprzątanie'
+            db.execute(
+                "INSERT INTO tasks(id,household_id,name,room_id,assigned_to,freq,diff,last_completed,approval_needed,created_at) VALUES (?,?,?,?,?,?,?,NULL,0,?)",
+                [uid(), hid, name, room_id, member_id, 'weekly', diff, datetime.now().isoformat()])
+            db.commit()
+            rname = next((r['name'] for r in rooms if r['id'] == room_id), '')
+            return jsonify({'action': 'add_task', 'message': f'➕ "{name}" ({rname})'})
 
     is_done = any(w in transcript for w in DONE_WORDS)
     is_want = any(w in transcript for w in WANT_WORDS)
