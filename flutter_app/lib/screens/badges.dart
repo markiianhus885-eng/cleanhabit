@@ -103,7 +103,7 @@ class _BadgesScreenState extends State<BadgesScreen> {
                 physics: const NeverScrollableScrollPhysics(),
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
-                childAspectRatio: 1.55,
+                childAspectRatio: 1.3,
                 children: entry.value
                     .map((b) => _BadgeTile(def: b, unlocked: earned.contains(b.key)))
                     .toList(),
@@ -162,8 +162,10 @@ class _BadgeTile extends StatelessWidget {
                     size: 18, color: unlocked ? c.accent : c.textFaint),
               ],
             ),
-            const Spacer(),
+            const SizedBox(height: 10),
             Text(context.t('b_${def.key}_n'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
