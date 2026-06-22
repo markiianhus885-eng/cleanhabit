@@ -40,13 +40,6 @@ class _TasksScreenState extends State<TasksScreen> {
 
     return Scaffold(
       backgroundColor: c.pageBg,
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: c.accent,
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        onPressed: () => _openAddSheet(context, data),
-        child: const Icon(Icons.add, color: Colors.white, size: 28),
-      ),
       body: SafeArea(
         bottom: false,
         child: RefreshIndicator(
@@ -55,15 +48,29 @@ class _TasksScreenState extends State<TasksScreen> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 90),
             children: [
-              Text(context.t('quest_board'),
-                  style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w800,
-                      color: c.textPrimary,
-                      letterSpacing: -0.5)),
-              const SizedBox(height: 2),
-              Text(context.t('quest_board_sub'),
-                  style: TextStyle(fontSize: 13.5, color: c.textSecondary)),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(context.t('quest_board'),
+                            style: TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.w800,
+                                color: c.textPrimary,
+                                letterSpacing: -0.5)),
+                        const SizedBox(height: 2),
+                        Text(context.t('quest_board_sub'),
+                            style: TextStyle(
+                                fontSize: 13.5, color: c.textSecondary)),
+                      ],
+                    ),
+                  ),
+                  HeaderAddButton(onTap: () => _openAddSheet(context, data)),
+                ],
+              ),
               const SizedBox(height: 14),
 
               _segmented(c),

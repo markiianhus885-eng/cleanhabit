@@ -2868,6 +2868,7 @@ function renderGoals(){
       <div style="display:flex;align-items:center;gap:4px;background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.3);border-radius:100px;padding:4px 10px;font-size:11px;font-weight:800;color:#C084FC">
         👑 ${t('lb_owner')}
       </div>
+      <button class="add-btn" onclick="showAddGoal()">+</button>
     </div>` : ''}
   </div>`;
 
@@ -2977,9 +2978,6 @@ function renderGoals(){
   }
 
   html += `<div style="height:80px"></div>`;
-  if(isOwner){
-    html += `<button class="fab" onclick="showAddGoal()" style="background:linear-gradient(135deg,#5b21b6,#7c3aed)">+</button>`;
-  }
   $('screen-goals').innerHTML = html;
 }
 

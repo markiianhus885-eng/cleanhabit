@@ -27,16 +27,13 @@ class GoalsScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: c.pageBg,
-      appBar: chAppBar(context, context.t('goals_title')),
-      floatingActionButton: data.amAdmin
-          ? FloatingActionButton(
-              backgroundColor: c.accent,
-              shape:
-                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-              onPressed: () => _openAddGoal(context),
-              child: const Icon(Icons.add, color: Colors.white, size: 28),
-            )
-          : null,
+      appBar: chAppBar(context, context.t('goals_title'), actions: [
+        if (data.amAdmin)
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: HeaderAddButton(onTap: () => _openAddGoal(context)),
+          ),
+      ]),
       body: SafeArea(
         top: false,
         child: RefreshIndicator(

@@ -23,13 +23,6 @@ class RoomsScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: c.pageBg,
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: c.accent,
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        onPressed: () => _openAddRoom(context),
-        child: const Icon(Icons.add, color: Colors.white, size: 28),
-      ),
       body: SafeArea(
         bottom: false,
         child: RefreshIndicator(
@@ -38,15 +31,29 @@ class RoomsScreen extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 90),
             children: [
-              Text(context.t('rooms_title'),
-                  style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w800,
-                      color: c.textPrimary,
-                      letterSpacing: -0.5)),
-              const SizedBox(height: 2),
-              Text(context.t('n_rooms', {'n': data.rooms.length}),
-                  style: TextStyle(fontSize: 13.5, color: c.textSecondary)),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(context.t('rooms_title'),
+                            style: TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.w800,
+                                color: c.textPrimary,
+                                letterSpacing: -0.5)),
+                        const SizedBox(height: 2),
+                        Text(context.t('n_rooms', {'n': data.rooms.length}),
+                            style: TextStyle(
+                                fontSize: 13.5, color: c.textSecondary)),
+                      ],
+                    ),
+                  ),
+                  HeaderAddButton(onTap: () => _openAddRoom(context)),
+                ],
+              ),
               const SizedBox(height: 16),
               if (data.rooms.isEmpty)
                 Padding(

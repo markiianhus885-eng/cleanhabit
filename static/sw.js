@@ -1,4 +1,4 @@
-const CACHE = 'cleanhouse-v3-playful';
+const CACHE = 'cleanhouse-v4-playful';
 const OFFLINE = ['/'];
 
 self.addEventListener('install', e => {
