@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
 <title>CleanHouse</title>
 <link rel="manifest" href="/static/manifest.json"/>
-<meta name="theme-color" content="#0EA5E9"/>
+<meta name="theme-color" content="#6D7BE6"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
@@ -19,37 +19,38 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 
 :root {
-  --bg:     #0A1628;
-  --bg2:    #0F2040;
-  --bg3:    #142850;
-  --card:   #0F2040;
-  --card2:  #142850;
-  --border: #1E3A5F;
+  /* Playful gamified palette (dark variant) — indigo/purple */
+  --bg:     #191527;
+  --bg2:    #241D33;
+  --bg3:    #2A2240;
+  --card:   #241D33;
+  --card2:  #2A2240;
+  --border: #352B4D;
 
-  --blue:   #0EA5E9;
-  --blue2:  #38BDF8;
-  --blue3:  #7DD3FC;
-  --bluedark:#0369A1;
-  --indigo: #6366F1;
+  --blue:   #6D7BE6;   /* primary accent (kept name to drive existing rules) */
+  --blue2:  #8E97F2;
+  --blue3:  #B9AEF5;
+  --bluedark:#5159D6;
+  --indigo: #6D7BE6;
 
-  --green:  #22C55E;
-  --teal:   #14B8A6;
-  --yellow: #EAB308;
-  --amber:  #F59E0B;
-  --orange: #F97316;
-  --red:    #EF4444;
-  --pink:   #EC4899;
-  --purple: #A855F7;
+  --green:  #2FB877;
+  --teal:   #2FB8A6;
+  --yellow: #FFD86B;   /* xp gold */
+  --amber:  #FFC53D;   /* coins gold */
+  --orange: #FF7A3D;   /* streak flame */
+  --red:    #F0617A;
+  --pink:   #F08AAB;
+  --purple: #B9AEF5;
 
-  --text:   #F0F9FF;
-  --text2:  #BAE6FD;
-  --muted:  #475569;
-  --muted2: #64748B;
+  --text:   #ECE8FA;
+  --text2:  #B9B2D6;
+  --muted:  #6F6890;
+  --muted2: #8A82AA;
 
   --navh:   72px;
-  --r-card: 20px;
-  --r-sm:   12px;
-  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  --r-card: 22px;
+  --r-sm:   14px;
+  --shadow: 0 18px 44px rgba(10,6,28,0.6);
 }
 
 html,body{height:100%;overflow:hidden;}
@@ -108,7 +109,7 @@ body{
   width:38px;height:30px;display:flex;align-items:center;justify-content:center;
   border-radius:14px;font-size:20px;transition:all 0.2s;position:relative;
 }
-.bnav-btn.active .bnav-icon{background:rgba(14,165,233,0.15);}
+.bnav-btn.active .bnav-icon{background:rgba(109,123,230,0.15);}
 .nav-badge{
   position:absolute;top:-2px;right:-2px;
   width:16px;height:16px;background:var(--red);border-radius:50%;
@@ -134,7 +135,7 @@ body{
 .btn:active{transform:scale(0.96);}
 .btn-primary{
   background:linear-gradient(135deg,var(--bluedark),var(--blue));
-  color:#fff;box-shadow:0 4px 18px rgba(14,165,233,0.3);
+  color:#fff;box-shadow:0 4px 18px rgba(109,123,230,0.3);
 }
 .btn-ghost{background:rgba(255,255,255,0.06);color:var(--text2);border:1px solid var(--border);}
 .btn-success{background:rgba(34,197,94,0.15);color:var(--green);border:1px solid rgba(34,197,94,0.25);}
@@ -155,7 +156,7 @@ body{
   background:linear-gradient(135deg,var(--bluedark),var(--blue2));
   border:none;color:#fff;font-size:28px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
-  box-shadow:0 4px 28px rgba(14,165,233,0.5);z-index:100;
+  box-shadow:0 4px 28px rgba(109,123,230,0.5);z-index:100;
   transition:transform 0.15s;
 }
 .fab:active{transform:scale(0.88);}
@@ -191,7 +192,7 @@ body{
   outline:none;transition:border-color 0.2s,background 0.2s;
   appearance:none;
 }
-.inp:focus{border-color:var(--blue);background:rgba(14,165,233,0.05);}
+.inp:focus{border-color:var(--blue);background:rgba(109,123,230,0.05);}
 .inp::placeholder{color:var(--muted2);}
 
 /* ──────────────── CHIPS ──────────────── */
@@ -203,7 +204,7 @@ body{
   cursor:pointer;transition:all 0.15s;
 }
 .chip.on{
-  background:rgba(14,165,233,0.15);
+  background:rgba(109,123,230,0.15);
   border-color:var(--blue);color:var(--blue2);
 }
 .chip:active{transform:scale(0.95);}
@@ -214,7 +215,7 @@ body{
 .tag-y{background:rgba(234,179,8,0.12);color:var(--yellow);}
 .tag-o{background:rgba(249,115,22,0.12);color:var(--orange);}
 .tag-r{background:rgba(239,68,68,0.12);color:var(--red);}
-.tag-b{background:rgba(14,165,233,0.12);color:var(--blue2);}
+.tag-b{background:rgba(109,123,230,0.12);color:var(--blue2);}
 .tag-p{background:rgba(168,85,247,0.12);color:var(--purple);}
 
 /* ──────────────── SECTION HEADER ──────────────── */
@@ -232,7 +233,7 @@ body{
   display:flex;align-items:center;justify-content:center;
   transition:all 0.15s;
 }
-.ebtn.on{background:rgba(14,165,233,0.15);border-color:var(--blue);}
+.ebtn.on{background:rgba(109,123,230,0.15);border-color:var(--blue);}
 
 /* ──────────────── AVATAR ──────────────── */
 .ava{display:flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0;}
@@ -266,7 +267,7 @@ body{
 }
 .tab-btn.on{
   background:var(--blue);color:#fff;
-  box-shadow:0 2px 14px rgba(14,165,233,0.4);
+  box-shadow:0 2px 14px rgba(109,123,230,0.4);
 }
 
 /* ──────────────── HERO BANNER ──────────────── */
@@ -274,8 +275,8 @@ body{
   margin:8px 16px 14px;border-radius:22px;padding:22px;
   position:relative;overflow:hidden;
 }
-.hero-blue{background:linear-gradient(135deg,#0c4a6e 0%,#075985 40%,#0ea5e9 100%);}
-.hero-teal{background:linear-gradient(135deg,#134e4a 0%,#0f766e 40%,#14b8a6 100%);}
+.hero-blue{background:linear-gradient(135deg,#3A2E8C 0%,#5159D6 45%,#6D7BE6 100%);}
+.hero-teal{background:linear-gradient(135deg,#2A2456 0%,#4D52C4 45%,#7C84F0 100%);}
 .hero-amber{background:linear-gradient(135deg,#78350f 0%,#b45309 40%,#f59e0b 100%);}
 .hero-red{background:linear-gradient(135deg,#7f1d1d 0%,#b91c1c 40%,#ef4444 100%);}
 .hero::before{content:'';position:absolute;top:-50px;right:-50px;width:160px;height:160px;background:rgba(255,255,255,0.05);border-radius:50%;}
@@ -340,7 +341,7 @@ body{
 .task-meta .dot{color:var(--muted);}
 .pts-pill{
   display:inline-flex;align-items:center;gap:3px;
-  background:rgba(14,165,233,0.12);color:var(--blue2);
+  background:rgba(109,123,230,0.12);color:var(--blue2);
   padding:4px 9px;border-radius:100px;font-size:12px;font-weight:700;
 }
 .coin-pill{
@@ -379,7 +380,7 @@ body{
 
 /* ──────────────── VIRTUAL HOUSE DISPLAY ──────────────── */
 .vhouse{
-  background:linear-gradient(180deg,#0c2a4a,#0a1e35);
+  background:linear-gradient(180deg,#241D33,#191527);
   border-radius:18px;min-height:160px;padding:16px;
   display:flex;flex-wrap:wrap;gap:12px;
   align-items:flex-end;justify-content:center;
@@ -400,7 +401,7 @@ body{
 .badge{
   display:inline-flex;align-items:center;gap:4px;
   padding:4px 11px;border-radius:100px;font-size:11px;font-weight:700;
-  background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.2);
+  background:rgba(109,123,230,0.1);border:1px solid rgba(109,123,230,0.2);
   color:var(--blue3);
 }
 .badge-gold{background:rgba(234,179,8,0.1);border-color:rgba(234,179,8,0.2);color:var(--yellow);}
@@ -480,7 +481,7 @@ body{
       <div style="display:flex;gap:8px">
         <button onclick="setHouseholdAction('create')" id="hact-create" style="
           flex:1;padding:10px 8px;border-radius:12px;border:2px solid var(--blue);
-          background:rgba(14,165,233,0.1);color:var(--blue2);font-weight:700;font-size:12px;cursor:pointer;
+          background:rgba(109,123,230,0.1);color:var(--blue2);font-weight:700;font-size:12px;cursor:pointer;
           display:flex;flex-direction:column;align-items:center;gap:4px;
         ">🏠<span>Stwórz nowy dom</span></button>
         <button onclick="setHouseholdAction('join')" id="hact-join" style="
@@ -526,7 +527,7 @@ body{
       <div id="auth-emoji-wrap" style="display:none">
         <div style="font-size:12px;color:var(--muted2);margin-bottom:8px">Wybierz swoje emoji</div>
         <div id="auth-emoji-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px">
-          <button type="button" onclick="selectAuthEmoji('😊',this)" class="emoji-opt" style="aspect-ratio:1;border-radius:12px;border:2px solid var(--blue);background:rgba(14,165,233,0.12);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">😊</button>
+          <button type="button" onclick="selectAuthEmoji('😊',this)" class="emoji-opt" style="aspect-ratio:1;border-radius:12px;border:2px solid var(--blue);background:rgba(109,123,230,0.12);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">😊</button>
           <button type="button" onclick="selectAuthEmoji('😎',this)" class="emoji-opt" style="aspect-ratio:1;border-radius:12px;border:2px solid var(--border);background:rgba(255,255,255,0.03);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">😎</button>
           <button type="button" onclick="selectAuthEmoji('🤩',this)" class="emoji-opt" style="aspect-ratio:1;border-radius:12px;border:2px solid var(--border);background:rgba(255,255,255,0.03);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">🤩</button>
           <button type="button" onclick="selectAuthEmoji('🥳',this)" class="emoji-opt" style="aspect-ratio:1;border-radius:12px;border:2px solid var(--border);background:rgba(255,255,255,0.03);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">🥳</button>
@@ -634,7 +635,7 @@ body{
       width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;flex-shrink:0;
       background:linear-gradient(135deg,var(--bluedark),var(--blue2));
       font-size:26px;color:#fff;
-      box-shadow:0 4px 20px rgba(14,165,233,0.5);
+      box-shadow:0 4px 20px rgba(109,123,230,0.5);
       transition:all 0.2s;display:flex;align-items:center;justify-content:center;
     ">🎤</button>
     <div id="rec-status" style="font-size:13px;color:var(--muted2)">Naciśnij i mów</div>
@@ -919,7 +920,7 @@ const LANGS = {
     modal_goal_err:'Podaj nazwę i cenę!',
   },
   en: {
-    nav_home:'Today', nav_rooms:'Rooms', nav_tasks:'Tasks', nav_lb:'Ranking',
+    nav_home:'Today', nav_rooms:'Rooms', nav_tasks:'Quests', nav_lb:'Ranking',
     nav_cal:'Calendar', nav_goals:'Goals', nav_badges:'Badges', nav_settings:'Profile',
     auth_login:'Login', auth_register:'Register', auth_username:'Username',
     auth_password:'Password (min. 4 chars)', auth_btn_login:'Sign in', auth_btn_register:'Sign up',
@@ -1334,7 +1335,7 @@ async function loadStats(){
     const cnt = s.heatmap[key]||0;
     const intensity = cnt===0 ? 0 : Math.max(0.15, cnt/maxVal);
     const cell = document.createElement('div');
-    cell.style.cssText=`aspect-ratio:1;border-radius:2px;background:${cnt===0?'var(--bg3)':`rgba(14,165,233,${intensity})`};title="${key}: ${cnt}"`;
+    cell.style.cssText=`aspect-ratio:1;border-radius:2px;background:${cnt===0?'var(--bg3)':`rgba(109,123,230,${intensity})`};title="${key}: ${cnt}"`;
     cell.title = `${key}: ${cnt} zadań`;
     hm.appendChild(cell);
   }
@@ -1361,17 +1362,17 @@ function selectAuthEmoji(emoji, btn){
     b.style.background  = 'rgba(255,255,255,0.03)';
   });
   btn.style.borderColor = 'var(--blue)';
-  btn.style.background  = 'rgba(14,165,233,0.12)';
+  btn.style.background  = 'rgba(109,123,230,0.12)';
 }
 
 function setHouseholdAction(action){
   householdAction = action;
   const isJoin = action === 'join';
   $('hact-create').style.borderColor = isJoin ? 'var(--border)' : 'var(--blue)';
-  $('hact-create').style.background  = isJoin ? 'transparent' : 'rgba(14,165,233,0.1)';
+  $('hact-create').style.background  = isJoin ? 'transparent' : 'rgba(109,123,230,0.1)';
   $('hact-create').style.color       = isJoin ? 'var(--muted2)' : 'var(--blue2)';
   $('hact-join').style.borderColor   = isJoin ? 'var(--blue)' : 'var(--border)';
-  $('hact-join').style.background    = isJoin ? 'rgba(14,165,233,0.1)' : 'transparent';
+  $('hact-join').style.background    = isJoin ? 'rgba(109,123,230,0.1)' : 'transparent';
   $('hact-join').style.color         = isJoin ? 'var(--blue2)' : 'var(--muted2)';
   $('auth-token-wrap').style.display    = isJoin ? 'block' : 'none';
   $('auth-hname-wrap').style.display    = isJoin ? 'none'  : 'block';
@@ -1431,7 +1432,7 @@ function selectMember(id, btn){
     b.style.background  = 'var(--bg3)';
   });
   btn.style.borderColor = 'var(--blue)';
-  btn.style.background  = 'rgba(14,165,233,0.15)';
+  btn.style.background  = 'rgba(109,123,230,0.15)';
 }
 
 function showAuthTab(mode){
@@ -1496,7 +1497,7 @@ function showTokenWelcome(token, name){
       <div style="font-size:12px;color:var(--muted2);margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px">Kod rodziny</div>
       <div style="
         font-size:32px;font-weight:900;letter-spacing:8px;color:var(--blue2);
-        background:rgba(14,165,233,0.1);border:2px solid var(--blue);
+        background:rgba(109,123,230,0.1);border:2px solid var(--blue);
         border-radius:16px;padding:14px;margin-bottom:12px;
       ">${token}</div>
       <div style="font-size:12px;color:var(--muted2);margin-bottom:20px;line-height:1.6">
@@ -1637,7 +1638,7 @@ async function renderCalendar(){
     let border = '1px solid var(--border)';
     let dayNumColor = isWeekend ? 'var(--red)' : 'var(--text)';
     if(isToday){
-      bg = 'rgba(14,165,233,0.15)';
+      bg = 'rgba(109,123,230,0.15)';
       border = '2px solid var(--blue)';
       dayNumColor = 'var(--blue2)';
     } else if(allDone){
@@ -1817,7 +1818,7 @@ function renderHome(d){
   const avgClean = d.rooms.length ? Math.round(d.rooms.reduce((a,r)=>a+r.cleanliness,0)/d.rooms.length) : 0;
   const top = d.members.length ? [...d.members].sort((a,b)=>b.points-a.points)[0] : null;
   const totalCoins = d.members.reduce((a,m)=>a+m.coins,0);
-  const effortBarColor = effortPct>=100?'#22C55E':effortPct>=60?'#38BDF8':'#0EA5E9';
+  const effortBarColor = effortPct>=100?'#2FB877':effortPct>=60?'#8E97F2':'#6D7BE6';
 
   let html = `
   <div class="topbar">
@@ -2402,7 +2403,7 @@ function showAddTask(prefillName='', prefillDiff='medium'){
     btn.textContent=label;
     btn.onclick=()=>{
       if(selDays.has(i)){ selDays.delete(i); btn.style.background='var(--bg3)'; btn.style.borderColor='var(--border)'; btn.style.color=isWe?'var(--red)':'var(--text2)'; }
-      else { selDays.add(i); btn.style.background='rgba(14,165,233,0.2)'; btn.style.borderColor='var(--blue)'; btn.style.color='var(--blue2)'; }
+      else { selDays.add(i); btn.style.background='rgba(109,123,230,0.2)'; btn.style.borderColor='var(--blue)'; btn.style.color='var(--blue2)'; }
       const names=['Pn','Wt','Śr','Cz','Pt','Sb','Nd'];
       $('task-dow-hint').textContent = selDays.size>0 ? 'Wybrane: '+[...selDays].sort().map(d=>names[d]).join(', ') : '';
     };
@@ -2525,7 +2526,7 @@ async function renderLeaderboard(lb){
     <div class="lb-card" onclick="openMemberDetail('${m.id}')">
       <div class="lb-rank">${medals[i]||`${i+1}`}</div>
       <div class="ava" style="width:52px;height:52px;font-size:30px;
-        background:${i===0?'rgba(245,158,11,0.15)':i===1?'rgba(100,116,139,0.15)':i===2?'rgba(180,83,9,0.15)':'rgba(14,165,233,0.1)'}">
+        background:${i===0?'rgba(245,158,11,0.15)':i===1?'rgba(100,116,139,0.15)':i===2?'rgba(180,83,9,0.15)':'rgba(109,123,230,0.1)'}">
         ${m.emoji}
       </div>
       <div style="flex:1;min-width:0">
@@ -2597,7 +2598,7 @@ function openMemberDetail(memberId){
     const key=d2.toISOString().slice(0,10);
     const cnt=memberAct[key]||0;
     const alpha=cnt===0?0:Math.max(0.15,cnt/maxAct);
-    hmCells+=`<div style="aspect-ratio:1;border-radius:2px;background:${cnt===0?'var(--bg3)':`rgba(14,165,233,${alpha})`}" title="${key}: ${cnt}"></div>`;
+    hmCells+=`<div style="aspect-ratio:1;border-radius:2px;background:${cnt===0?'var(--bg3)':`rgba(109,123,230,${alpha})`}" title="${key}: ${cnt}"></div>`;
   }
 
   const histHtml = hist.length===0
@@ -3302,12 +3303,12 @@ function renderSettings(d){
   // Household token card
   const tok = d.household_token || '';
   html += `
-  <div class="card" style="margin:0 16px 14px;border-color:rgba(14,165,233,0.3)">
+  <div class="card" style="margin:0 16px 14px;border-color:rgba(109,123,230,0.3)">
     <div style="font-weight:800;font-size:15px;margin-bottom:4px">🔑 ${t('set_family_code')}</div>
     <div style="font-size:12px;color:var(--muted2);margin-bottom:14px">${t('set_family_code_desc')}</div>
     <div style="
       font-size:30px;font-weight:900;letter-spacing:6px;color:var(--blue2);
-      background:rgba(14,165,233,0.08);border:1.5px solid rgba(14,165,233,0.25);
+      background:rgba(109,123,230,0.08);border:1.5px solid rgba(109,123,230,0.25);
       border-radius:14px;padding:12px;text-align:center;margin-bottom:12px;
     ">${tok}</div>
     <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center"
@@ -3370,7 +3371,7 @@ function renderSettings(d){
       ${[['pl','🇵🇱 Polski'],['en','🇬🇧 English'],['uk','🇺🇦 Українська']].map(([code,label])=>`
         <button onclick="setLang('${code}')" style="
           flex:1;padding:10px 6px;border-radius:12px;border:2px solid ${_lang===code?'var(--blue)':'var(--border)'};
-          background:${_lang===code?'rgba(14,165,233,0.1)':'var(--bg3)'};
+          background:${_lang===code?'rgba(109,123,230,0.1)':'var(--bg3)'};
           color:${_lang===code?'var(--blue2)':'var(--muted2)'};font-weight:700;font-size:11px;cursor:pointer;
           display:flex;flex-direction:column;align-items:center;gap:3px;
         "><span style="font-size:20px">${label.split(' ')[0]}</span><span>${label.split(' ').slice(1).join(' ')}</span></button>

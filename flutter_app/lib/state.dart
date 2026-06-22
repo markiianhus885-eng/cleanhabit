@@ -15,7 +15,8 @@ class AppState extends ChangeNotifier {
     _themeMode = switch (saved) {
       'light' => ThemeMode.light,
       'dark' => ThemeMode.dark,
-      _ => ThemeMode.system,
+      'system' => ThemeMode.system,
+      _ => ThemeMode.light, // Playful redesign is light-first
     };
     _lang = prefs.getString('lang') ?? 'en';
     _bootstrap();

@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'models.dart';
 import 'theme.dart';
 
 /// A small gold coin dot (radial gradient), matching the mockup.
@@ -62,11 +63,12 @@ class AppCard extends StatelessWidget {
         color: c.card,
         borderRadius: BorderRadius.circular(radius),
         boxShadow: Theme.of(context).brightness == Brightness.light
-            ? [
+            ? const [
                 BoxShadow(
-                  color: const Color(0x0D142819),
-                  blurRadius: 3,
-                  offset: const Offset(0, 1),
+                  color: Color(0x1F3C2D78),
+                  blurRadius: 26,
+                  spreadRadius: -16,
+                  offset: Offset(0, 14),
                 )
               ]
             : null,
@@ -155,7 +157,16 @@ class BarMeter extends StatelessWidget {
   final double value; // 0..1
   final double height;
   final Color? fill;
-  const BarMeter({super.key, required this.value, this.height = 8, this.fill});
+  final Gradient? gradient;
+  final Color? track;
+  const BarMeter({
+    super.key,
+    required this.value,
+    this.height = 8,
+    this.fill,
+    this.gradient,
+    this.track,
+  });
   @override
   Widget build(BuildContext context) {
     final c = context.ch;
@@ -163,13 +174,14 @@ class BarMeter extends StatelessWidget {
       borderRadius: BorderRadius.circular(999),
       child: Container(
         height: height,
-        color: c.trackBg,
+        color: track ?? c.trackBg,
         child: FractionallySizedBox(
           alignment: Alignment.centerLeft,
           widthFactor: value.clamp(0, 1),
           child: Container(
             decoration: BoxDecoration(
-              color: fill ?? c.accent,
+              color: gradient == null ? (fill ?? c.accent) : null,
+              gradient: gradient,
               borderRadius: BorderRadius.circular(999),
             ),
           ),
@@ -340,6 +352,403 @@ AppBar chAppBar(BuildContext context, String title, {List<Widget>? actions}) {
         style: TextStyle(fontWeight: FontWeight.w800, color: c.textPrimary)),
     actions: actions,
   );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Playful gamified components
+// ─────────────────────────────────────────────────────────────────────
+
+/// Indigo gradient surface with a soft decorative circle in the corner.
+/// Used by the level hero, daily-goal banner and reward cards.
+class GradientHero extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final double radius;
+  const GradientHero({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(20),
+    this.radius = 26,
+  });
+  @override
+  Widget build(BuildContext context) {
+    final c = context.ch;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: c.accentGradient,
+        borderRadius: BorderRadius.circular(radius),
+        boxShadow: [
+          BoxShadow(
+            color: c.accentGradB.withValues(alpha: 0.45),
+            blurRadius: 30,
+            spreadRadius: -14,
+            offset: const Offset(0, 16),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(radius),
+        child: Stack(
+          children: [
+            Positioned(
+              top: -30,
+              right: -18,
+              child: Container(
+                width: 110,
+                height: 110,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.10),
+                ),
+              ),
+            ),
+            Padding(padding: padding, child: child),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The level + XP hero card. [pts] are the member's lifetime points.
+class LevelHeroCard extends StatelessWidget {
+  final int pts;
+  final String levelLabel; // e.g. "Level 7 · Champion"
+  final String toNextLabel; // e.g. "160 xp to level 8" (already localized)
+  const LevelHeroCard({
+    super.key,
+    required this.pts,
+    required this.levelLabel,
+    required this.toNextLabel,
+  });
+  @override
+  Widget build(BuildContext context) {
+    final c = context.ch;
+    final white = c.onAccent;
+    return GradientHero(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(levelLabel,
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: white.withValues(alpha: 0.85))),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text('$pts',
+                  style: TextStyle(
+                      fontSize: 40,
+                      height: 1,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -1,
+                      color: white)),
+              const SizedBox(width: 5),
+              Text('xp',
+                  style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: white.withValues(alpha: 0.85))),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(toNextLabel,
+              style: TextStyle(
+                  fontSize: 11.5, color: white.withValues(alpha: 0.78))),
+          const SizedBox(height: 10),
+          BarMeter(
+            value: levelProgress(pts),
+            height: 7,
+            gradient: c.xpGradient,
+            track: Colors.black.withValues(alpha: 0.18),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Small stat tile (streak / coins). Optionally tinted with a gradient.
+class StatChip extends StatelessWidget {
+  final Widget icon;
+  final String value;
+  final String label;
+  final Gradient? gradient;
+  final Color? valueColor;
+  final Color? labelColor;
+  const StatChip({
+    super.key,
+    required this.icon,
+    required this.value,
+    required this.label,
+    this.gradient,
+    this.valueColor,
+    this.labelColor,
+  });
+  @override
+  Widget build(BuildContext context) {
+    final c = context.ch;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 13),
+      decoration: BoxDecoration(
+        color: gradient == null ? c.card : null,
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: gradient == null &&
+                Theme.of(context).brightness == Brightness.light
+            ? const [
+                BoxShadow(
+                    color: Color(0x143C2D78),
+                    blurRadius: 22,
+                    spreadRadius: -14,
+                    offset: Offset(0, 10))
+              ]
+            : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Row(mainAxisSize: MainAxisSize.min, children: [
+            icon,
+            const SizedBox(width: 4),
+            Text(value,
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: valueColor ?? c.textPrimary)),
+          ]),
+          const SizedBox(height: 3),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
+                  color: labelColor ?? c.textFaint)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Flame glyph for streaks.
+class FlameIcon extends StatelessWidget {
+  final double size;
+  const FlameIcon({super.key, this.size = 15});
+  @override
+  Widget build(BuildContext context) =>
+      Icon(Icons.local_fire_department_rounded,
+          size: size, color: context.ch.flame);
+}
+
+/// The +XP / +coins reward row shown under a quest title.
+class RewardTags extends StatelessWidget {
+  final int xp;
+  final int coins;
+  const RewardTags({super.key, required this.xp, required this.coins});
+  @override
+  Widget build(BuildContext context) {
+    final c = context.ch;
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Text('+$xp xp',
+          style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+              color: c.successPillText)),
+      const SizedBox(width: 8),
+      CoinDot(size: 10),
+      const SizedBox(width: 3),
+      Text('+$coins',
+          style: TextStyle(
+              fontSize: 11.5, fontWeight: FontWeight.w700, color: c.star)),
+    ]);
+  }
+}
+
+/// ⚡ quick / 🔥 epic difficulty tag.
+class DiffTag extends StatelessWidget {
+  final int diffLevel; // 1 easy, 2 medium, 3 hard
+  final String quickLabel;
+  final String epicLabel;
+  const DiffTag({
+    super.key,
+    required this.diffLevel,
+    required this.quickLabel,
+    required this.epicLabel,
+  });
+  @override
+  Widget build(BuildContext context) {
+    final c = context.ch;
+    final epic = diffLevel >= 3;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: epic ? c.epicBg : c.quickBg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(epic ? '🔥 $epicLabel' : '⚡ $quickLabel',
+          style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+              color: epic ? c.epicFg : c.quickFg)),
+    );
+  }
+}
+
+/// Maps a task to a representative line icon + tint for its quest tile.
+({IconData icon, Color color}) questIcon(BuildContext context, Task task) {
+  final c = context.ch;
+  switch (task.diff) {
+    case 'hard':
+      return (icon: Icons.cleaning_services_rounded, color: c.epicFg);
+    case 'medium':
+      return (icon: Icons.auto_awesome_rounded, color: const Color(0xFF4D8DE8));
+    default:
+      return (icon: Icons.checkroom_rounded, color: const Color(0xFF7C5CFF));
+  }
+}
+
+/// A single quest (task) row card with icon tile, reward tags and a trailing
+/// action (incomplete ring, done check, or a "go" button).
+class QuestTile extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final Widget? subtitle; // reward tags + diff tag
+  final bool done;
+  final String? doneLabel; // "claimed +40 xp 🎉"
+  final Widget? trailing; // overrides the default ring/check
+  final VoidCallback? onTap;
+  const QuestTile({
+    super.key,
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    this.subtitle,
+    this.done = false,
+    this.doneLabel,
+    this.trailing,
+    this.onTap,
+  });
+  @override
+  Widget build(BuildContext context) {
+    final c = context.ch;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+        decoration: BoxDecoration(
+          color: done ? c.successPillBg : c.card,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: !done && Theme.of(context).brightness == Brightness.light
+              ? const [
+                  BoxShadow(
+                      color: Color(0x1A3C2D78),
+                      blurRadius: 24,
+                      spreadRadius: -18,
+                      offset: Offset(0, 12))
+                ]
+              : null,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: done ? c.successPillBg : c.iconTint,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon,
+                  size: 22, color: done ? c.successPillText : iconColor),
+            ),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        color: done ? c.textFaint : c.textPrimary,
+                        decoration: done
+                            ? TextDecoration.lineThrough
+                            : TextDecoration.none,
+                      )),
+                  const SizedBox(height: 3),
+                  if (done && doneLabel != null)
+                    Text(doneLabel!,
+                        style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: c.successPillText))
+                  else if (subtitle != null)
+                    subtitle!,
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            trailing ??
+                (done
+                    ? Container(
+                        width: 30,
+                        height: 30,
+                        decoration: const BoxDecoration(
+                            color: Color(0xFF16C172), shape: BoxShape.circle),
+                        child: const Icon(Icons.check,
+                            size: 17, color: Colors.white))
+                    : Container(
+                        width: 30,
+                        height: 30,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: c.trackBg, width: 2.5),
+                        ),
+                      )),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Small solid "go" action button used on quest tiles.
+class GoButton extends StatelessWidget {
+  final String label;
+  final VoidCallback? onTap;
+  const GoButton({super.key, required this.label, this.onTap});
+  @override
+  Widget build(BuildContext context) {
+    final c = context.ch;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+        decoration: BoxDecoration(
+          gradient: c.accentGradient,
+          borderRadius: BorderRadius.circular(13),
+          boxShadow: [
+            BoxShadow(
+                color: c.accentGradB.withValues(alpha: 0.5),
+                blurRadius: 14,
+                spreadRadius: -6,
+                offset: const Offset(0, 6)),
+          ],
+        ),
+        child: Text(label,
+            style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w800,
+                color: c.onAccent)),
+      ),
+    );
+  }
 }
 
 /// Lightweight snackbar helper.

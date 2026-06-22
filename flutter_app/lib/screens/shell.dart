@@ -35,6 +35,7 @@ class _AppShellState extends State<AppShell> {
     ];
     return Scaffold(
       backgroundColor: context.ch.pageBg,
+      extendBody: true,
       body: IndexedStack(index: _index, children: pages),
       bottomNavigationBar: _BottomNav(
         tabs: _tabs,
@@ -62,40 +63,58 @@ class _BottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.ch;
-    return Container(
-      decoration: BoxDecoration(
-        color: c.navBar,
-        border: Border(top: BorderSide(color: c.divider)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 64,
-          child: Row(
-            children: List.generate(tabs.length, (i) {
-              final t = tabs[i];
-              final sel = i == index;
-              final color = sel ? c.accent : c.textFaint;
-              return Expanded(
-                child: InkResponse(
-                  onTap: () => onTap(i),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(sel ? t.activeIcon : t.icon, size: 23, color: color),
-                      const SizedBox(height: 4),
-                      Text(context.t(t.label),
-                          style: TextStyle(
-                              fontSize: 11,
-                              fontWeight:
-                                  sel ? FontWeight.w700 : FontWeight.w600,
-                              color: color)),
-                    ],
-                  ),
+    final light = Theme.of(context).brightness == Brightness.light;
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        height: 66,
+        decoration: BoxDecoration(
+          color: c.navBar,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: light
+              ? const [
+                  BoxShadow(
+                    color: Color(0x243C2D78),
+                    blurRadius: 32,
+                    spreadRadius: -10,
+                    offset: Offset(0, 14),
+                  )
+                ]
+              : const [
+                  BoxShadow(
+                    color: Color(0x66000000),
+                    blurRadius: 24,
+                    spreadRadius: -8,
+                    offset: Offset(0, 10),
+                  )
+                ],
+        ),
+        child: Row(
+          children: List.generate(tabs.length, (i) {
+            final t = tabs[i];
+            final sel = i == index;
+            final color = sel ? c.accent : c.textFaint;
+            return Expanded(
+              child: InkResponse(
+                onTap: () => onTap(i),
+                radius: 36,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(sel ? t.activeIcon : t.icon, size: 22, color: color),
+                    const SizedBox(height: 4),
+                    Text(context.t(t.label),
+                        style: TextStyle(
+                            fontSize: 10,
+                            fontWeight:
+                                sel ? FontWeight.w700 : FontWeight.w600,
+                            color: color)),
+                  ],
                 ),
-              );
-            }),
-          ),
+              ),
+            );
+          }),
         ),
       ),
     );
