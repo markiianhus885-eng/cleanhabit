@@ -6,8 +6,8 @@ import '../l10n.dart';
 import '../state.dart';
 import '../theme.dart';
 import '../widgets.dart';
-import 'calendar.dart';
-import 'goals.dart';
+import 'rooms.dart';
+import 'family.dart';
 import 'badges.dart';
 import 'profile.dart';
 import 'assistant.dart';
@@ -43,10 +43,10 @@ class MoreScreen extends StatelessWidget {
             children: [
               _nav(context, Icons.mic_none_rounded, context.t('ai_assistant'),
                   const AssistantScreen(), highlight: true),
-              _nav(context, Icons.calendar_today_outlined,
-                  context.t('calendar_title'), const CalendarScreen()),
-              _nav(context, Icons.flag_outlined, context.t('goals_nav'),
-                  const GoalsScreen()),
+              _nav(context, Icons.grid_view_outlined, context.t('nav_rooms'),
+                  const RoomsScreen()),
+              _nav(context, Icons.people_outline, context.t('nav_family'),
+                  const FamilyScreen()),
               _nav(context, Icons.emoji_events_outlined,
                   context.t('badges_title'), const BadgesScreen()),
               _nav(context, Icons.person_outline, context.t('profile_title'),

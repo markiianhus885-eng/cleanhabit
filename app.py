@@ -4,6 +4,9 @@ import hashlib
 import random
 import string
 import secrets
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 from flask import Flask, jsonify, request, g, session
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -139,6 +142,12 @@ def _ensure_db():
         "ALTER TABLE tasks ADD COLUMN specific_days TEXT DEFAULT NULL",
         "ALTER TABLE history ADD COLUMN type TEXT DEFAULT 'done'",
         "ALTER TABLE tasks ADD COLUMN one_time INTEGER DEFAULT 0",
+        "ALTER TABLE users ADD COLUMN email TEXT",
+        """CREATE TABLE IF NOT EXISTS reset_tokens (
+            token TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            expires_at TEXT NOT NULL
+        )""",
     ]:
         try:
             db.execute(migration)
@@ -186,6 +195,41 @@ def verify_pw(stored, pw):
 
 def gen_token():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+MAIL_FROM    = os.environ.get('MAIL_FROM',    'markiianhus885@gmail.com')
+MAIL_USER    = os.environ.get('MAIL_USER',    'markiianhus885@gmail.com')
+MAIL_PASS    = os.environ.get('MAIL_PASS',    '')
+MAIL_NAME    = os.environ.get('MAIL_NAME',    'CleanHouse')
+
+def send_email(to: str, subject: str, html: str):
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = subject
+    msg['From']    = f'{MAIL_NAME} <{MAIL_FROM}>'
+    msg['To']      = to
+    msg.attach(MIMEText(html, 'html', 'utf-8'))
+    with smtplib.SMTP('smtp.gmail.com', 587) as s:
+        s.starttls()
+        s.login(MAIL_USER, MAIL_PASS)
+        s.sendmail(MAIL_FROM, to, msg.as_string())
+
+def send_reset_email(to: str, code: str):
+    html = f"""
+    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px">
+      <div style="text-align:center;margin-bottom:24px">
+        <span style="font-size:48px">🏠</span>
+        <h2 style="margin:8px 0;color:#6d7be6">CleanHouse</h2>
+      </div>
+      <h3 style="color:#1a1a2e">Reset hasła</h3>
+      <p style="color:#555">Twój jednorazowy kod weryfikacyjny:</p>
+      <div style="background:#f0f0ff;border:2px solid #6d7be6;border-radius:16px;
+                  padding:24px;text-align:center;margin:24px 0">
+        <span style="font-size:36px;font-weight:900;letter-spacing:12px;color:#6d7be6">{code}</span>
+      </div>
+      <p style="color:#888;font-size:13px">Kod ważny przez <strong>15 minut</strong>.
+      Jeśli nie prosiłeś o reset hasła, zignoruj tę wiadomość.</p>
+    </div>
+    """
+    send_email(to, 'CleanHouse — kod resetowania hasła', html)
 
 # ─── AUTH HELPERS ─────────────────────────────────────────────
 def current_user():
@@ -378,6 +422,36 @@ def index():
     with open(os.path.join(os.path.dirname(__file__), 'templates', 'index.html'), encoding='utf-8') as f:
         return f.read()
 
+@app.route('/privacy')
+def privacy():
+    return '''<!DOCTYPE html><html lang="pl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Polityka prywatności — CleanHouse</title>
+<style>body{font-family:sans-serif;max-width:680px;margin:40px auto;padding:0 20px;color:#333;line-height:1.7}
+h1{color:#6d7be6}h2{color:#444;margin-top:32px}a{color:#6d7be6}</style></head>
+<body>
+<h1>🏠 Polityka prywatności CleanHouse</h1>
+<p>Ostatnia aktualizacja: 2026-06-23</p>
+<h2>1. Administrator danych</h2>
+<p>Administratorem danych osobowych jest właściciel aplikacji CleanHouse. Kontakt: <a href="mailto:cleanhouse@myroapp.org">cleanhouse@myroapp.org</a></p>
+<h2>2. Jakie dane zbieramy</h2>
+<ul>
+  <li>Nazwa użytkownika</li>
+  <li>Adres email (do resetowania hasła)</li>
+  <li>Dane o aktywności w aplikacji (ukończone zadania, punkty)</li>
+</ul>
+<h2>3. Cel przetwarzania danych</h2>
+<p>Dane przetwarzamy wyłącznie w celu świadczenia usługi — zarządzania gospodarstwem domowym w ramach aplikacji CleanHouse.</p>
+<h2>4. Podstawa prawna</h2>
+<p>Przetwarzanie opiera się na zgodzie użytkownika (art. 6 ust. 1 lit. a RODO), wyrażonej podczas rejestracji.</p>
+<h2>5. Przechowywanie danych</h2>
+<p>Dane przechowywane są na prywatnym serwerze w Polsce. Nie udostępniamy danych podmiotom trzecim.</p>
+<h2>6. Prawa użytkownika</h2>
+<p>Masz prawo do dostępu, sprostowania, usunięcia oraz przenoszenia swoich danych. Aby je wykonać, skontaktuj się z nami mailowo.</p>
+<h2>7. Pliki cookies</h2>
+<p>Aplikacja używa wyłącznie niezbędnych plików cookie do utrzymania sesji logowania.</p>
+</body></html>''', 200, {'Content-Type': 'text/html; charset=utf-8'}
+
 @app.route('/.well-known/assetlinks.json')
 def assetlinks():
     from flask import send_from_directory
@@ -408,6 +482,7 @@ def auth_register():
     d = request.json or {}
     username     = d.get('username', '').strip().lower()
     password     = d.get('password', '').strip()
+    email        = d.get('email', '').strip().lower()
     display_name = d.get('display_name', '').strip()
     action       = d.get('action', 'create')  # 'create' or 'join'
     token        = d.get('token', '').strip().upper()
@@ -417,6 +492,8 @@ def auth_register():
 
     if not username or not password:
         return jsonify({'error': 'Podaj nazwę użytkownika i hasło'}), 400
+    if not email or '@' not in email:
+        return jsonify({'error': 'Podaj poprawny adres email'}), 400
     if len(password) < 4:
         return jsonify({'error': 'Hasło musi mieć min. 4 znaki'}), 400
 
@@ -461,8 +538,8 @@ def auth_register():
         )
 
     user_id = uid()
-    db.execute("INSERT INTO users(id,username,password_hash,household_id,member_id,role,created_at) VALUES (?,?,?,?,?,?,?)",
-               [user_id, username, make_pw(password), household_id, member_id, role, datetime.now().isoformat()])
+    db.execute("INSERT INTO users(id,username,password_hash,email,household_id,member_id,role,created_at) VALUES (?,?,?,?,?,?,?,?)",
+               [user_id, username, make_pw(password), email, household_id, member_id, role, datetime.now().isoformat()])
     db.commit()
     session['user_id'] = user_id
     user = dict(db.execute("SELECT id,username,household_id,member_id,role FROM users WHERE id=?", [user_id]).fetchone())
@@ -493,6 +570,61 @@ def auth_login():
 @app.route('/api/auth/logout', methods=['POST'])
 def auth_logout():
     session.clear()
+    return jsonify({'ok': True})
+
+@app.route('/api/auth/forgot-password', methods=['POST'])
+@limiter.limit('5 per hour')
+def auth_forgot_password():
+    d = request.json or {}
+    email = d.get('email', '').strip().lower()
+    if not email:
+        return jsonify({'error': 'Podaj adres email'}), 400
+    db = get_db()
+    row = db.execute("SELECT id FROM users WHERE email=?", [email]).fetchone()
+    # Always return ok to avoid email enumeration
+    if row:
+        code = ''.join(random.choices(string.digits, k=6))
+        expires = (datetime.now() + timedelta(minutes=15)).isoformat()
+        tok = secrets.token_hex(32)
+        db.execute("DELETE FROM reset_tokens WHERE user_id=?", [row['id']])
+        db.execute("INSERT INTO reset_tokens(token,user_id,expires_at) VALUES (?,?,?)",
+                   [tok, row['id'], expires])
+        db.commit()
+        try:
+            send_reset_email(email, code)
+            db.execute("UPDATE reset_tokens SET token=? WHERE user_id=?",
+                       [code, row['id']])
+            db.commit()
+        except Exception as e:
+            return jsonify({'error': f'Nie udało się wysłać emaila: {e}'}), 500
+    return jsonify({'ok': True})
+
+@app.route('/api/auth/reset-password', methods=['POST'])
+@limiter.limit('10 per hour')
+def auth_reset_password():
+    d = request.json or {}
+    email    = d.get('email', '').strip().lower()
+    code     = d.get('code', '').strip()
+    new_pass = d.get('password', '').strip()
+    if not email or not code or not new_pass:
+        return jsonify({'error': 'Wypełnij wszystkie pola'}), 400
+    if len(new_pass) < 4:
+        return jsonify({'error': 'Hasło musi mieć min. 4 znaki'}), 400
+    db = get_db()
+    row = db.execute("SELECT id FROM users WHERE email=?", [email]).fetchone()
+    if not row:
+        return jsonify({'error': 'Nieprawidłowy kod lub email'}), 400
+    tok = db.execute(
+        "SELECT * FROM reset_tokens WHERE user_id=? AND token=?",
+        [row['id'], code]
+    ).fetchone()
+    if not tok:
+        return jsonify({'error': 'Nieprawidłowy kod weryfikacyjny'}), 400
+    if datetime.fromisoformat(tok['expires_at']) < datetime.now():
+        return jsonify({'error': 'Kod wygasł — spróbuj ponownie'}), 400
+    db.execute("UPDATE users SET password_hash=? WHERE id=?", [make_pw(new_pass), row['id']])
+    db.execute("DELETE FROM reset_tokens WHERE user_id=?", [row['id']])
+    db.commit()
     return jsonify({'ok': True})
 
 @app.route('/api/auth/me')

@@ -32,6 +32,8 @@ class L10n {
     'nav_tasks': ['Quests', 'Zadania', 'Завдання'],
     'nav_rooms': ['Rooms', 'Pokoje', 'Кімнати'],
     'nav_family': ['Family', 'Rodzina', 'Сім\'я'],
+    'nav_cal': ['Calendar', 'Kalendarz', 'Календар'],
+    'nav_goals': ['Goals', 'Cele', 'Цілі'],
     'nav_more': ['More', 'Więcej', 'Більше'],
 
     // gamification / quests

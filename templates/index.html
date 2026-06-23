@@ -502,6 +502,10 @@ body{
 
     <div class="card" style="padding:20px;gap:12px;display:flex;flex-direction:column">
       <input class="inp" id="auth-username" placeholder="Nazwa użytkownika" autocomplete="username"/>
+      <!-- email shown only on register -->
+      <div id="auth-email-wrap" style="display:none">
+        <input class="inp" id="auth-email" placeholder="Adres email" type="email" autocomplete="email"/>
+      </div>
       <input class="inp" id="auth-password" placeholder="Hasło (min. 4 znaki)" type="password" autocomplete="current-password"/>
 
       <!-- CREATE: household name -->
@@ -556,12 +560,28 @@ body{
         </div>
       </div>
 
+      <!-- GDPR checkbox — shown only on register -->
+      <div id="auth-gdpr-wrap" style="display:none;align-items:flex-start;gap:10px">
+        <input type="checkbox" id="auth-gdpr" style="margin-top:3px;accent-color:var(--blue);width:16px;height:16px;flex-shrink:0"/>
+        <label for="auth-gdpr" style="font-size:12px;color:var(--muted2);line-height:1.5;cursor:pointer">
+          Akceptuję <a href="/privacy" target="_blank" style="color:var(--blue2);text-decoration:underline">politykę prywatności</a>
+          i wyrażam zgodę na przetwarzanie moich danych osobowych przez CleanHouse w celu świadczenia usługi.
+        </label>
+      </div>
+
       <button onclick="doAuth()" style="
         padding:14px;border-radius:14px;border:none;cursor:pointer;font-weight:800;font-size:15px;
         background:linear-gradient(135deg,var(--bluedark),var(--blue2));color:#fff;
       " id="auth-btn">Zaloguj się</button>
     </div>
-    <div style="text-align:center;margin-top:16px;font-size:12px;color:var(--muted2)">
+
+    <!-- Forgot password link (login mode only) -->
+    <div id="auth-forgot-link" style="text-align:center;margin-top:12px">
+      <button onclick="showForgotPassword()" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--blue2);text-decoration:underline">
+        Zapomniałem hasła
+      </button>
+    </div>
+    <div style="text-align:center;margin-top:8px;font-size:12px;color:var(--muted2)">
       Twoje dane są bezpieczne i widoczne tylko dla Twojej rodziny
     </div>
   </div>
@@ -1448,6 +1468,9 @@ function showAuthTab(mode){
   $('tab-register').style.background = mode==='register' ? 'var(--blue)' : 'transparent';
   $('tab-register').style.color = mode==='register' ? '#fff' : 'var(--muted2)';
   $('auth-household-wrap').style.display = mode==='register' ? 'block' : 'none';
+  $('auth-email-wrap').style.display = mode==='register' ? 'block' : 'none';
+  $('auth-gdpr-wrap').style.display = mode==='register' ? 'flex' : 'none';
+  $('auth-forgot-link').style.display = mode==='login' ? 'block' : 'none';
   $('auth-token-wrap').style.display = 'none';
   $('auth-hname-wrap').style.display = 'none';
   $('auth-displayname-wrap').style.display = 'none';
@@ -1466,6 +1489,10 @@ async function doAuth(){
   const url = authMode==='login' ? '/api/auth/login' : '/api/auth/register';
   const body = {username, password};
   if(authMode==='register'){
+    const email = $('auth-email').value.trim();
+    if(!email || !email.includes('@')){ errEl.style.display='block'; errEl.textContent='Podaj poprawny adres email'; return; }
+    if(!$('auth-gdpr').checked){ errEl.style.display='block'; errEl.textContent='Musisz zaakceptować politykę prywatności'; return; }
+    body.email = email;
     body.action = householdAction;
     if(householdAction === 'join'){
       const tok = $('auth-token').value.trim().toUpperCase();
@@ -1492,6 +1519,60 @@ async function doAuth(){
   if(authMode==='register' && householdAction==='create' && res.household){
     showTokenWelcome(res.household.token, res.household.name);
   }
+}
+
+function showForgotPassword(){
+  openModal(`
+    <div style="padding:8px 0">
+      <div style="text-align:center;font-size:40px;margin-bottom:12px">🔐</div>
+      <h3 style="margin-bottom:4px;text-align:center">Reset hasła</h3>
+      <p style="font-size:13px;color:var(--muted2);text-align:center;margin-bottom:20px">Podaj email podany przy rejestracji.<br>Wyślemy kod weryfikacyjny.</p>
+      <div id="fp-step1">
+        <input class="inp" id="fp-email" placeholder="Twój adres email" type="email" style="margin-bottom:12px"/>
+        <div id="fp-err" style="display:none;color:#fca5a5;font-size:13px;margin-bottom:10px"></div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="fpSendCode()">Wyślij kod</button>
+      </div>
+      <div id="fp-step2" style="display:none">
+        <p style="font-size:13px;color:var(--muted2);margin-bottom:12px">Wpisz 6-cyfrowy kod z emaila:</p>
+        <input class="inp" id="fp-code" placeholder="000000" maxlength="6"
+          style="text-align:center;letter-spacing:8px;font-size:22px;font-weight:900;margin-bottom:12px"
+          oninput="this.value=this.value.replace(/[^0-9]/g,'')"/>
+        <input class="inp" id="fp-newpass" placeholder="Nowe hasło (min. 4 znaki)" type="password" style="margin-bottom:12px"/>
+        <div id="fp-err2" style="display:none;color:#fca5a5;font-size:13px;margin-bottom:10px"></div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="fpResetPass()">Zmień hasło</button>
+      </div>
+    </div>
+  `);
+}
+
+async function fpSendCode(){
+  const email = $('fp-email').value.trim();
+  const errEl = $('fp-err');
+  errEl.style.display = 'none';
+  if(!email||!email.includes('@')){ errEl.style.display='block'; errEl.textContent='Podaj poprawny email'; return; }
+  const res = await POST('/api/auth/forgot-password', {email});
+  if(res.error){ errEl.style.display='block'; errEl.textContent=res.error; return; }
+  $('fp-step1').style.display = 'none';
+  $('fp-step2').style.display = 'block';
+}
+
+async function fpResetPass(){
+  const email = $('fp-email').value.trim();
+  const code = $('fp-code').value.trim();
+  const password = $('fp-newpass').value.trim();
+  const errEl = $('fp-err2');
+  errEl.style.display = 'none';
+  if(!code||code.length<6){ errEl.style.display='block'; errEl.textContent='Wpisz 6-cyfrowy kod'; return; }
+  if(!password||password.length<4){ errEl.style.display='block'; errEl.textContent='Hasło musi mieć min. 4 znaki'; return; }
+  const res = await POST('/api/auth/reset-password', {email, code, password});
+  if(res.error){ errEl.style.display='block'; errEl.textContent=res.error; return; }
+  closeModal();
+  showAuthTab('login');
+  const ok = document.createElement('div');
+  ok.style.cssText = 'background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.4);border-radius:12px;padding:10px 14px;color:#86efac;font-size:13px;margin-bottom:14px;text-align:center';
+  ok.textContent = '✅ Hasło zmienione! Możesz się zalogować.';
+  $('auth-error').parentNode.insertBefore(ok, $('auth-error'));
+  setTimeout(()=>ok.remove(), 5000);
 }
 
 function showTokenWelcome(token, name){
@@ -3314,13 +3395,33 @@ function renderSettings(d){
   <div class="card" style="margin:0 16px 14px;border-color:rgba(109,123,230,0.3)">
     <div style="font-weight:800;font-size:15px;margin-bottom:4px">🔑 ${t('set_family_code')}</div>
     <div style="font-size:12px;color:var(--muted2);margin-bottom:14px">${t('set_family_code_desc')}</div>
-    <div style="
+    <div id="tok-main" onclick="copyToken('${tok}')" style="
       font-size:30px;font-weight:900;letter-spacing:6px;color:var(--blue2);
       background:rgba(109,123,230,0.08);border:1.5px solid rgba(109,123,230,0.25);
       border-radius:14px;padding:12px;text-align:center;margin-bottom:12px;
-    ">${tok}</div>
-    <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center"
-      onclick="copyToken('${tok}')">📋 ${t('set_copy')}</button>
+      cursor:pointer;user-select:none;transition:background 0.15s
+    " onmouseenter="this.style.background='rgba(109,123,230,0.18)'"
+       onmouseleave="this.style.background='rgba(109,123,230,0.08)'">${tok}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div onclick="copyToken('${tok}')" style="
+        cursor:pointer;border-radius:12px;padding:12px 8px;text-align:center;
+        background:rgba(109,123,230,0.08);border:1.5px solid rgba(109,123,230,0.2);
+        transition:background 0.15s;user-select:none
+      " onmouseenter="this.style.background='rgba(109,123,230,0.18)'"
+         onmouseleave="this.style.background='rgba(109,123,230,0.08)'">
+        <div style="font-size:22px;margin-bottom:4px">📋</div>
+        <div style="font-size:11px;font-weight:700;color:var(--blue2)">${t('set_copy')}</div>
+      </div>
+      <div onclick="copyToken('${tok}')" style="
+        cursor:pointer;border-radius:12px;padding:12px 8px;text-align:center;
+        background:rgba(109,123,230,0.08);border:1.5px solid rgba(109,123,230,0.2);
+        transition:background 0.15s;user-select:none
+      " onmouseenter="this.style.background='rgba(109,123,230,0.18)'"
+         onmouseleave="this.style.background='rgba(109,123,230,0.08)'">
+        <div style="font-size:22px;margin-bottom:4px">🔑</div>
+        <div style="font-size:11px;font-weight:700;color:var(--blue2)">${tok}</div>
+      </div>
+    </div>
   </div>
 
   <div class="card" style="margin:0 16px 14px">

@@ -3,8 +3,8 @@ import '../theme.dart';
 import '../l10n.dart';
 import 'today.dart';
 import 'tasks.dart';
-import 'rooms.dart';
-import 'family.dart';
+import 'calendar.dart';
+import 'goals.dart';
 import 'stub.dart';
 
 class AppShell extends StatefulWidget {
@@ -19,8 +19,8 @@ class _AppShellState extends State<AppShell> {
   static const _tabs = <_TabDef>[
     _TabDef('nav_today', Icons.home_outlined, Icons.home_rounded),
     _TabDef('nav_tasks', Icons.check_circle_outline, Icons.check_circle),
-    _TabDef('nav_rooms', Icons.grid_view_outlined, Icons.grid_view_rounded),
-    _TabDef('nav_family', Icons.people_outline, Icons.people_rounded),
+    _TabDef('nav_cal', Icons.calendar_today_outlined, Icons.calendar_today_rounded),
+    _TabDef('nav_goals', Icons.flag_outlined, Icons.flag_rounded),
     _TabDef('nav_more', Icons.more_horiz, Icons.more_horiz),
   ];
 
@@ -29,8 +29,8 @@ class _AppShellState extends State<AppShell> {
     final pages = const [
       TodayScreen(),
       TasksScreen(),
-      RoomsScreen(),
-      FamilyScreen(),
+      CalendarScreen(),
+      GoalsScreen(),
       MoreScreen(),
     ];
     return Scaffold(
