@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'models.dart';
 import 'theme.dart';
 
-/// A gold coin with 3-D edge, shine highlight and a "₵" letter.
+/// A gold coin with 3-D rim, gradient face and shine — no text inside.
 class CoinDot extends StatelessWidget {
   final double size;
   const CoinDot({super.key, this.size = 18});
@@ -27,46 +27,36 @@ class _CoinPainter extends CustomPainter {
     final r = s.width / 2;
     final c = Offset(r, r);
 
-    // outer edge (darker rim)
-    canvas.drawCircle(
-      c, r,
-      Paint()..color = Color.lerp(coinB, Colors.brown.shade800, 0.4)!,
-    );
+    // dark outer rim
+    canvas.drawCircle(c, r,
+        Paint()..color = const Color(0xFF8B6200));
 
-    // main face — linear gradient top-left bright → bottom-right dark
+    // main face — radial: bright centre → dark edge
     canvas.drawCircle(
-      c, r * 0.88,
+      c, r * 0.86,
       Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [coinA, coinB, Color.lerp(coinB, Colors.brown.shade700, 0.5)!],
-          stops: const [0.0, 0.55, 1.0],
-        ).createShader(Rect.fromCircle(center: c, radius: r * 0.88)),
+        ..shader = RadialGradient(
+          center: const Alignment(-0.3, -0.35),
+          radius: 1.0,
+          colors: [coinA, coinB, const Color(0xFFB8740A)],
+          stops: const [0.0, 0.6, 1.0],
+        ).createShader(Rect.fromCircle(center: c, radius: r * 0.86)),
     );
 
-    // top-left shine highlight
+    // inner engraved ring (thin darker circle)
+    canvas.drawCircle(c, r * 0.68,
+        Paint()
+          ..color = const Color(0x30000000)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = r * 0.07);
+
+    // top-left specular shine
     canvas.drawCircle(
-      Offset(r * 0.62, r * 0.52), r * 0.3,
+      Offset(r * 0.58, r * 0.48), r * 0.28,
       Paint()
-        ..color = Colors.white.withAlpha(60)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+        ..color = Colors.white.withAlpha(70)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, r * 0.18),
     );
-
-    // "₵" letter
-    final tp = TextPainter(
-      text: TextSpan(
-        text: '₵',
-        style: TextStyle(
-          fontSize: r * 0.95,
-          fontWeight: FontWeight.w900,
-          color: Color.lerp(coinB, Colors.brown.shade900, 0.6)!,
-          height: 1,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    tp.paint(canvas, Offset(r - tp.width / 2, r - tp.height / 2));
   }
 
   @override
