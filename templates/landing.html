@@ -6,7 +6,7 @@
 <title>CleanHouse — Sprzątanie bez stresu</title>
 <meta name="description" content="Zarządzaj sprzątaniem w domu razem z rodziną. Zadania, pokoje, nagrody — wszystko w jednej aplikacji.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -16,23 +16,33 @@
 }
 html{scroll-behavior:smooth}
 body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--white);color:var(--navy);overflow-x:hidden}
+body.lang-uk{font-family:'Manrope',sans-serif}
 
 /* NAV */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(255,255,255,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 2rem}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(255,255,255,0.88);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 2rem}
 .nav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:64px}
 .logo{display:flex;align-items:center;gap:.5rem;font-weight:800;font-size:1.2rem;text-decoration:none;color:var(--navy)}
 .logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--green),var(--green-dark));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+.nav-right{display:flex;align-items:center;gap:1.5rem}
 .nav-links{display:flex;align-items:center;gap:2rem;list-style:none}
 .nav-links a{text-decoration:none;color:var(--muted);font-weight:500;font-size:.92rem;transition:color .2s}
 .nav-links a:hover{color:var(--green-dark)}
 .nav-cta{background:var(--green);color:#fff!important;padding:.45rem 1.1rem;border-radius:8px;font-weight:600!important;transition:background .2s!important}
 .nav-cta:hover{background:var(--green-dark)!important}
+
+/* LANG SWITCHER */
+.lang-switcher{display:flex;gap:2px;background:var(--off);border:1px solid var(--border);border-radius:8px;padding:3px}
+.lang-btn{border:none;background:transparent;padding:.25rem .55rem;border-radius:6px;font-size:.78rem;font-weight:700;cursor:pointer;color:var(--muted);transition:.18s;line-height:1}
+.lang-btn:hover{color:var(--navy)}
+.lang-btn.active{background:#fff;color:var(--navy);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+
 .nav-toggle{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:.3rem}
 .nav-toggle span{width:22px;height:2px;background:var(--navy);border-radius:2px;transition:.3s}
 @media(max-width:720px){
   .nav-links{display:none;flex-direction:column;position:absolute;top:64px;left:0;right:0;background:#fff;padding:1rem 2rem 1.5rem;border-bottom:1px solid var(--border);gap:1rem}
   .nav-links.open{display:flex}
   .nav-toggle{display:flex}
+  .lang-switcher{order:-1}
 }
 
 /* HERO */
@@ -42,7 +52,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(255,255,255,
 .badge{display:inline-flex;align-items:center;gap:.4rem;background:var(--green-light);color:var(--green-dark);padding:.3rem .8rem;border-radius:99px;font-size:.8rem;font-weight:700;margin-bottom:1.2rem;letter-spacing:.04em}
 h1{font-size:clamp(2rem,5vw,3.2rem);font-weight:800;line-height:1.15;letter-spacing:-.02em;margin-bottom:1.2rem}
 h1 span{color:var(--green)}
-.hero-sub{font-size:1.1rem;color:var(--muted);line-height:1.7;margin-bottom:2rem;max-width:480px}
+.hero-sub{font-size:1.05rem;color:var(--muted);line-height:1.7;margin-bottom:2rem;max-width:480px}
 @media(max-width:860px){.hero-sub{margin:0 auto 2rem}}
 .hero-btns{display:flex;gap:1rem;flex-wrap:wrap}
 @media(max-width:860px){.hero-btns{justify-content:center}}
@@ -53,7 +63,6 @@ h1 span{color:var(--green)}
 .btn-secondary:hover{background:var(--border)}
 .hero-stats{display:flex;gap:2rem;margin-top:2.5rem}
 @media(max-width:860px){.hero-stats{justify-content:center}}
-.stat{text-align:left}
 .stat-num{font-size:1.6rem;font-weight:800;color:var(--navy)}
 .stat-label{font-size:.8rem;color:var(--muted);font-weight:500}
 
@@ -95,10 +104,9 @@ section{padding:5rem 2rem}
 .feature-title{font-weight:700;font-size:1rem;margin-bottom:.5rem}
 .feature-desc{color:var(--muted);font-size:.9rem;line-height:1.6}
 
-/* HOW IT WORKS */
+/* HOW */
 #how{background:#fff}
-.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:2rem;margin-top:3rem;counter-reset:step}
-.step{position:relative;padding-left:0}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:2rem;margin-top:3rem}
 .step-num{width:44px;height:44px;background:linear-gradient(135deg,var(--green),var(--green-dark));border-radius:12px;color:#fff;font-weight:800;font-size:1rem;display:flex;align-items:center;justify-content:center;margin-bottom:1rem}
 .step h3{font-weight:700;font-size:1rem;margin-bottom:.5rem}
 .step p{color:var(--muted);font-size:.9rem;line-height:1.6}
@@ -120,9 +128,7 @@ section{padding:5rem 2rem}
 .lb-row{display:flex;align-items:center;gap:.8rem;padding:.6rem 0;border-bottom:1px solid rgba(255,255,255,.06)}
 .lb-row:last-child{border:none}
 .lb-pos{width:24px;font-weight:800;font-size:.9rem;color:rgba(255,255,255,.3);flex-shrink:0}
-.lb-pos.gold{color:#f59e0b}
-.lb-pos.silver{color:#94a3b8}
-.lb-pos.bronze{color:#b45309}
+.lb-pos.gold{color:#f59e0b}.lb-pos.silver{color:#94a3b8}.lb-pos.bronze{color:#b45309}
 .lb-avatar{width:32px;height:32px;border-radius:50%;font-size:.85rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .lb-name{color:#fff;font-weight:600;font-size:.88rem;flex:1}
 .lb-pts{color:var(--green);font-weight:700;font-size:.88rem}
@@ -139,16 +145,13 @@ section{padding:5rem 2rem}
 .store-btn .sb-text small{display:block;font-size:.65rem;opacity:.7;font-weight:400}
 .web-badge{background:var(--green);padding:.3rem .9rem;border-radius:99px;font-size:.78rem;font-weight:700;color:#fff;margin-bottom:1.5rem;display:inline-block}
 
-/* FOOTER */
 footer{background:var(--navy);color:rgba(255,255,255,.5);padding:2.5rem 2rem;text-align:center;font-size:.85rem}
 footer a{color:var(--green);text-decoration:none}
 footer a:hover{text-decoration:underline}
 
-/* SCROLL ANIMATIONS */
 .reveal{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease}
 .reveal.visible{opacity:1;transform:none}
 
-/* TABS */
 .tabs{display:flex;gap:.5rem;background:var(--border);border-radius:12px;padding:.3rem;margin-bottom:2rem;width:fit-content}
 .tab{padding:.5rem 1.2rem;border-radius:9px;font-weight:600;font-size:.88rem;cursor:pointer;color:var(--muted);transition:.2s;border:none;background:transparent}
 .tab.active{background:#fff;color:var(--navy);box-shadow:0 1px 4px rgba(0,0,0,.1)}
@@ -164,15 +167,23 @@ footer a:hover{text-decoration:underline}
       <div class="logo-icon">🏠</div>
       CleanHouse
     </a>
-    <div class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Menu">
-      <span></span><span></span><span></span>
+    <div class="nav-right">
+      <!-- LANG SWITCHER -->
+      <div class="lang-switcher">
+        <button class="lang-btn active" onclick="setLang('pl')">🇵🇱 PL</button>
+        <button class="lang-btn" onclick="setLang('en')">🇬🇧 EN</button>
+        <button class="lang-btn" onclick="setLang('uk')">🇺🇦 UK</button>
+      </div>
+      <div class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="#features" data-i18n="nav_features">Funkcje</a></li>
+        <li><a href="#how" data-i18n="nav_how">Jak działa</a></li>
+        <li><a href="#family" data-i18n="nav_family">Rodzina</a></li>
+        <li><a href="#download" class="nav-cta" data-i18n="nav_download">Pobierz</a></li>
+      </ul>
     </div>
-    <ul class="nav-links">
-      <li><a href="#features">Funkcje</a></li>
-      <li><a href="#how">Jak działa</a></li>
-      <li><a href="#family">Rodzina</a></li>
-      <li><a href="#download" class="nav-cta">Pobierz</a></li>
-    </ul>
   </div>
 </nav>
 
@@ -180,44 +191,44 @@ footer a:hover{text-decoration:underline}
 <section class="hero">
   <div class="hero-inner">
     <div class="hero-content">
-      <div class="badge">✨ Darmowa aplikacja</div>
-      <h1>Sprzątanie<br>bez chaosu<br>i <span>bez stresu</span></h1>
-      <p class="hero-sub">Przydziel zadania, śledź postępy i motywuj całą rodzinę do utrzymania porządku — w jednej prostej aplikacji.</p>
+      <div class="badge" data-i18n="hero_badge">✨ Darmowa aplikacja</div>
+      <h1 data-i18n-html="hero_h1">Sprzątanie<br>bez chaosu<br>i <span>bez stresu</span></h1>
+      <p class="hero-sub" data-i18n="hero_sub">Przydziel zadania, śledź postępy i motywuj całą rodzinę do utrzymania porządku — w jednej prostej aplikacji.</p>
       <div class="hero-btns">
-        <a href="/app" class="btn btn-primary">🚀 Otwórz aplikację</a>
-        <a href="#how" class="btn btn-secondary">Zobacz jak działa</a>
+        <a href="/app" class="btn btn-primary" data-i18n="hero_btn_open">🚀 Otwórz aplikację</a>
+        <a href="#how" class="btn btn-secondary" data-i18n="hero_btn_how">Zobacz jak działa</a>
       </div>
       <div class="hero-stats">
-        <div class="stat"><div class="stat-num">5+</div><div class="stat-label">języków UI</div></div>
-        <div class="stat"><div class="stat-num">∞</div><div class="stat-label">pokoi i zadań</div></div>
-        <div class="stat"><div class="stat-num">100%</div><div class="stat-label">za darmo</div></div>
+        <div class="stat"><div class="stat-num">3</div><div class="stat-label" data-i18n="stat_lang">języki UI</div></div>
+        <div class="stat"><div class="stat-num">∞</div><div class="stat-label" data-i18n="stat_tasks">pokoje i zadania</div></div>
+        <div class="stat"><div class="stat-num">100%</div><div class="stat-label" data-i18n="stat_free">za darmo</div></div>
       </div>
     </div>
     <div class="hero-visual">
       <div class="phone floating">
-        <div class="phone-badge">🏆 Ranking</div>
+        <div class="phone-badge">🏆 <span data-i18n="phone_rank">Ranking</span></div>
         <div class="phone-screen">
           <div class="phone-status"><span>9:41</span><span>●●●</span></div>
-          <div class="phone-header">Dzisiaj 🌿</div>
-          <div class="phone-sub">3 zadania do zrobienia</div>
+          <div class="phone-header" data-i18n="phone_today">Dzisiaj 🌿</div>
+          <div class="phone-sub" data-i18n="phone_tasks">3 zadania do zrobienia</div>
           <div class="task-card">
             <div class="task-icon g">🧹</div>
-            <div><div class="task-name">Odkurzanie salonu</div><div class="task-who">Ania · 15 pkt</div></div>
+            <div><div class="task-name" data-i18n="phone_t1">Odkurzanie salonu</div><div class="task-who">Ania · 15 pkt</div></div>
             <div class="task-check">✓</div>
           </div>
           <div class="task-card">
             <div class="task-icon b">🍽️</div>
-            <div><div class="task-name">Zmywarka</div><div class="task-who">Marek · 10 pkt</div></div>
+            <div><div class="task-name" data-i18n="phone_t2">Zmywarka</div><div class="task-who">Marek · 10 pkt</div></div>
           </div>
           <div class="task-card">
             <div class="task-icon y">🛁</div>
-            <div><div class="task-name">Łazienka</div><div class="task-who">Ty · 20 pkt</div></div>
+            <div><div class="task-name" data-i18n="phone_t3">Łazienka</div><div class="task-who">Ty · 20 pkt</div></div>
           </div>
           <div style="height:.8rem"></div>
           <div style="background:rgba(34,197,94,.15);border-radius:10px;padding:.6rem .8rem;margin-top:auto">
-            <div style="color:rgba(255,255,255,.5);font-size:.62rem;margin-bottom:.3rem">TWÓJ POSTĘP</div>
+            <div style="color:rgba(255,255,255,.5);font-size:.62rem;margin-bottom:.3rem" data-i18n="phone_progress">TWÓJ POSTĘP</div>
             <div style="height:6px;background:rgba(255,255,255,.1);border-radius:3px"><div style="width:65%;height:100%;background:var(--green);border-radius:3px"></div></div>
-            <div style="color:var(--green);font-size:.68rem;margin-top:.3rem;font-weight:700">65 / 100 pkt do LV5</div>
+            <div style="color:var(--green);font-size:.68rem;margin-top:.3rem;font-weight:700">65 / 100 pkt → LV5</div>
           </div>
           <div class="phone-bar" style="margin-top:.8rem">
             <span class="active">🏠</span><span>✅</span><span>📅</span><span>🏆</span><span>⋯</span>
@@ -232,119 +243,43 @@ footer a:hover{text-decoration:underline}
 <section id="features">
   <div class="section-inner">
     <div class="reveal">
-      <div class="section-tag">Funkcje</div>
-      <h2 class="section-title">Wszystko czego potrzebuje dom</h2>
-      <p class="section-sub">Od codziennych zadań po długoterminowe cele — CleanHouse ma to wszystko w jednym miejscu.</p>
+      <div class="section-tag" data-i18n="feat_tag">Funkcje</div>
+      <h2 class="section-title" data-i18n="feat_title">Wszystko czego potrzebuje dom</h2>
+      <p class="section-sub" data-i18n="feat_sub">Od codziennych zadań po długoterminowe cele — CleanHouse ma to wszystko w jednym miejscu.</p>
     </div>
-
     <div class="tabs reveal" style="margin-top:2rem">
-      <button class="tab active" onclick="switchTab(event,'tab-org')">🗂️ Organizacja</button>
-      <button class="tab" onclick="switchTab(event,'tab-mot')">🏆 Motywacja</button>
-      <button class="tab" onclick="switchTab(event,'tab-ai')">🤖 AI</button>
+      <button class="tab active" onclick="switchTab(event,'tab-org')" data-i18n="tab_org">🗂️ Organizacja</button>
+      <button class="tab" onclick="switchTab(event,'tab-mot')" data-i18n="tab_mot">🏆 Motywacja</button>
+      <button class="tab" onclick="switchTab(event,'tab-ai')" data-i18n="tab_ai">🤖 AI</button>
     </div>
-
     <div id="tab-org" class="tab-panel active">
       <div class="features-grid">
-        <div class="feature-card reveal">
-          <span class="feature-emoji">🏠</span>
-          <div class="feature-title">Pokoje i obszary</div>
-          <div class="feature-desc">Podziel dom na pokoje. Przydziel zadania do konkretnych miejsc — łazienka, kuchnia, ogród, garaż.</div>
-        </div>
-        <div class="feature-card reveal">
-          <span class="feature-emoji">📅</span>
-          <div class="feature-title">Kalendarz zadań</div>
-          <div class="feature-desc">Widok kalendarza pokazuje kiedy co jest zaplanowane. Codzienne, tygodniowe, miesięczne — wszystko widać.</div>
-        </div>
-        <div class="feature-card reveal">
-          <span class="feature-emoji">👤</span>
-          <div class="feature-title">Przydzielanie do osób</div>
-          <div class="feature-desc">Każde zadanie można przypisać konkretnemu domownikowi. Wiadomo kto za co odpowiada.</div>
-        </div>
-        <div class="feature-card reveal">
-          <span class="feature-emoji">✅</span>
-          <div class="feature-title">Zatwierdzanie zadań</div>
-          <div class="feature-desc">Rodzic może włączyć tryb zatwierdzania — dziecko zgłasza wykonanie, dorosły weryfikuje i przyznaje punkty.</div>
-        </div>
-        <div class="feature-card reveal">
-          <span class="feature-emoji">🎯</span>
-          <div class="feature-title">Cele i nagrody</div>
-          <div class="feature-desc">Ustal cel (np. rower, gra, wyjście do kina) i cenę w punktach. Dzieci zbierają punkty i odblokowują nagrody.</div>
-        </div>
-        <div class="feature-card reveal">
-          <span class="feature-emoji">🔔</span>
-          <div class="feature-title">Jednorazowe i cykliczne</div>
-          <div class="feature-desc">Twórz zadania jednorazowe albo cykliczne. Zrób coraz raz, bo np. mycie okien co kwartał — ustawisz to łatwo.</div>
-        </div>
+        <div class="feature-card reveal"><span class="feature-emoji">🏠</span><div class="feature-title" data-i18n="f1t">Pokoje i obszary</div><div class="feature-desc" data-i18n="f1d">Podziel dom na pokoje. Przydziel zadania do konkretnych miejsc — łazienka, kuchnia, ogród, garaż.</div></div>
+        <div class="feature-card reveal"><span class="feature-emoji">📅</span><div class="feature-title" data-i18n="f2t">Kalendarz zadań</div><div class="feature-desc" data-i18n="f2d">Widok kalendarza pokazuje kiedy co jest zaplanowane. Codzienne, tygodniowe, miesięczne — wszystko widać.</div></div>
+        <div class="feature-card reveal"><span class="feature-emoji">👤</span><div class="feature-title" data-i18n="f3t">Przydzielanie do osób</div><div class="feature-desc" data-i18n="f3d">Każde zadanie można przypisać konkretnemu domownikowi. Wiadomo kto za co odpowiada.</div></div>
+        <div class="feature-card reveal"><span class="feature-emoji">✅</span><div class="feature-title" data-i18n="f4t">Zatwierdzanie zadań</div><div class="feature-desc" data-i18n="f4d">Rodzic może włączyć tryb zatwierdzania — dziecko zgłasza wykonanie, dorosły weryfikuje i przyznaje punkty.</div></div>
+        <div class="feature-card reveal"><span class="feature-emoji">🎯</span><div class="feature-title" data-i18n="f5t">Cele i nagrody</div><div class="feature-desc" data-i18n="f5d">Ustal cel (np. rower, gra, wyjście do kina) i cenę w punktach. Dzieci zbierają punkty i odblokowują nagrody.</div></div>
+        <div class="feature-card reveal"><span class="feature-emoji">🔔</span><div class="feature-title" data-i18n="f6t">Jednorazowe i cykliczne</div><div class="feature-desc" data-i18n="f6d">Twórz zadania jednorazowe albo cykliczne. Mycie okien co kwartał — ustawisz to łatwo.</div></div>
       </div>
     </div>
-
     <div id="tab-mot" class="tab-panel">
       <div class="features-grid">
-        <div class="feature-card reveal">
-          <span class="feature-emoji">🏆</span>
-          <div class="feature-title">Ranking rodziny</div>
-          <div class="feature-desc">Tabela wyników w czasie tygodnia, miesiąca i ogólna. Zdrowa rywalizacja motywuje do działania.</div>
-        </div>
-        <div class="feature-card reveal">
-          <span class="feature-emoji">⭐</span>
-          <div class="feature-title">Punkty i poziomy</div>
-          <div class="feature-desc">Za każde zadanie punkty. Zbieraj je i awansuj przez poziomy — od LV1 do LV10 i dalej.</div>
-        </div>
-        <div class="feature-card reveal">
-          <span class="feature-emoji">🎖️</span>
-          <div class="feature-title">Odznaki</div>
-          <div class="feature-desc">Specjalne odznaki za osiągnięcia: pierwsze zadanie, 7-dniowa seria, 100 zadań, perfekcjonista i wiele więcej.</div>
-        </div>
-        <div class="feature-card reveal">
-          <span class="feature-emoji">🛍️</span>
-          <div class="feature-title">Sklep z nagrodami</div>
-          <div class="feature-desc">Rodzic ustawia co można kupić za punkty. Dzieci widzą cel i pracują na niego z motywacją.</div>
-        </div>
-        <div class="feature-card reveal">
-          <span class="feature-emoji">📊</span>
-          <div class="feature-title">Statystyki</div>
-          <div class="feature-desc">Szczegółowe statystyki — ile zadań zrobiono, przez kogo, kiedy. Pełny obraz aktywności w domu.</div>
-        </div>
-        <div class="feature-card reveal">
-          <span class="feature-emoji">🔥</span>
-          <div class="feature-title">Seria dni</div>
-          <div class="feature-desc">Utrzymuj codzienną serię wykonanych zadań. Streak motywuje do regularności bardziej niż cokolwiek innego.</div>
-        </div>
+        <div class="feature-card reveal"><span class="feature-emoji">🏆</span><div class="feature-title" data-i18n="m1t">Ranking rodziny</div><div class="feature-desc" data-i18n="m1d">Tabela wyników w czasie tygodnia, miesiąca i ogólna. Zdrowa rywalizacja motywuje do działania.</div></div>
+        <div class="feature-card reveal"><span class="feature-emoji">⭐</span><div class="feature-title" data-i18n="m2t">Punkty i poziomy</div><div class="feature-desc" data-i18n="m2d">Za każde zadanie punkty. Zbieraj je i awansuj przez poziomy — od LV1 do LV10 i dalej.</div></div>
+        <div class="feature-card reveal"><span class="feature-emoji">🎖️</span><div class="feature-title" data-i18n="m3t">Odznaki</div><div class="feature-desc" data-i18n="m3d">Specjalne odznaki za osiągnięcia: pierwsze zadanie, 7-dniowa seria, 100 zadań i wiele więcej.</div></div>
+        <div class="feature-card reveal"><span class="feature-emoji">🛍️</span><div class="feature-title" data-i18n="m4t">Sklep z nagrodami</div><div class="feature-desc" data-i18n="m4d">Rodzic ustawia co można kupić za punkty. Dzieci widzą cel i pracują na niego z motywacją.</div></div>
+        <div class="feature-card reveal"><span class="feature-emoji">📊</span><div class="feature-title" data-i18n="m5t">Statystyki</div><div class="feature-desc" data-i18n="m5d">Szczegółowe statystyki — ile zadań zrobiono, przez kogo, kiedy. Pełny obraz aktywności.</div></div>
+        <div class="feature-card reveal"><span class="feature-emoji">🔥</span><div class="feature-title" data-i18n="m6t">Seria dni</div><div class="feature-desc" data-i18n="m6d">Utrzymuj codzienną serię wykonanych zadań. Streak motywuje do regularności bardziej niż cokolwiek innego.</div></div>
       </div>
     </div>
-
     <div id="tab-ai" class="tab-panel">
       <div class="features-grid">
-        <div class="feature-card reveal">
-          <span class="feature-emoji">🎙️</span>
-          <div class="feature-title">Asystent głosowy</div>
-          <div class="feature-desc">Powiedz głosem „dodaj zadanie odkurzanie do salonu" albo „zakończ mycie okien" — AI rozumie i wykona.</div>
-        </div>
-        <div class="feature-card reveal">
-          <span class="feature-emoji">🧠</span>
-          <div class="feature-title">Claude AI w środku</div>
-          <div class="feature-desc">Asystent napędzany przez Claude (Anthropic) — najlepszy model językowy do rozumienia naturalnych komend po polsku.</div>
-        </div>
-        <div class="feature-card reveal">
-          <span class="feature-emoji">💡</span>
-          <div class="feature-title">Sugestie zadań</div>
-          <div class="feature-desc">Wbudowane szablony 20 popularnych zadań domowych — szybko dodaj bez pisania od zera.</div>
-        </div>
-        <div class="feature-card reveal">
-          <span class="feature-emoji">🌍</span>
-          <div class="feature-title">Wielojęzyczny</div>
-          <div class="feature-desc">Interfejs w języku polskim, angielskim i ukraińskim. Asystent głosowy też rozumie wszystkie trzy języki.</div>
-        </div>
-        <div class="feature-card reveal">
-          <span class="feature-emoji">📱</span>
-          <div class="feature-title">Aplikacja Flutter</div>
-          <div class="feature-desc">Natywna aplikacja Android napisana we Flutter. Szybka, responsywna, działa bez internetu (dane lokalne).</div>
-        </div>
-        <div class="feature-card reveal">
-          <span class="feature-emoji">🔧</span>
-          <div class="feature-title">API i MCP</div>
-          <div class="feature-desc">Pełne API REST i serwer MCP — integruj CleanHouse z innymi narzędziami albo Claude Desktop.</div>
-        </div>
+        <div class="feature-card reveal"><span class="feature-emoji">🎙️</span><div class="feature-title" data-i18n="a1t">Asystent głosowy</div><div class="feature-desc" data-i18n="a1d">Powiedz głosem „dodaj zadanie odkurzanie" albo „zakończ mycie okien" — AI rozumie i wykona.</div></div>
+        <div class="feature-card reveal"><span class="feature-emoji">🧠</span><div class="feature-title" data-i18n="a2t">Claude AI w środku</div><div class="feature-desc" data-i18n="a2d">Asystent napędzany przez Claude (Anthropic) — najlepszy model językowy do rozumienia komend po polsku.</div></div>
+        <div class="feature-card reveal"><span class="feature-emoji">💡</span><div class="feature-title" data-i18n="a3t">Sugestie zadań</div><div class="feature-desc" data-i18n="a3d">Wbudowane szablony 20 popularnych zadań domowych — szybko dodaj bez pisania od zera.</div></div>
+        <div class="feature-card reveal"><span class="feature-emoji">🌍</span><div class="feature-title" data-i18n="a4t">Wielojęzyczny</div><div class="feature-desc" data-i18n="a4d">Interfejs w języku polskim, angielskim i ukraińskim. Asystent głosowy też rozumie wszystkie trzy.</div></div>
+        <div class="feature-card reveal"><span class="feature-emoji">📱</span><div class="feature-title" data-i18n="a5t">Aplikacja Flutter</div><div class="feature-desc" data-i18n="a5d">Natywna aplikacja Android napisana we Flutter. Szybka, responsywna, działa bez internetu.</div></div>
+        <div class="feature-card reveal"><span class="feature-emoji">🔧</span><div class="feature-title" data-i18n="a6t">API i MCP</div><div class="feature-desc" data-i18n="a6d">Pełne API REST i serwer MCP — integruj CleanHouse z innymi narzędziami albo Claude Desktop.</div></div>
       </div>
     </div>
   </div>
@@ -354,31 +289,15 @@ footer a:hover{text-decoration:underline}
 <section id="how">
   <div class="section-inner">
     <div class="reveal">
-      <div class="section-tag">Jak działa</div>
-      <h2 class="section-title">Gotowy w 3 minuty</h2>
-      <p class="section-sub">Bez instalacji, bez konfiguracji. Otwierasz, rejestrujesz dom i zaczynasz.</p>
+      <div class="section-tag" data-i18n="how_tag">Jak działa</div>
+      <h2 class="section-title" data-i18n="how_title">Gotowy w 3 minuty</h2>
+      <p class="section-sub" data-i18n="how_sub">Bez instalacji, bez konfiguracji. Otwierasz, rejestrujesz dom i zaczynasz.</p>
     </div>
     <div class="steps">
-      <div class="step reveal">
-        <div class="step-num">1</div>
-        <h3>Załóż dom</h3>
-        <p>Zarejestruj się i nadaj nazwę swojemu gospodarstwu. Dostajesz unikalny kod zaproszenia dla rodziny.</p>
-      </div>
-      <div class="step reveal">
-        <div class="step-num">2</div>
-        <h3>Dodaj pokoje i zadania</h3>
-        <p>Stwórz pokoje: salon, kuchnia, łazienka. Dodaj zadania i przypisz do konkretnych osób lub zostaw otwarte.</p>
-      </div>
-      <div class="step reveal">
-        <div class="step-num">3</div>
-        <h3>Zaproś rodzinę</h3>
-        <p>Domownicy wpisują kod rodziny i dołączają. Każdy widzi swoje zadania i zbiera punkty za ich wykonanie.</p>
-      </div>
-      <div class="step reveal">
-        <div class="step-num">4</div>
-        <h3>Ciesz się czystym domem</h3>
-        <p>Śledź postępy w rankingu, przyznawaj nagrody, świętuj odznaki — dom jest czysty, rodzina zadowolona.</p>
-      </div>
+      <div class="step reveal"><div class="step-num">1</div><h3 data-i18n="s1t">Załóż dom</h3><p data-i18n="s1d">Zarejestruj się i nadaj nazwę swojemu gospodarstwu. Dostajesz unikalny kod zaproszenia dla rodziny.</p></div>
+      <div class="step reveal"><div class="step-num">2</div><h3 data-i18n="s2t">Dodaj pokoje i zadania</h3><p data-i18n="s2d">Stwórz pokoje: salon, kuchnia, łazienka. Dodaj zadania i przypisz do konkretnych osób.</p></div>
+      <div class="step reveal"><div class="step-num">3</div><h3 data-i18n="s3t">Zaproś rodzinę</h3><p data-i18n="s3d">Domownicy wpisują kod rodziny i dołączają. Każdy widzi swoje zadania i zbiera punkty.</p></div>
+      <div class="step reveal"><div class="step-num">4</div><h3 data-i18n="s4t">Ciesz się czystym domem</h3><p data-i18n="s4d">Śledź postępy w rankingu, przyznawaj nagrody, świętuj odznaki — dom czysty, rodzina zadowolona.</p></div>
     </div>
   </div>
 </section>
@@ -388,69 +307,25 @@ footer a:hover{text-decoration:underline}
   <div class="section-inner">
     <div class="family-grid">
       <div class="reveal">
-        <div class="section-tag">Dla całej rodziny</div>
-        <h2 class="section-title">Każdy ma swoją rolę</h2>
-        <p class="section-sub">System ról i uprawnień sprawia, że każdy — od właściciela po dziecko — dokładnie wie co ma robić.</p>
+        <div class="section-tag" data-i18n="fam_tag">Dla całej rodziny</div>
+        <h2 class="section-title" data-i18n="fam_title">Każdy ma swoją rolę</h2>
+        <p class="section-sub" data-i18n="fam_sub">System ról i uprawnień sprawia, że każdy — od właściciela po dziecko — dokładnie wie co ma robić.</p>
         <div class="family-features" style="margin-top:2rem">
-          <div class="family-item">
-            <div class="family-icon">👑</div>
-            <div>
-              <h4>Właściciel domu</h4>
-              <p>Pełna kontrola — zarządza domownikami, ustala role, tworzy cele i nagrody.</p>
-            </div>
-          </div>
-          <div class="family-item">
-            <div class="family-icon">🛡️</div>
-            <div>
-              <h4>Administrator</h4>
-              <p>Zatwierdza wykonane zadania, dodaje pokoje i zarządza codziennym sprzątaniem.</p>
-            </div>
-          </div>
-          <div class="family-item">
-            <div class="family-icon">🧹</div>
-            <div>
-              <h4>Domownik</h4>
-              <p>Widzi swoje zadania, oznacza je jako wykonane i zbiera punkty do rankingu.</p>
-            </div>
-          </div>
-          <div class="family-item">
-            <div class="family-icon">🔒</div>
-            <div>
-              <h4>Bezpieczeństwo</h4>
-              <p>Dane rodziny są prywatne. Każdy dom ma osobny kod dostępu, dane szyfrowane.</p>
-            </div>
-          </div>
+          <div class="family-item"><div class="family-icon">👑</div><div><h4 data-i18n="role1t">Właściciel domu</h4><p data-i18n="role1d">Pełna kontrola — zarządza domownikami, ustala role, tworzy cele i nagrody.</p></div></div>
+          <div class="family-item"><div class="family-icon">🛡️</div><div><h4 data-i18n="role2t">Administrator</h4><p data-i18n="role2d">Zatwierdza wykonane zadania, dodaje pokoje i zarządza codziennym sprzątaniem.</p></div></div>
+          <div class="family-item"><div class="family-icon">🧹</div><div><h4 data-i18n="role3t">Domownik</h4><p data-i18n="role3d">Widzi swoje zadania, oznacza je jako wykonane i zbiera punkty do rankingu.</p></div></div>
+          <div class="family-item"><div class="family-icon">🔒</div><div><h4 data-i18n="role4t">Bezpieczeństwo</h4><p data-i18n="role4d">Dane rodziny są prywatne. Każdy dom ma osobny kod dostępu, dane szyfrowane.</p></div></div>
         </div>
       </div>
       <div class="reveal">
         <div class="leaderboard-card">
-          <div class="lb-title">🏆 Ranking tygodnia</div>
-          <div class="lb-row">
-            <div class="lb-pos gold">1</div>
-            <div class="lb-avatar" style="background:rgba(245,158,11,.2)">👦</div>
-            <div class="lb-name">Kacper</div>
-            <div class="lb-pts">342 pkt</div>
-          </div>
-          <div class="lb-row">
-            <div class="lb-pos silver">2</div>
-            <div class="lb-avatar" style="background:rgba(148,163,184,.2)">👧</div>
-            <div class="lb-name">Zosia</div>
-            <div class="lb-pts">289 pkt</div>
-          </div>
-          <div class="lb-row">
-            <div class="lb-pos bronze">3</div>
-            <div class="lb-avatar" style="background:rgba(180,83,9,.2)">👩</div>
-            <div class="lb-name">Mama</div>
-            <div class="lb-pts">251 pkt</div>
-          </div>
-          <div class="lb-row">
-            <div class="lb-pos">4</div>
-            <div class="lb-avatar" style="background:rgba(255,255,255,.08)">👨</div>
-            <div class="lb-name">Tata</div>
-            <div class="lb-pts">180 pkt</div>
-          </div>
+          <div class="lb-title">🏆 <span data-i18n="lb_title">Ranking tygodnia</span></div>
+          <div class="lb-row"><div class="lb-pos gold">1</div><div class="lb-avatar" style="background:rgba(245,158,11,.2)">👦</div><div class="lb-name">Kacper</div><div class="lb-pts">342 pkt</div></div>
+          <div class="lb-row"><div class="lb-pos silver">2</div><div class="lb-avatar" style="background:rgba(148,163,184,.2)">👧</div><div class="lb-name">Zosia</div><div class="lb-pts">289 pkt</div></div>
+          <div class="lb-row"><div class="lb-pos bronze">3</div><div class="lb-avatar" style="background:rgba(180,83,9,.2)">👩</div><div class="lb-name" data-i18n="lb_mom">Mama</div><div class="lb-pts">251 pkt</div></div>
+          <div class="lb-row"><div class="lb-pos">4</div><div class="lb-avatar" style="background:rgba(255,255,255,.08)">👨</div><div class="lb-name" data-i18n="lb_dad">Tata</div><div class="lb-pts">180 pkt</div></div>
           <div style="margin-top:1rem;background:rgba(34,197,94,.1);border-radius:10px;padding:.8rem;border:1px solid rgba(34,197,94,.2)">
-            <div style="color:rgba(255,255,255,.5);font-size:.68rem;margin-bottom:.4rem">AKTYWNY CEL RODZINY</div>
+            <div style="color:rgba(255,255,255,.5);font-size:.68rem;margin-bottom:.4rem" data-i18n="lb_goal">AKTYWNY CEL RODZINY</div>
             <div style="color:#fff;font-weight:700;font-size:.88rem">🎮 PlayStation 5</div>
             <div style="height:6px;background:rgba(255,255,255,.1);border-radius:3px;margin:.4rem 0"><div style="width:73%;height:100%;background:var(--green);border-radius:3px"></div></div>
             <div style="color:var(--green);font-size:.72rem;font-weight:600">1062 / 1500 pkt</div>
@@ -464,54 +339,227 @@ footer a:hover{text-decoration:underline}
 <!-- DOWNLOAD -->
 <section id="download">
   <div class="download-inner reveal">
-    <div class="web-badge">Dostępna teraz</div>
-    <h2>Zacznij za darmo<br>już dziś</h2>
-    <p>Działa w przeglądarce, na Androidzie i przez asystenta głosowego. Zero instalacji, zero opłat.</p>
+    <div class="web-badge" data-i18n="dl_badge">Dostępna teraz</div>
+    <h2 data-i18n="dl_title">Zacznij za darmo<br>już dziś</h2>
+    <p data-i18n="dl_sub">Działa w przeglądarce, na Androidzie i przez asystenta głosowego. Zero instalacji, zero opłat.</p>
     <div class="download-btns">
-      <a href="/app" class="store-btn">
-        <span class="sb-icon">🌐</span>
-        <div class="sb-text"><small>Otwórz w</small>Przeglądarce</div>
-      </a>
-      <a href="https://web-production-65a7a.up.railway.app" class="store-btn" target="_blank">
-        <span class="sb-icon">🚀</span>
-        <div class="sb-text"><small>Wersja</small>Produkcyjna</div>
-      </a>
+      <a href="/app" class="store-btn"><span class="sb-icon">🌐</span><div class="sb-text"><small data-i18n="dl_open_small">Otwórz w</small><span data-i18n="dl_open">Przeglądarce</span></div></a>
+      <a href="https://web-production-65a7a.up.railway.app" class="store-btn" target="_blank"><span class="sb-icon">🚀</span><div class="sb-text"><small data-i18n="dl_prod_small">Wersja</small><span data-i18n="dl_prod">Produkcyjna</span></div></a>
     </div>
-    <p style="margin-top:2rem;font-size:.8rem;color:var(--muted)">
-      Masz pytania? <a href="mailto:myro@mrosupply.com" style="color:var(--green-dark);font-weight:600">Napisz do nas</a>
-    </p>
+    <p style="margin-top:2rem;font-size:.8rem;color:var(--muted)" data-i18n-html="dl_contact">Masz pytania? <a href="mailto:myro@mrosupply.com" style="color:var(--green-dark);font-weight:600">Napisz do nas</a></p>
   </div>
 </section>
 
 <footer>
-  <p>© 2026 CleanHouse ·
-    <a href="/privacy">Polityka prywatności</a> ·
-    <a href="/app">Otwórz aplikację</a>
-  </p>
+  <p>© 2026 CleanHouse · <a href="/privacy" data-i18n="footer_privacy">Polityka prywatności</a> · <a href="/app" data-i18n="footer_app">Otwórz aplikację</a></p>
 </footer>
 
 <script>
-// Tab switching
+// ─── TRANSLATIONS ───────────────────────────────────────────────────────────
+const T = {
+  pl: {
+    nav_features:'Funkcje', nav_how:'Jak działa', nav_family:'Rodzina', nav_download:'Pobierz',
+    hero_badge:'✨ Darmowa aplikacja',
+    hero_h1:'Sprzątanie<br>bez chaosu<br>i <span>bez stresu</span>',
+    hero_sub:'Przydziel zadania, śledź postępy i motywuj całą rodzinę do utrzymania porządku — w jednej prostej aplikacji.',
+    hero_btn_open:'🚀 Otwórz aplikację', hero_btn_how:'Zobacz jak działa',
+    stat_lang:'języki UI', stat_tasks:'pokoje i zadania', stat_free:'za darmo',
+    phone_rank:'Ranking', phone_today:'Dzisiaj 🌿', phone_tasks:'3 zadania do zrobienia',
+    phone_t1:'Odkurzanie salonu', phone_t2:'Zmywarka', phone_t3:'Łazienka',
+    phone_progress:'TWÓJ POSTĘP',
+    feat_tag:'Funkcje', feat_title:'Wszystko czego potrzebuje dom',
+    feat_sub:'Od codziennych zadań po długoterminowe cele — CleanHouse ma to wszystko w jednym miejscu.',
+    tab_org:'🗂️ Organizacja', tab_mot:'🏆 Motywacja', tab_ai:'🤖 AI',
+    f1t:'Pokoje i obszary', f1d:'Podziel dom na pokoje. Przydziel zadania do konkretnych miejsc — łazienka, kuchnia, ogród, garaż.',
+    f2t:'Kalendarz zadań', f2d:'Widok kalendarza pokazuje kiedy co jest zaplanowane. Codzienne, tygodniowe, miesięczne — wszystko widać.',
+    f3t:'Przydzielanie do osób', f3d:'Każde zadanie można przypisać konkretnemu domownikowi. Wiadomo kto za co odpowiada.',
+    f4t:'Zatwierdzanie zadań', f4d:'Rodzic może włączyć tryb zatwierdzania — dziecko zgłasza wykonanie, dorosły weryfikuje i przyznaje punkty.',
+    f5t:'Cele i nagrody', f5d:'Ustal cel (np. rower, gra, wyjście do kina) i cenę w punktach. Dzieci zbierają punkty i odblokowują nagrody.',
+    f6t:'Jednorazowe i cykliczne', f6d:'Twórz zadania jednorazowe albo cykliczne. Mycie okien co kwartał — ustawisz to łatwo.',
+    m1t:'Ranking rodziny', m1d:'Tabela wyników w czasie tygodnia, miesiąca i ogólna. Zdrowa rywalizacja motywuje do działania.',
+    m2t:'Punkty i poziomy', m2d:'Za każde zadanie punkty. Zbieraj je i awansuj przez poziomy — od LV1 do LV10 i dalej.',
+    m3t:'Odznaki', m3d:'Specjalne odznaki za osiągnięcia: pierwsze zadanie, 7-dniowa seria, 100 zadań i wiele więcej.',
+    m4t:'Sklep z nagrodami', m4d:'Rodzic ustawia co można kupić za punkty. Dzieci widzą cel i pracują na niego z motywacją.',
+    m5t:'Statystyki', m5d:'Szczegółowe statystyki — ile zadań zrobiono, przez kogo, kiedy. Pełny obraz aktywności.',
+    m6t:'Seria dni', m6d:'Utrzymuj codzienną serię wykonanych zadań. Streak motywuje do regularności bardziej niż cokolwiek innego.',
+    a1t:'Asystent głosowy', a1d:'Powiedz głosem „dodaj zadanie odkurzanie" albo „zakończ mycie okien" — AI rozumie i wykona.',
+    a2t:'Claude AI w środku', a2d:'Asystent napędzany przez Claude (Anthropic) — najlepszy model językowy do rozumienia komend po polsku.',
+    a3t:'Sugestie zadań', a3d:'Wbudowane szablony 20 popularnych zadań domowych — szybko dodaj bez pisania od zera.',
+    a4t:'Wielojęzyczny', a4d:'Interfejs w języku polskim, angielskim i ukraińskim. Asystent głosowy też rozumie wszystkie trzy.',
+    a5t:'Aplikacja Flutter', a5d:'Natywna aplikacja Android napisana we Flutter. Szybka, responsywna, działa bez internetu.',
+    a6t:'API i MCP', a6d:'Pełne API REST i serwer MCP — integruj CleanHouse z innymi narzędziami albo Claude Desktop.',
+    how_tag:'Jak działa', how_title:'Gotowy w 3 minuty',
+    how_sub:'Bez instalacji, bez konfiguracji. Otwierasz, rejestrujesz dom i zaczynasz.',
+    s1t:'Załóż dom', s1d:'Zarejestruj się i nadaj nazwę swojemu gospodarstwu. Dostajesz unikalny kod zaproszenia dla rodziny.',
+    s2t:'Dodaj pokoje i zadania', s2d:'Stwórz pokoje: salon, kuchnia, łazienka. Dodaj zadania i przypisz do konkretnych osób.',
+    s3t:'Zaproś rodzinę', s3d:'Domownicy wpisują kod rodziny i dołączają. Każdy widzi swoje zadania i zbiera punkty.',
+    s4t:'Ciesz się czystym domem', s4d:'Śledź postępy w rankingu, przyznawaj nagrody, świętuj odznaki — dom czysty, rodzina zadowolona.',
+    fam_tag:'Dla całej rodziny', fam_title:'Każdy ma swoją rolę',
+    fam_sub:'System ról i uprawnień sprawia, że każdy — od właściciela po dziecko — dokładnie wie co ma robić.',
+    role1t:'Właściciel domu', role1d:'Pełna kontrola — zarządza domownikami, ustala role, tworzy cele i nagrody.',
+    role2t:'Administrator', role2d:'Zatwierdza wykonane zadania, dodaje pokoje i zarządza codziennym sprzątaniem.',
+    role3t:'Domownik', role3d:'Widzi swoje zadania, oznacza je jako wykonane i zbiera punkty do rankingu.',
+    role4t:'Bezpieczeństwo', role4d:'Dane rodziny są prywatne. Każdy dom ma osobny kod dostępu, dane szyfrowane.',
+    lb_title:'Ranking tygodnia', lb_mom:'Mama', lb_dad:'Tata', lb_goal:'AKTYWNY CEL RODZINY',
+    dl_badge:'Dostępna teraz', dl_title:'Zacznij za darmo<br>już dziś',
+    dl_sub:'Działa w przeglądarce, na Androidzie i przez asystenta głosowego. Zero instalacji, zero opłat.',
+    dl_open_small:'Otwórz w', dl_open:'Przeglądarce', dl_prod_small:'Wersja', dl_prod:'Produkcyjna',
+    dl_contact:'Masz pytania? <a href="mailto:myro@mrosupply.com" style="color:var(--green-dark);font-weight:600">Napisz do nas</a>',
+    footer_privacy:'Polityka prywatności', footer_app:'Otwórz aplikację',
+  },
+  en: {
+    nav_features:'Features', nav_how:'How it works', nav_family:'Family', nav_download:'Download',
+    hero_badge:'✨ Free app',
+    hero_h1:'Cleaning<br>without chaos<br>and <span>without stress</span>',
+    hero_sub:'Assign tasks, track progress and motivate the whole family to keep the house tidy — in one simple app.',
+    hero_btn_open:'🚀 Open app', hero_btn_how:'See how it works',
+    stat_lang:'UI languages', stat_tasks:'rooms & tasks', stat_free:'free forever',
+    phone_rank:'Ranking', phone_today:'Today 🌿', phone_tasks:'3 tasks to do',
+    phone_t1:'Vacuuming living room', phone_t2:'Dishwasher', phone_t3:'Bathroom',
+    phone_progress:'YOUR PROGRESS',
+    feat_tag:'Features', feat_title:'Everything your home needs',
+    feat_sub:'From daily chores to long-term goals — CleanHouse has it all in one place.',
+    tab_org:'🗂️ Organization', tab_mot:'🏆 Motivation', tab_ai:'🤖 AI',
+    f1t:'Rooms & areas', f1d:'Divide your home into rooms. Assign tasks to specific places — bathroom, kitchen, garden, garage.',
+    f2t:'Task calendar', f2d:'Calendar view shows when everything is scheduled. Daily, weekly, monthly — all visible.',
+    f3t:'Assign to people', f3d:'Each task can be assigned to a specific household member. Everyone knows who is responsible for what.',
+    f4t:'Task approval', f4d:'Parents can enable approval mode — a child reports completion, an adult verifies and awards points.',
+    f5t:'Goals & rewards', f5d:'Set a goal (e.g. a bike, game, cinema trip) and its price in points. Kids collect points and unlock rewards.',
+    f6t:'One-time & recurring', f6d:'Create one-time or recurring tasks. Window cleaning every quarter — easy to set up.',
+    m1t:'Family ranking', m1d:'Scoreboard by week, month and all-time. Healthy competition motivates action.',
+    m2t:'Points & levels', m2d:'Earn points for every task. Collect them and advance through levels — from LV1 to LV10 and beyond.',
+    m3t:'Badges', m3d:'Special badges for achievements: first task, 7-day streak, 100 tasks and many more.',
+    m4t:'Rewards shop', m4d:'Parents set what can be bought with points. Kids see the goal and work toward it with motivation.',
+    m5t:'Statistics', m5d:'Detailed stats — how many tasks done, by whom, when. Full picture of household activity.',
+    m6t:'Daily streak', m6d:'Maintain a daily streak of completed tasks. A streak motivates consistency more than anything else.',
+    a1t:'Voice assistant', a1d:'Say "add task vacuum cleaner" or "finish washing windows" — AI understands and executes.',
+    a2t:'Claude AI inside', a2d:'Assistant powered by Claude (Anthropic) — the best language model for understanding natural commands.',
+    a3t:'Task suggestions', a3d:'Built-in templates for 20 popular household tasks — add quickly without typing from scratch.',
+    a4t:'Multilingual', a4d:'UI in Polish, English and Ukrainian. The voice assistant understands all three languages too.',
+    a5t:'Flutter app', a5d:'Native Android app built with Flutter. Fast, responsive, works without internet (local data).',
+    a6t:'API & MCP', a6d:'Full REST API and MCP server — integrate CleanHouse with other tools or Claude Desktop.',
+    how_tag:'How it works', how_title:'Ready in 3 minutes',
+    how_sub:'No installation, no configuration. Open it, register your home and start.',
+    s1t:'Create your home', s1d:'Register and name your household. You get a unique invitation code for your family.',
+    s2t:'Add rooms & tasks', s2d:'Create rooms: living room, kitchen, bathroom. Add tasks and assign them to specific people.',
+    s3t:'Invite your family', s3d:'Household members enter the family code and join. Everyone sees their tasks and earns points.',
+    s4t:'Enjoy a clean home', s4d:'Track progress in the ranking, award rewards, celebrate badges — home clean, family happy.',
+    fam_tag:'For the whole family', fam_title:'Everyone has their role',
+    fam_sub:'The roles and permissions system ensures everyone — from owner to child — knows exactly what to do.',
+    role1t:'Home owner', role1d:'Full control — manages members, sets roles, creates goals and rewards.',
+    role2t:'Administrator', role2d:'Approves completed tasks, adds rooms and manages daily cleaning.',
+    role3t:'Member', role3d:'Sees their tasks, marks them as done and collects points for the ranking.',
+    role4t:'Security', role4d:'Family data is private. Each home has a separate access code, data encrypted.',
+    lb_title:'Weekly ranking', lb_mom:'Mom', lb_dad:'Dad', lb_goal:'ACTIVE FAMILY GOAL',
+    dl_badge:'Available now', dl_title:'Start for free<br>today',
+    dl_sub:'Works in browser, on Android and via voice assistant. Zero installation, zero fees.',
+    dl_open_small:'Open in', dl_open:'Browser', dl_prod_small:'Version', dl_prod:'Production',
+    dl_contact:'Have questions? <a href="mailto:myro@mrosupply.com" style="color:var(--green-dark);font-weight:600">Contact us</a>',
+    footer_privacy:'Privacy policy', footer_app:'Open app',
+  },
+  uk: {
+    nav_features:'Функції', nav_how:'Як це працює', nav_family:'Родина', nav_download:'Завантажити',
+    hero_badge:'✨ Безкоштовний застосунок',
+    hero_h1:'Прибирання<br>без хаосу<br>і <span>без стресу</span>',
+    hero_sub:'Призначайте завдання, відстежуйте прогрес і мотивуйте всю родину підтримувати порядок — в одному простому застосунку.',
+    hero_btn_open:'🚀 Відкрити застосунок', hero_btn_how:'Дізнатися як це працює',
+    stat_lang:'мови інтерфейсу', stat_tasks:'кімнати та завдання', stat_free:'безкоштовно',
+    phone_rank:'Рейтинг', phone_today:'Сьогодні 🌿', phone_tasks:'3 завдання на сьогодні',
+    phone_t1:'Пилосос у вітальні', phone_t2:'Посудомийна машина', phone_t3:'Ванна кімната',
+    phone_progress:'ВАШ ПРОГРЕС',
+    feat_tag:'Функції', feat_title:'Все що потрібно дому',
+    feat_sub:'Від щоденних справ до довгострокових цілей — CleanHouse має все в одному місці.',
+    tab_org:'🗂️ Організація', tab_mot:'🏆 Мотивація', tab_ai:'🤖 AI',
+    f1t:'Кімнати та зони', f1d:'Розділіть будинок на кімнати. Призначте завдання конкретним місцям — ванна, кухня, сад, гараж.',
+    f2t:'Календар завдань', f2d:'Перегляд календаря показує коли що заплановано. Щоденні, щотижневі, щомісячні — все видно.',
+    f3t:'Призначення людям', f3d:'Кожне завдання можна призначити конкретному члену домогосподарства. Всім зрозуміло хто за що відповідає.',
+    f4t:'Підтвердження завдань', f4d:'Батьки можуть увімкнути режим підтвердження — дитина повідомляє про виконання, дорослий перевіряє і нараховує бали.',
+    f5t:'Цілі та нагороди', f5d:'Встановіть ціль (наприклад, велосипед, гра, кіно) та її ціну в балах. Діти збирають бали та отримують нагороди.',
+    f6t:'Одноразові та циклічні', f6d:'Створюйте одноразові або циклічні завдання. Миття вікон щокварталу — легко налаштувати.',
+    m1t:'Рейтинг родини', m1d:'Таблиця результатів за тиждень, місяць і загальна. Здорова конкуренція мотивує до дій.',
+    m2t:'Бали та рівні', m2d:'За кожне завдання бали. Збирайте їх і підвищуйте рівні — від LV1 до LV10 і далі.',
+    m3t:'Відзнаки', m3d:'Спеціальні відзнаки за досягнення: перше завдання, серія 7 днів, 100 завдань та багато іншого.',
+    m4t:'Магазин нагород', m4d:'Батьки встановлюють що можна купити за бали. Діти бачать ціль і працюють над нею з мотивацією.',
+    m5t:'Статистика', m5d:'Детальна статистика — скільки завдань виконано, ким, коли. Повна картина активності.',
+    m6t:'Щоденна серія', m6d:'Підтримуйте щоденну серію виконаних завдань. Стрік мотивує до регулярності більше за будь-що інше.',
+    a1t:'Голосовий помічник', a1d:'Скажіть вголос «додай завдання пилосос» або «завершити миття вікон» — AI розуміє і виконає.',
+    a2t:'Claude AI всередині', a2d:'Помічник на базі Claude (Anthropic) — найкраща мовна модель для розуміння команд.',
+    a3t:'Підказки завдань', a3d:'Вбудовані шаблони 20 популярних домашніх завдань — швидко додайте без введення з нуля.',
+    a4t:'Багатомовний', a4d:'Інтерфейс польською, англійською та українською мовами. Голосовий помічник теж розуміє всі три.',
+    a5t:'Застосунок Flutter', a5d:'Нативний застосунок Android на Flutter. Швидкий, адаптивний, працює без інтернету.',
+    a6t:'API та MCP', a6d:'Повний REST API та сервер MCP — інтегруйте CleanHouse з іншими інструментами або Claude Desktop.',
+    how_tag:'Як це працює', how_title:'Готово за 3 хвилини',
+    how_sub:'Без встановлення, без налаштування. Відкрийте, зареєструйте дім і починайте.',
+    s1t:'Створіть свій дім', s1d:'Зареєструйтеся та назвіть своє домогосподарство. Отримайте унікальний код запрошення для родини.',
+    s2t:'Додайте кімнати та завдання', s2d:'Створіть кімнати: вітальня, кухня, ванна. Додайте завдання та призначте конкретним людям.',
+    s3t:'Запросіть родину', s3d:'Члени домогосподарства вводять код родини і приєднуються. Кожен бачить свої завдання і заробляє бали.',
+    s4t:'Насолоджуйтесь чистим домом', s4d:'Відстежуйте прогрес у рейтингу, нагороджуйте, святкуйте відзнаки — дім чистий, родина щаслива.',
+    fam_tag:'Для всієї родини', fam_title:'Кожен має свою роль',
+    fam_sub:'Система ролей та дозволів гарантує, що кожен — від власника до дитини — точно знає що робити.',
+    role1t:'Власник дому', role1d:'Повний контроль — керує членами, встановлює ролі, створює цілі та нагороди.',
+    role2t:'Адміністратор', role2d:'Підтверджує виконані завдання, додає кімнати та керує щоденним прибиранням.',
+    role3t:'Мешканець', role3d:'Бачить свої завдання, позначає їх як виконані та збирає бали для рейтингу.',
+    role4t:'Безпека', role4d:'Дані родини є приватними. Кожен дім має окремий код доступу, дані зашифровані.',
+    lb_title:'Рейтинг тижня', lb_mom:'Мама', lb_dad:'Тато', lb_goal:'АКТИВНА ЦІЛЬ РОДИНИ',
+    dl_badge:'Доступно зараз', dl_title:'Починайте безкоштовно<br>вже сьогодні',
+    dl_sub:'Працює в браузері, на Android та через голосовий помічник. Нуль встановлень, нуль плати.',
+    dl_open_small:'Відкрити в', dl_open:'Браузері', dl_prod_small:'Версія', dl_prod:'Виробнича',
+    dl_contact:'Маєте питання? <a href="mailto:myro@mrosupply.com" style="color:var(--green-dark);font-weight:600">Напишіть нам</a>',
+    footer_privacy:'Політика конфіденційності', footer_app:'Відкрити застосунок',
+  }
+};
+
+let currentLang = localStorage.getItem('landing_lang') || 'pl';
+
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('landing_lang', lang);
+  document.documentElement.lang = lang;
+  document.body.className = lang === 'uk' ? 'lang-uk' : '';
+
+  // update lang buttons
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent.toLowerCase().includes(lang));
+  });
+
+  const d = T[lang];
+  // text nodes
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    if (d[key] !== undefined) el.textContent = d[key];
+  });
+  // html nodes (allow <br>, <span>, <a>)
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const key = el.dataset.i18nHtml;
+    if (d[key] !== undefined) el.innerHTML = d[key];
+  });
+
+  // update page title
+  const titles = {pl:'CleanHouse — Sprzątanie bez stresu', en:'CleanHouse — Cleaning without stress', uk:'CleanHouse — Прибирання без стресу'};
+  document.title = titles[lang];
+}
+
+// ─── TAB SWITCHING ────────────────────────────────────────────────────────
 function switchTab(e, id) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   e.currentTarget.classList.add('active');
   document.getElementById(id).classList.add('active');
-  // trigger reveal for newly visible cards
   setTimeout(revealCheck, 50);
 }
 
-// Scroll reveal
+// ─── SCROLL REVEAL ────────────────────────────────────────────────────────
 function revealCheck() {
   document.querySelectorAll('.reveal').forEach(el => {
-    const rect = el.getBoundingClientRect();
-    if (rect.top < window.innerHeight - 60) el.classList.add('visible');
+    if (el.getBoundingClientRect().top < window.innerHeight - 60) el.classList.add('visible');
   });
 }
-window.addEventListener('scroll', revealCheck, {passive: true});
+window.addEventListener('scroll', revealCheck, {passive:true});
+
+// ─── INIT ─────────────────────────────────────────────────────────────────
+setLang(currentLang);
 revealCheck();
 
-// Nav close on link click (mobile)
 document.querySelectorAll('.nav-links a').forEach(a => {
   a.addEventListener('click', () => document.querySelector('.nav-links').classList.remove('open'));
 });
