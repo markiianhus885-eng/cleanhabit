@@ -432,6 +432,16 @@ def index():
     with open(os.path.join(os.path.dirname(__file__), 'templates', 'index.html'), encoding='utf-8') as f:
         return f.read()
 
+@app.route('/download/app')
+def download_apk():
+    from flask import send_from_directory
+    return send_from_directory(
+        os.path.join(os.path.dirname(__file__), 'static'),
+        'cleanhouse.apk',
+        as_attachment=True,
+        download_name='CleanHouse.apk'
+    )
+
 @app.route('/privacy')
 def privacy():
     return '''<!DOCTYPE html><html lang="pl"><head><meta charset="utf-8">

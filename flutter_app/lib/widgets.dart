@@ -3,25 +3,74 @@ import 'package:flutter/material.dart';
 import 'models.dart';
 import 'theme.dart';
 
-/// A small gold coin dot (radial gradient), matching the mockup.
+/// A gold coin with 3-D edge, shine highlight and a "₵" letter.
 class CoinDot extends StatelessWidget {
   final double size;
   const CoinDot({super.key, this.size = 18});
   @override
   Widget build(BuildContext context) {
     final c = context.ch;
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          center: const Alignment(-0.3, -0.4),
-          colors: [c.coinA, c.coinB],
-        ),
-      ),
+    return CustomPaint(
+      size: Size(size, size),
+      painter: _CoinPainter(coinA: c.coinA, coinB: c.coinB),
     );
   }
+}
+
+class _CoinPainter extends CustomPainter {
+  final Color coinA;
+  final Color coinB;
+  const _CoinPainter({required this.coinA, required this.coinB});
+
+  @override
+  void paint(Canvas canvas, Size s) {
+    final r = s.width / 2;
+    final c = Offset(r, r);
+
+    // outer edge (darker rim)
+    canvas.drawCircle(
+      c, r,
+      Paint()..color = Color.lerp(coinB, Colors.brown.shade800, 0.4)!,
+    );
+
+    // main face — linear gradient top-left bright → bottom-right dark
+    canvas.drawCircle(
+      c, r * 0.88,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [coinA, coinB, Color.lerp(coinB, Colors.brown.shade700, 0.5)!],
+          stops: const [0.0, 0.55, 1.0],
+        ).createShader(Rect.fromCircle(center: c, radius: r * 0.88)),
+    );
+
+    // top-left shine highlight
+    canvas.drawCircle(
+      Offset(r * 0.62, r * 0.52), r * 0.3,
+      Paint()
+        ..color = Colors.white.withAlpha(60)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+    );
+
+    // "₵" letter
+    final tp = TextPainter(
+      text: TextSpan(
+        text: '₵',
+        style: TextStyle(
+          fontSize: r * 0.95,
+          fontWeight: FontWeight.w900,
+          color: Color.lerp(coinB, Colors.brown.shade900, 0.6)!,
+          height: 1,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    tp.paint(canvas, Offset(r - tp.width / 2, r - tp.height / 2));
+  }
+
+  @override
+  bool shouldRepaint(_CoinPainter o) => o.coinA != coinA || o.coinB != coinB;
 }
 
 /// 1-3 lightning bolts indicating difficulty (easy=1, medium=2, hard=3).
