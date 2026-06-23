@@ -434,14 +434,21 @@ def index():
 
 @app.route('/download/app')
 def download_apk():
-    from flask import send_from_directory
-    apk_dir = os.environ.get('APK_DIR', os.path.join(os.path.dirname(__file__), 'static_ext'))
-    return send_from_directory(
-        apk_dir,
-        'cleanhouse.apk',
-        as_attachment=True,
-        download_name='CleanHouse.apk'
+    from flask import send_file, make_response
+    apk_path = os.path.join(
+        os.environ.get('APK_DIR', os.path.join(os.path.dirname(__file__), 'static_ext')),
+        'cleanhouse.apk'
     )
+    resp = make_response(send_file(
+        apk_path,
+        mimetype='application/vnd.android.package-archive',
+        as_attachment=True,
+        download_name='CleanHouse.apk',
+        conditional=True,
+    ))
+    resp.headers['X-Accel-Buffering'] = 'no'
+    resp.headers['Cache-Control'] = 'no-cache'
+    return resp
 
 @app.route('/privacy')
 def privacy():
