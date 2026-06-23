@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n.dart';
@@ -182,19 +183,28 @@ class ProfileScreen extends StatelessWidget {
                               color: c.textPrimary)),
                     ]),
                     const SizedBox(height: 10),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      decoration: BoxDecoration(
-                          color: c.pageBg,
-                          borderRadius: BorderRadius.circular(14)),
-                      child: Text(data.householdToken.split('').join('  '),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 2,
-                              color: c.accent)),
+                    GestureDetector(
+                      onTap: () {
+                        Clipboard.setData(
+                            ClipboardData(text: data.householdToken));
+                        showSnack(context, context.t('code_copied'));
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                            color: c.accent.withOpacity(0.08),
+                            border: Border.all(
+                                color: c.accent.withOpacity(0.25)),
+                            borderRadius: BorderRadius.circular(14)),
+                        child: Text(data.householdToken.split('').join('  '),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 2,
+                                color: c.accent)),
+                      ),
                     ),
                   ],
                 ),

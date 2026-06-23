@@ -110,35 +110,33 @@ class MoreScreen extends StatelessWidget {
                   Text(context.t('family_code'),
                       style: TextStyle(
                           fontWeight: FontWeight.w700, color: c.textPrimary)),
-                  const Spacer(),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () {
-                      Clipboard.setData(
-                          ClipboardData(text: data.householdToken));
-                      showSnack(context, context.t('code_copied'));
-                    },
-                    icon: Icon(Icons.copy, size: 18, color: c.accent),
-                  ),
                 ]),
+                const SizedBox(height: 4),
                 Text(context.t('share_code'),
                     style: TextStyle(fontSize: 13, color: c.textSecondary)),
                 const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
-                    color: c.pageBg,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Text(
-                    data.householdToken.split('').join('  '),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 2,
-                        color: c.accent),
+                GestureDetector(
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: data.householdToken));
+                    showSnack(context, context.t('code_copied'));
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      color: c.accent.withOpacity(0.08),
+                      border: Border.all(color: c.accent.withOpacity(0.25)),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Text(
+                      data.householdToken.split('').join('  '),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 2,
+                          color: c.accent),
+                    ),
                   ),
                 ),
               ],
