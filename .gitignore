@@ -8,4 +8,7 @@ sweepy.db
 
 # Flutter build artifacts (flutter_app has its own .gitignore too)
 flutter_app/build/
+
+# APK too large for GitHub — uploaded directly to Pi via SCP
+static/cleanhouse.apk
 flutter_app/.dart_tool/
