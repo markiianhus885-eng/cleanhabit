@@ -65,6 +65,22 @@ class Api {
     await _jar.deleteAll();
   }
 
+  Future<void> forgotPassword(String email) async {
+    final r = await _dio.post('/api/auth/forgot-password', data: {'email': email});
+    final err = _err(r);
+    if (err.startsWith('Something went wrong') == false && r.data is Map && r.data['error'] != null) {
+      throw ApiException(r.data['error'].toString());
+    }
+  }
+
+  Future<void> resetPassword(String email, String code, String password) async {
+    final r = await _dio.post('/api/auth/reset-password',
+        data: {'email': email, 'code': code, 'password': password});
+    if (r.data is Map && r.data['error'] != null) {
+      throw ApiException(r.data['error'].toString());
+    }
+  }
+
   /// Returns the `user` map if a session is active, else null.
   Future<Map<String, dynamic>?> me() async {
     final r = await _dio.get('/api/auth/me');

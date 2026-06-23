@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../api.dart';
 import '../l10n.dart';
@@ -19,11 +20,13 @@ class _AuthScreenState extends State<AuthScreen> {
   _Mode _mode = _Mode.login;
   final _username = TextEditingController();
   final _password = TextEditingController();
+  final _email = TextEditingController();
   final _displayName = TextEditingController();
   final _householdName = TextEditingController();
   final _token = TextEditingController();
 
   bool _busy = false;
+  bool _gdpr = false;
   String? _error;
 
   // For join: looked-up members to claim
@@ -35,6 +38,7 @@ class _AuthScreenState extends State<AuthScreen> {
   void dispose() {
     _username.dispose();
     _password.dispose();
+    _email.dispose();
     _displayName.dispose();
     _householdName.dispose();
     _token.dispose();
@@ -77,6 +81,17 @@ class _AuthScreenState extends State<AuthScreen> {
       setState(() => _error = context.t('enter_user_pass'));
       return;
     }
+    if (_mode != _Mode.login) {
+      final email = _email.text.trim();
+      if (email.isEmpty || !email.contains('@')) {
+        setState(() => _error = context.t('enter_email'));
+        return;
+      }
+      if (!_gdpr) {
+        setState(() => _error = context.t('gdpr_required'));
+        return;
+      }
+    }
     setState(() {
       _busy = true;
       _error = null;
@@ -89,6 +104,7 @@ class _AuthScreenState extends State<AuthScreen> {
           await app.register({
             'username': username,
             'password': password,
+            'email': _email.text.trim(),
             'action': 'create',
             'display_name': _displayName.text.trim(),
             'household_name': _householdName.text.trim().isEmpty
@@ -103,6 +119,7 @@ class _AuthScreenState extends State<AuthScreen> {
           await app.register({
             'username': username,
             'password': password,
+            'email': _email.text.trim(),
             'action': 'join',
             'token': _token.text.trim().toUpperCase(),
             'member_id': _selectedMemberId,
@@ -230,6 +247,72 @@ class _AuthScreenState extends State<AuthScreen> {
                         const SizedBox(height: 10),
                         _field(c, _password, context.t('password'),
                             obscure: true),
+                        if (_mode != _Mode.login) ...[
+                          const SizedBox(height: 10),
+                          _field(c, _email, context.t('email'),
+                              keyboardType: TextInputType.emailAddress),
+                          const SizedBox(height: 12),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: Checkbox(
+                                  value: _gdpr,
+                                  activeColor: c.accent,
+                                  onChanged: (v) =>
+                                      setState(() => _gdpr = v ?? false),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () =>
+                                      setState(() => _gdpr = !_gdpr),
+                                  child: RichText(
+                                    text: TextSpan(
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: c.textSecondary,
+                                          height: 1.5),
+                                      children: [
+                                        TextSpan(
+                                            text: context.t('gdpr_accept')),
+                                        WidgetSpan(
+                                          child: GestureDetector(
+                                            onTap: () => launchUrl(Uri.parse(
+                                                'https://cleanhouse.myroapp.org/privacy')),
+                                            child: Text(
+                                              context.t('privacy_policy'),
+                                              style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: c.accent,
+                                                  decoration: TextDecoration
+                                                      .underline),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        if (_mode == _Mode.login) ...[
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () => _showForgotPassword(context, c),
+                              child: Text(context.t('forgot_password'),
+                                  style: TextStyle(
+                                      color: c.accent, fontSize: 13)),
+                            ),
+                          ),
+                        ],
                         if (_error != null) ...[
                           const SizedBox(height: 12),
                           Text(_error!,
@@ -324,11 +407,131 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
+  void _showForgotPassword(BuildContext context, ChColors c) {
+    final emailCtrl = TextEditingController();
+    final codeCtrl = TextEditingController();
+    final passCtrl = TextEditingController();
+    int step = 0;
+    String? err;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => PopScope(
+          canPop: false,
+          child: AlertDialog(
+          backgroundColor: c.card,
+          title: Text('🔐 ${context.t('forgot_password')}',
+              style: TextStyle(color: c.textPrimary, fontSize: 17)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (step == 0) ...[
+                Text(context.t('forgot_desc'),
+                    style:
+                        TextStyle(fontSize: 13, color: c.textSecondary)),
+                const SizedBox(height: 12),
+                _field(c, emailCtrl, context.t('email'),
+                    keyboardType: TextInputType.emailAddress),
+              ] else ...[
+                Text(context.t('enter_code_desc'),
+                    style:
+                        TextStyle(fontSize: 13, color: c.textSecondary)),
+                const SizedBox(height: 6),
+                Text(context.t('check_spam'),
+                    style: TextStyle(fontSize: 12, color: c.textFaint)),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: codeCtrl,
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 8,
+                      color: c.textPrimary),
+                  decoration: InputDecoration(
+                    hintText: '000000',
+                    hintStyle: TextStyle(color: c.textFaint),
+                    counterText: '',
+                    filled: true,
+                    fillColor: c.pageBg,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                _field(c, passCtrl, context.t('new_password'),
+                    obscure: true),
+              ],
+              if (err != null) ...[
+                const SizedBox(height: 8),
+                Text(err!,
+                    style: const TextStyle(
+                        color: Color(0xFFB3261E), fontSize: 13)),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(context.t('cancel'),
+                  style: TextStyle(color: c.textSecondary)),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: c.accent),
+              onPressed: () async {
+                final api = context.read<AppState>().api;
+                if (step == 0) {
+                  try {
+                    await api.forgotPassword(emailCtrl.text.trim());
+                    setS(() { step = 1; err = null; });
+                  } on ApiException catch (e) {
+                    setS(() => err = e.message);
+                  } catch (e) {
+                    setS(() => err = e.toString());
+                  }
+                } else {
+                  try {
+                    await api.resetPassword(
+                      emailCtrl.text.trim(),
+                      codeCtrl.text.trim(),
+                      passCtrl.text,
+                    );
+                    if (ctx.mounted) Navigator.pop(ctx);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text(context.t('pass_changed')),
+                        backgroundColor: Colors.green,
+                      ));
+                    }
+                  } catch (e) {
+                    setS(() => err = e.toString());
+                  }
+                }
+              },
+              child: Text(
+                step == 0 ? context.t('send_code') : context.t('save'),
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+        ),
+      ),
+    );
+  }
+
   Widget _field(ChColors c, TextEditingController ctrl, String hint,
-      {bool obscure = false, bool caps = false}) {
+      {bool obscure = false, bool caps = false,
+      TextInputType? keyboardType}) {
     return TextField(
       controller: ctrl,
       obscureText: obscure,
+      keyboardType: keyboardType,
       textCapitalization:
           caps ? TextCapitalization.characters : TextCapitalization.none,
       style: TextStyle(color: c.textPrimary),

@@ -286,6 +286,18 @@ class L10n {
     'enter_code6': ['Enter the 6-character family code.', 'Podaj 6-znakowy kod rodziny.', 'Введіть 6-значний код сім\'ї.'],
     'pick_who': ['Look up the family and pick who you are.', 'Znajdź rodzinę i wybierz, kim jesteś.', 'Знайдіть сім\'ю та виберіть, хто ви.'],
     'net_retry': ['Network error. Try again.', 'Błąd sieci. Spróbuj ponownie.', 'Помилка мережі. Спробуйте ще.'],
+    'email': ['Email address', 'Adres email', 'Адреса email'],
+    'enter_email': ['Enter a valid email address.', 'Podaj poprawny adres email.', 'Введіть дійсну адресу email.'],
+    'gdpr_required': ['You must accept the privacy policy.', 'Musisz zaakceptować politykę prywatności.', 'Ви повинні прийняти політику конфіденційності.'],
+    'gdpr_accept': ['I accept the ', 'Akceptuję ', 'Я приймаю '],
+    'privacy_policy': ['privacy policy', 'politykę prywatności', 'політику конфіденційності'],
+    'forgot_password': ['Forgot password?', 'Zapomniałem hasła', 'Забули пароль?'],
+    'forgot_desc': ['Enter your registration email. We\'ll send a verification code.', 'Podaj email z rejestracji. Wyślemy kod weryfikacyjny.', 'Введіть email з реєстрації. Надішлемо код.'],
+    'enter_code_desc': ['Enter the 6-digit code from your email:', 'Wpisz 6-cyfrowy kod z emaila:', 'Введіть 6-значний код з email:'],
+    'check_spam': ['📁 Check your spam/junk folder if you don\'t see it.', '📁 Nie widzisz? Sprawdź folder spam/śmietnik.', '📁 Не бачите? Перевірте папку спам.'],
+    'send_code': ['Send code', 'Wyślij kod', 'Надіслати код'],
+    'new_password': ['New password', 'Nowe hasło', 'Новий пароль'],
+    'pass_changed': ['Password changed! You can now log in.', 'Hasło zmienione! Możesz się zalogować.', 'Пароль змінено! Тепер можна увійти.'],
 
     // assistant
     'assistant_title': ['AI assistant', 'Asystent AI', 'AI-помічник'],
