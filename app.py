@@ -435,8 +435,9 @@ def index():
 @app.route('/download/app')
 def download_apk():
     from flask import send_from_directory
+    apk_dir = os.environ.get('APK_DIR', os.path.join(os.path.dirname(__file__), 'static_ext'))
     return send_from_directory(
-        os.path.join(os.path.dirname(__file__), 'static'),
+        apk_dir,
         'cleanhouse.apk',
         as_attachment=True,
         download_name='CleanHouse.apk'

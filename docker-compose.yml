@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  cleanhouse:
+    build: .
+    container_name: cleanhouse
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      - /mnt/ssd/cleanhouse/data:/app/data
+      - /mnt/ssd/cleanhouse/static:/app/static_ext
+    environment:
+      - TZ=Europe/Warsaw
+      - DATABASE_PATH=/app/data/cleanhouse.db
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    env_file:
+      - .env
