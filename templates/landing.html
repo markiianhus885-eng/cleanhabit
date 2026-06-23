@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CleanHouse — Sprzątanie bez stresu</title>
+<meta name="description" content="Zarządzaj sprzątaniem w domu razem z rodziną. Zadania, pokoje, nagrody — wszystko w jednej aplikacji.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green:#22c55e;--green-dark:#16a34a;--green-light:#bbf7d0;
+  --navy:#0f172a;--slate:#1e293b;--muted:#64748b;--border:#e2e8f0;
+  --white:#ffffff;--off:#f8fafc;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--white);color:var(--navy);overflow-x:hidden}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(255,255,255,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 2rem}
+.nav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:64px}
+.logo{display:flex;align-items:center;gap:.5rem;font-weight:800;font-size:1.2rem;text-decoration:none;color:var(--navy)}
+.logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--green),var(--green-dark));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+.nav-links{display:flex;align-items:center;gap:2rem;list-style:none}
+.nav-links a{text-decoration:none;color:var(--muted);font-weight:500;font-size:.92rem;transition:color .2s}
+.nav-links a:hover{color:var(--green-dark)}
+.nav-cta{background:var(--green);color:#fff!important;padding:.45rem 1.1rem;border-radius:8px;font-weight:600!important;transition:background .2s!important}
+.nav-cta:hover{background:var(--green-dark)!important}
+.nav-toggle{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:.3rem}
+.nav-toggle span{width:22px;height:2px;background:var(--navy);border-radius:2px;transition:.3s}
+@media(max-width:720px){
+  .nav-links{display:none;flex-direction:column;position:absolute;top:64px;left:0;right:0;background:#fff;padding:1rem 2rem 1.5rem;border-bottom:1px solid var(--border);gap:1rem}
+  .nav-links.open{display:flex}
+  .nav-toggle{display:flex}
+}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;align-items:center;padding:5rem 2rem 3rem;background:linear-gradient(160deg,#f0fdf4 0%,#ffffff 60%,#eff6ff 100%)}
+.hero-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
+@media(max-width:860px){.hero-inner{grid-template-columns:1fr;text-align:center}.hero-visual{order:-1}}
+.badge{display:inline-flex;align-items:center;gap:.4rem;background:var(--green-light);color:var(--green-dark);padding:.3rem .8rem;border-radius:99px;font-size:.8rem;font-weight:700;margin-bottom:1.2rem;letter-spacing:.04em}
+h1{font-size:clamp(2rem,5vw,3.2rem);font-weight:800;line-height:1.15;letter-spacing:-.02em;margin-bottom:1.2rem}
+h1 span{color:var(--green)}
+.hero-sub{font-size:1.1rem;color:var(--muted);line-height:1.7;margin-bottom:2rem;max-width:480px}
+@media(max-width:860px){.hero-sub{margin:0 auto 2rem}}
+.hero-btns{display:flex;gap:1rem;flex-wrap:wrap}
+@media(max-width:860px){.hero-btns{justify-content:center}}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.6rem;border-radius:10px;font-weight:700;font-size:.95rem;text-decoration:none;transition:.2s}
+.btn-primary{background:var(--green);color:#fff}
+.btn-primary:hover{background:var(--green-dark);transform:translateY(-1px)}
+.btn-secondary{background:var(--off);color:var(--navy);border:1px solid var(--border)}
+.btn-secondary:hover{background:var(--border)}
+.hero-stats{display:flex;gap:2rem;margin-top:2.5rem}
+@media(max-width:860px){.hero-stats{justify-content:center}}
+.stat{text-align:left}
+.stat-num{font-size:1.6rem;font-weight:800;color:var(--navy)}
+.stat-label{font-size:.8rem;color:var(--muted);font-weight:500}
+
+/* PHONE MOCKUP */
+.hero-visual{display:flex;justify-content:center;align-items:center}
+.phone{width:260px;height:520px;background:linear-gradient(160deg,var(--slate),var(--navy));border-radius:36px;padding:12px;box-shadow:0 40px 80px rgba(0,0,0,.25),0 0 0 1px rgba(255,255,255,.08);position:relative;flex-shrink:0}
+.phone-screen{width:100%;height:100%;background:linear-gradient(160deg,#0f1e0f,#1a2e1a);border-radius:26px;overflow:hidden;display:flex;flex-direction:column;padding:1.2rem}
+.phone-status{display:flex;justify-content:space-between;color:rgba(255,255,255,.5);font-size:.65rem;margin-bottom:1rem}
+.phone-header{color:#fff;font-weight:700;font-size:.95rem;margin-bottom:.3rem}
+.phone-sub{color:var(--green);font-size:.7rem;font-weight:600;margin-bottom:1rem}
+.task-card{background:rgba(255,255,255,.07);border-radius:12px;padding:.7rem .8rem;margin-bottom:.5rem;display:flex;align-items:center;gap:.6rem}
+.task-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0}
+.task-icon.g{background:rgba(34,197,94,.2)}
+.task-icon.b{background:rgba(59,130,246,.2)}
+.task-icon.y{background:rgba(234,179,8,.2)}
+.task-name{color:rgba(255,255,255,.85);font-size:.72rem;font-weight:600}
+.task-who{color:rgba(255,255,255,.4);font-size:.62rem}
+.task-check{margin-left:auto;width:18px;height:18px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:.65rem;color:#fff}
+.phone-bar{margin-top:auto;background:rgba(255,255,255,.06);border-radius:10px;padding:.6rem .8rem;display:flex;justify-content:space-around}
+.phone-bar span{color:rgba(255,255,255,.4);font-size:.6rem;text-align:center;cursor:pointer}
+.phone-bar span.active{color:var(--green)}
+.floating{animation:float 4s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.phone-badge{position:absolute;top:-10px;right:-14px;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:12px;padding:.4rem .7rem;color:#fff;font-size:.7rem;font-weight:700;box-shadow:0 8px 20px rgba(245,158,11,.4)}
+
+/* SECTIONS */
+section{padding:5rem 2rem}
+.section-inner{max-width:1100px;margin:0 auto}
+.section-tag{font-size:.8rem;font-weight:700;color:var(--green-dark);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.6rem}
+.section-title{font-size:clamp(1.6rem,3.5vw,2.4rem);font-weight:800;letter-spacing:-.02em;margin-bottom:1rem}
+.section-sub{color:var(--muted);font-size:1rem;line-height:1.7;max-width:560px}
+
+/* FEATURES */
+#features{background:var(--off)}
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;margin-top:3rem}
+.feature-card{background:#fff;border-radius:16px;padding:1.8rem;border:1px solid var(--border);transition:.25s;cursor:default}
+.feature-card:hover{transform:translateY(-4px);box-shadow:0 20px 40px rgba(0,0,0,.08);border-color:var(--green-light)}
+.feature-emoji{font-size:2rem;margin-bottom:1rem;display:block}
+.feature-title{font-weight:700;font-size:1rem;margin-bottom:.5rem}
+.feature-desc{color:var(--muted);font-size:.9rem;line-height:1.6}
+
+/* HOW IT WORKS */
+#how{background:#fff}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:2rem;margin-top:3rem;counter-reset:step}
+.step{position:relative;padding-left:0}
+.step-num{width:44px;height:44px;background:linear-gradient(135deg,var(--green),var(--green-dark));border-radius:12px;color:#fff;font-weight:800;font-size:1rem;display:flex;align-items:center;justify-content:center;margin-bottom:1rem}
+.step h3{font-weight:700;font-size:1rem;margin-bottom:.5rem}
+.step p{color:var(--muted);font-size:.9rem;line-height:1.6}
+
+/* FAMILY */
+#family{background:linear-gradient(160deg,#0f172a,#1e293b);color:#fff}
+#family .section-tag{color:var(--green)}
+#family .section-title{color:#fff}
+#family .section-sub{color:rgba(255,255,255,.6)}
+.family-grid{display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center;margin-top:3rem}
+@media(max-width:720px){.family-grid{grid-template-columns:1fr}}
+.family-features{display:flex;flex-direction:column;gap:1.2rem}
+.family-item{display:flex;gap:1rem;align-items:flex-start}
+.family-icon{width:40px;height:40px;background:rgba(34,197,94,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.family-item h4{color:#fff;font-weight:700;margin-bottom:.25rem;font-size:.95rem}
+.family-item p{color:rgba(255,255,255,.55);font-size:.85rem;line-height:1.5}
+.leaderboard-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:1.5rem;backdrop-filter:blur(10px)}
+.lb-title{color:rgba(255,255,255,.5);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:1rem}
+.lb-row{display:flex;align-items:center;gap:.8rem;padding:.6rem 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.lb-row:last-child{border:none}
+.lb-pos{width:24px;font-weight:800;font-size:.9rem;color:rgba(255,255,255,.3);flex-shrink:0}
+.lb-pos.gold{color:#f59e0b}
+.lb-pos.silver{color:#94a3b8}
+.lb-pos.bronze{color:#b45309}
+.lb-avatar{width:32px;height:32px;border-radius:50%;font-size:.85rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.lb-name{color:#fff;font-weight:600;font-size:.88rem;flex:1}
+.lb-pts{color:var(--green);font-weight:700;font-size:.88rem}
+
+/* DOWNLOAD */
+#download{background:linear-gradient(135deg,#f0fdf4,#dcfce7);text-align:center;padding:5rem 2rem}
+.download-inner{max-width:600px;margin:0 auto}
+.download-inner h2{font-size:clamp(1.8rem,4vw,2.8rem);font-weight:800;margin-bottom:1rem;letter-spacing:-.02em}
+.download-inner p{color:var(--muted);font-size:1rem;line-height:1.7;margin-bottom:2rem}
+.download-btns{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+.store-btn{display:flex;align-items:center;gap:.7rem;background:var(--navy);color:#fff;padding:.7rem 1.4rem;border-radius:12px;text-decoration:none;font-weight:600;font-size:.9rem;transition:.2s}
+.store-btn:hover{background:var(--slate);transform:translateY(-2px)}
+.store-btn .sb-icon{font-size:1.4rem}
+.store-btn .sb-text small{display:block;font-size:.65rem;opacity:.7;font-weight:400}
+.web-badge{background:var(--green);padding:.3rem .9rem;border-radius:99px;font-size:.78rem;font-weight:700;color:#fff;margin-bottom:1.5rem;display:inline-block}
+
+/* FOOTER */
+footer{background:var(--navy);color:rgba(255,255,255,.5);padding:2.5rem 2rem;text-align:center;font-size:.85rem}
+footer a{color:var(--green);text-decoration:none}
+footer a:hover{text-decoration:underline}
+
+/* SCROLL ANIMATIONS */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease}
+.reveal.visible{opacity:1;transform:none}
+
+/* TABS */
+.tabs{display:flex;gap:.5rem;background:var(--border);border-radius:12px;padding:.3rem;margin-bottom:2rem;width:fit-content}
+.tab{padding:.5rem 1.2rem;border-radius:9px;font-weight:600;font-size:.88rem;cursor:pointer;color:var(--muted);transition:.2s;border:none;background:transparent}
+.tab.active{background:#fff;color:var(--navy);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="logo">
+      <div class="logo-icon">🏠</div>
+      CleanHouse
+    </a>
+    <div class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </div>
+    <ul class="nav-links">
+      <li><a href="#features">Funkcje</a></li>
+      <li><a href="#how">Jak działa</a></li>
+      <li><a href="#family">Rodzina</a></li>
+      <li><a href="#download" class="nav-cta">Pobierz</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-content">
+      <div class="badge">✨ Darmowa aplikacja</div>
+      <h1>Sprzątanie<br>bez chaosu<br>i <span>bez stresu</span></h1>
+      <p class="hero-sub">Przydziel zadania, śledź postępy i motywuj całą rodzinę do utrzymania porządku — w jednej prostej aplikacji.</p>
+      <div class="hero-btns">
+        <a href="/app" class="btn btn-primary">🚀 Otwórz aplikację</a>
+        <a href="#how" class="btn btn-secondary">Zobacz jak działa</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat"><div class="stat-num">5+</div><div class="stat-label">języków UI</div></div>
+        <div class="stat"><div class="stat-num">∞</div><div class="stat-label">pokoi i zadań</div></div>
+        <div class="stat"><div class="stat-num">100%</div><div class="stat-label">za darmo</div></div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="phone floating">
+        <div class="phone-badge">🏆 Ranking</div>
+        <div class="phone-screen">
+          <div class="phone-status"><span>9:41</span><span>●●●</span></div>
+          <div class="phone-header">Dzisiaj 🌿</div>
+          <div class="phone-sub">3 zadania do zrobienia</div>
+          <div class="task-card">
+            <div class="task-icon g">🧹</div>
+            <div><div class="task-name">Odkurzanie salonu</div><div class="task-who">Ania · 15 pkt</div></div>
+            <div class="task-check">✓</div>
+          </div>
+          <div class="task-card">
+            <div class="task-icon b">🍽️</div>
+            <div><div class="task-name">Zmywarka</div><div class="task-who">Marek · 10 pkt</div></div>
+          </div>
+          <div class="task-card">
+            <div class="task-icon y">🛁</div>
+            <div><div class="task-name">Łazienka</div><div class="task-who">Ty · 20 pkt</div></div>
+          </div>
+          <div style="height:.8rem"></div>
+          <div style="background:rgba(34,197,94,.15);border-radius:10px;padding:.6rem .8rem;margin-top:auto">
+            <div style="color:rgba(255,255,255,.5);font-size:.62rem;margin-bottom:.3rem">TWÓJ POSTĘP</div>
+            <div style="height:6px;background:rgba(255,255,255,.1);border-radius:3px"><div style="width:65%;height:100%;background:var(--green);border-radius:3px"></div></div>
+            <div style="color:var(--green);font-size:.68rem;margin-top:.3rem;font-weight:700">65 / 100 pkt do LV5</div>
+          </div>
+          <div class="phone-bar" style="margin-top:.8rem">
+            <span class="active">🏠</span><span>✅</span><span>📅</span><span>🏆</span><span>⋯</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-tag">Funkcje</div>
+      <h2 class="section-title">Wszystko czego potrzebuje dom</h2>
+      <p class="section-sub">Od codziennych zadań po długoterminowe cele — CleanHouse ma to wszystko w jednym miejscu.</p>
+    </div>
+
+    <div class="tabs reveal" style="margin-top:2rem">
+      <button class="tab active" onclick="switchTab(event,'tab-org')">🗂️ Organizacja</button>
+      <button class="tab" onclick="switchTab(event,'tab-mot')">🏆 Motywacja</button>
+      <button class="tab" onclick="switchTab(event,'tab-ai')">🤖 AI</button>
+    </div>
+
+    <div id="tab-org" class="tab-panel active">
+      <div class="features-grid">
+        <div class="feature-card reveal">
+          <span class="feature-emoji">🏠</span>
+          <div class="feature-title">Pokoje i obszary</div>
+          <div class="feature-desc">Podziel dom na pokoje. Przydziel zadania do konkretnych miejsc — łazienka, kuchnia, ogród, garaż.</div>
+        </div>
+        <div class="feature-card reveal">
+          <span class="feature-emoji">📅</span>
+          <div class="feature-title">Kalendarz zadań</div>
+          <div class="feature-desc">Widok kalendarza pokazuje kiedy co jest zaplanowane. Codzienne, tygodniowe, miesięczne — wszystko widać.</div>
+        </div>
+        <div class="feature-card reveal">
+          <span class="feature-emoji">👤</span>
+          <div class="feature-title">Przydzielanie do osób</div>
+          <div class="feature-desc">Każde zadanie można przypisać konkretnemu domownikowi. Wiadomo kto za co odpowiada.</div>
+        </div>
+        <div class="feature-card reveal">
+          <span class="feature-emoji">✅</span>
+          <div class="feature-title">Zatwierdzanie zadań</div>
+          <div class="feature-desc">Rodzic może włączyć tryb zatwierdzania — dziecko zgłasza wykonanie, dorosły weryfikuje i przyznaje punkty.</div>
+        </div>
+        <div class="feature-card reveal">
+          <span class="feature-emoji">🎯</span>
+          <div class="feature-title">Cele i nagrody</div>
+          <div class="feature-desc">Ustal cel (np. rower, gra, wyjście do kina) i cenę w punktach. Dzieci zbierają punkty i odblokowują nagrody.</div>
+        </div>
+        <div class="feature-card reveal">
+          <span class="feature-emoji">🔔</span>
+          <div class="feature-title">Jednorazowe i cykliczne</div>
+          <div class="feature-desc">Twórz zadania jednorazowe albo cykliczne. Zrób coraz raz, bo np. mycie okien co kwartał — ustawisz to łatwo.</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-mot" class="tab-panel">
+      <div class="features-grid">
+        <div class="feature-card reveal">
+          <span class="feature-emoji">🏆</span>
+          <div class="feature-title">Ranking rodziny</div>
+          <div class="feature-desc">Tabela wyników w czasie tygodnia, miesiąca i ogólna. Zdrowa rywalizacja motywuje do działania.</div>
+        </div>
+        <div class="feature-card reveal">
+          <span class="feature-emoji">⭐</span>
+          <div class="feature-title">Punkty i poziomy</div>
+          <div class="feature-desc">Za każde zadanie punkty. Zbieraj je i awansuj przez poziomy — od LV1 do LV10 i dalej.</div>
+        </div>
+        <div class="feature-card reveal">
+          <span class="feature-emoji">🎖️</span>
+          <div class="feature-title">Odznaki</div>
+          <div class="feature-desc">Specjalne odznaki za osiągnięcia: pierwsze zadanie, 7-dniowa seria, 100 zadań, perfekcjonista i wiele więcej.</div>
+        </div>
+        <div class="feature-card reveal">
+          <span class="feature-emoji">🛍️</span>
+          <div class="feature-title">Sklep z nagrodami</div>
+          <div class="feature-desc">Rodzic ustawia co można kupić za punkty. Dzieci widzą cel i pracują na niego z motywacją.</div>
+        </div>
+        <div class="feature-card reveal">
+          <span class="feature-emoji">📊</span>
+          <div class="feature-title">Statystyki</div>
+          <div class="feature-desc">Szczegółowe statystyki — ile zadań zrobiono, przez kogo, kiedy. Pełny obraz aktywności w domu.</div>
+        </div>
+        <div class="feature-card reveal">
+          <span class="feature-emoji">🔥</span>
+          <div class="feature-title">Seria dni</div>
+          <div class="feature-desc">Utrzymuj codzienną serię wykonanych zadań. Streak motywuje do regularności bardziej niż cokolwiek innego.</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-ai" class="tab-panel">
+      <div class="features-grid">
+        <div class="feature-card reveal">
+          <span class="feature-emoji">🎙️</span>
+          <div class="feature-title">Asystent głosowy</div>
+          <div class="feature-desc">Powiedz głosem „dodaj zadanie odkurzanie do salonu" albo „zakończ mycie okien" — AI rozumie i wykona.</div>
+        </div>
+        <div class="feature-card reveal">
+          <span class="feature-emoji">🧠</span>
+          <div class="feature-title">Claude AI w środku</div>
+          <div class="feature-desc">Asystent napędzany przez Claude (Anthropic) — najlepszy model językowy do rozumienia naturalnych komend po polsku.</div>
+        </div>
+        <div class="feature-card reveal">
+          <span class="feature-emoji">💡</span>
+          <div class="feature-title">Sugestie zadań</div>
+          <div class="feature-desc">Wbudowane szablony 20 popularnych zadań domowych — szybko dodaj bez pisania od zera.</div>
+        </div>
+        <div class="feature-card reveal">
+          <span class="feature-emoji">🌍</span>
+          <div class="feature-title">Wielojęzyczny</div>
+          <div class="feature-desc">Interfejs w języku polskim, angielskim i ukraińskim. Asystent głosowy też rozumie wszystkie trzy języki.</div>
+        </div>
+        <div class="feature-card reveal">
+          <span class="feature-emoji">📱</span>
+          <div class="feature-title">Aplikacja Flutter</div>
+          <div class="feature-desc">Natywna aplikacja Android napisana we Flutter. Szybka, responsywna, działa bez internetu (dane lokalne).</div>
+        </div>
+        <div class="feature-card reveal">
+          <span class="feature-emoji">🔧</span>
+          <div class="feature-title">API i MCP</div>
+          <div class="feature-desc">Pełne API REST i serwer MCP — integruj CleanHouse z innymi narzędziami albo Claude Desktop.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-tag">Jak działa</div>
+      <h2 class="section-title">Gotowy w 3 minuty</h2>
+      <p class="section-sub">Bez instalacji, bez konfiguracji. Otwierasz, rejestrujesz dom i zaczynasz.</p>
+    </div>
+    <div class="steps">
+      <div class="step reveal">
+        <div class="step-num">1</div>
+        <h3>Załóż dom</h3>
+        <p>Zarejestruj się i nadaj nazwę swojemu gospodarstwu. Dostajesz unikalny kod zaproszenia dla rodziny.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">2</div>
+        <h3>Dodaj pokoje i zadania</h3>
+        <p>Stwórz pokoje: salon, kuchnia, łazienka. Dodaj zadania i przypisz do konkretnych osób lub zostaw otwarte.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">3</div>
+        <h3>Zaproś rodzinę</h3>
+        <p>Domownicy wpisują kod rodziny i dołączają. Każdy widzi swoje zadania i zbiera punkty za ich wykonanie.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">4</div>
+        <h3>Ciesz się czystym domem</h3>
+        <p>Śledź postępy w rankingu, przyznawaj nagrody, świętuj odznaki — dom jest czysty, rodzina zadowolona.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAMILY -->
+<section id="family">
+  <div class="section-inner">
+    <div class="family-grid">
+      <div class="reveal">
+        <div class="section-tag">Dla całej rodziny</div>
+        <h2 class="section-title">Każdy ma swoją rolę</h2>
+        <p class="section-sub">System ról i uprawnień sprawia, że każdy — od właściciela po dziecko — dokładnie wie co ma robić.</p>
+        <div class="family-features" style="margin-top:2rem">
+          <div class="family-item">
+            <div class="family-icon">👑</div>
+            <div>
+              <h4>Właściciel domu</h4>
+              <p>Pełna kontrola — zarządza domownikami, ustala role, tworzy cele i nagrody.</p>
+            </div>
+          </div>
+          <div class="family-item">
+            <div class="family-icon">🛡️</div>
+            <div>
+              <h4>Administrator</h4>
+              <p>Zatwierdza wykonane zadania, dodaje pokoje i zarządza codziennym sprzątaniem.</p>
+            </div>
+          </div>
+          <div class="family-item">
+            <div class="family-icon">🧹</div>
+            <div>
+              <h4>Domownik</h4>
+              <p>Widzi swoje zadania, oznacza je jako wykonane i zbiera punkty do rankingu.</p>
+            </div>
+          </div>
+          <div class="family-item">
+            <div class="family-icon">🔒</div>
+            <div>
+              <h4>Bezpieczeństwo</h4>
+              <p>Dane rodziny są prywatne. Każdy dom ma osobny kod dostępu, dane szyfrowane.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="reveal">
+        <div class="leaderboard-card">
+          <div class="lb-title">🏆 Ranking tygodnia</div>
+          <div class="lb-row">
+            <div class="lb-pos gold">1</div>
+            <div class="lb-avatar" style="background:rgba(245,158,11,.2)">👦</div>
+            <div class="lb-name">Kacper</div>
+            <div class="lb-pts">342 pkt</div>
+          </div>
+          <div class="lb-row">
+            <div class="lb-pos silver">2</div>
+            <div class="lb-avatar" style="background:rgba(148,163,184,.2)">👧</div>
+            <div class="lb-name">Zosia</div>
+            <div class="lb-pts">289 pkt</div>
+          </div>
+          <div class="lb-row">
+            <div class="lb-pos bronze">3</div>
+            <div class="lb-avatar" style="background:rgba(180,83,9,.2)">👩</div>
+            <div class="lb-name">Mama</div>
+            <div class="lb-pts">251 pkt</div>
+          </div>
+          <div class="lb-row">
+            <div class="lb-pos">4</div>
+            <div class="lb-avatar" style="background:rgba(255,255,255,.08)">👨</div>
+            <div class="lb-name">Tata</div>
+            <div class="lb-pts">180 pkt</div>
+          </div>
+          <div style="margin-top:1rem;background:rgba(34,197,94,.1);border-radius:10px;padding:.8rem;border:1px solid rgba(34,197,94,.2)">
+            <div style="color:rgba(255,255,255,.5);font-size:.68rem;margin-bottom:.4rem">AKTYWNY CEL RODZINY</div>
+            <div style="color:#fff;font-weight:700;font-size:.88rem">🎮 PlayStation 5</div>
+            <div style="height:6px;background:rgba(255,255,255,.1);border-radius:3px;margin:.4rem 0"><div style="width:73%;height:100%;background:var(--green);border-radius:3px"></div></div>
+            <div style="color:var(--green);font-size:.72rem;font-weight:600">1062 / 1500 pkt</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DOWNLOAD -->
+<section id="download">
+  <div class="download-inner reveal">
+    <div class="web-badge">Dostępna teraz</div>
+    <h2>Zacznij za darmo<br>już dziś</h2>
+    <p>Działa w przeglądarce, na Androidzie i przez asystenta głosowego. Zero instalacji, zero opłat.</p>
+    <div class="download-btns">
+      <a href="/app" class="store-btn">
+        <span class="sb-icon">🌐</span>
+        <div class="sb-text"><small>Otwórz w</small>Przeglądarce</div>
+      </a>
+      <a href="https://web-production-65a7a.up.railway.app" class="store-btn" target="_blank">
+        <span class="sb-icon">🚀</span>
+        <div class="sb-text"><small>Wersja</small>Produkcyjna</div>
+      </a>
+    </div>
+    <p style="margin-top:2rem;font-size:.8rem;color:var(--muted)">
+      Masz pytania? <a href="mailto:myro@mrosupply.com" style="color:var(--green-dark);font-weight:600">Napisz do nas</a>
+    </p>
+  </div>
+</section>
+
+<footer>
+  <p>© 2026 CleanHouse ·
+    <a href="/privacy">Polityka prywatności</a> ·
+    <a href="/app">Otwórz aplikację</a>
+  </p>
+</footer>
+
+<script>
+// Tab switching
+function switchTab(e, id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  e.currentTarget.classList.add('active');
+  document.getElementById(id).classList.add('active');
+  // trigger reveal for newly visible cards
+  setTimeout(revealCheck, 50);
+}
+
+// Scroll reveal
+function revealCheck() {
+  document.querySelectorAll('.reveal').forEach(el => {
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight - 60) el.classList.add('visible');
+  });
+}
+window.addEventListener('scroll', revealCheck, {passive: true});
+revealCheck();
+
+// Nav close on link click (mobile)
+document.querySelectorAll('.nav-links a').forEach(a => {
+  a.addEventListener('click', () => document.querySelector('.nav-links').classList.remove('open'));
+});
+</script>
+</body>
+</html>

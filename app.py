@@ -418,6 +418,16 @@ def get_all_data(household_id):
 
 # ─── ROUTES ───────────────────────────────────────────────────
 @app.route('/')
+def root():
+    from flask import redirect
+    return redirect('/welcome')
+
+@app.route('/welcome')
+def landing():
+    with open(os.path.join(os.path.dirname(__file__), 'templates', 'landing.html'), encoding='utf-8') as f:
+        return f.read()
+
+@app.route('/app')
 def index():
     with open(os.path.join(os.path.dirname(__file__), 'templates', 'index.html'), encoding='utf-8') as f:
         return f.read()
