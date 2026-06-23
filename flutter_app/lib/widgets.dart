@@ -323,11 +323,14 @@ class ChPage extends StatelessWidget {
         ...children,
       ],
     );
-    return SafeArea(
-      bottom: false,
-      child: onRefresh != null
-          ? RefreshIndicator(color: c.accent, onRefresh: onRefresh!, child: body)
-          : body,
+    return ColoredBox(
+      color: c.pageBg,
+      child: SafeArea(
+        bottom: false,
+        child: onRefresh != null
+            ? RefreshIndicator(color: c.accent, onRefresh: onRefresh!, child: body)
+            : body,
+      ),
     );
   }
 }
