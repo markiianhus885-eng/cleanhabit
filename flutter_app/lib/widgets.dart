@@ -307,11 +307,15 @@ class ChPage extends StatelessWidget {
                           fontSize: 26,
                           fontWeight: FontWeight.w800,
                           color: c.textPrimary,
-                          letterSpacing: -0.5)),
+                          letterSpacing: -0.5,
+                          decoration: TextDecoration.none)),
                   if (subtitle != null) ...[
                     const SizedBox(height: 2),
                     Text(subtitle!,
-                        style: TextStyle(fontSize: 13.5, color: c.textSecondary)),
+                        style: TextStyle(
+                            fontSize: 13.5,
+                            color: c.textSecondary,
+                            decoration: TextDecoration.none)),
                   ],
                 ],
               ),
