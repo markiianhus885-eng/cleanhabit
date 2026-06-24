@@ -233,11 +233,27 @@ ThemeData _build(ChColors c, Brightness brightness, String lang) {
       ? GoogleFonts.manropeTextTheme(base.textTheme)
       : GoogleFonts.plusJakartaSansTextTheme(base.textTheme);
   final fallback = [GoogleFonts.notoSans().fontFamily!];
-  final textTheme = fontTheme.apply(
+  // Strip any inherited TextDecoration (Google Fonts / Material3 can leave
+  // underline decorations on some styles that render as yellow bars on screen).
+  TextTheme _stripDeco(TextTheme t) {
+    TextStyle strip(TextStyle? s) =>
+        (s ?? const TextStyle()).copyWith(decoration: TextDecoration.none, decorationColor: Colors.transparent);
+    return t.copyWith(
+      displayLarge: strip(t.displayLarge), displayMedium: strip(t.displayMedium),
+      displaySmall: strip(t.displaySmall), headlineLarge: strip(t.headlineLarge),
+      headlineMedium: strip(t.headlineMedium), headlineSmall: strip(t.headlineSmall),
+      titleLarge: strip(t.titleLarge), titleMedium: strip(t.titleMedium),
+      titleSmall: strip(t.titleSmall), bodyLarge: strip(t.bodyLarge),
+      bodyMedium: strip(t.bodyMedium), bodySmall: strip(t.bodySmall),
+      labelLarge: strip(t.labelLarge), labelMedium: strip(t.labelMedium),
+      labelSmall: strip(t.labelSmall),
+    );
+  }
+  final textTheme = _stripDeco(fontTheme.apply(
     bodyColor: c.textPrimary,
     displayColor: c.textPrimary,
     fontFamilyFallback: fallback,
-  );
+  ));
   return base.copyWith(
     scaffoldBackgroundColor: c.pageBg,
     canvasColor: c.pageBg,
