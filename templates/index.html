@@ -581,6 +581,9 @@ html.dark .tb-streak{color:#FF9A6B;background:rgba(255,122,61,.14);}
 .fam-actions button{background:none;border:1px solid var(--border);color:var(--muted2);border-radius:9px;padding:6px 10px;font-size:13px;cursor:pointer;}
 .fam-actions button:hover{background:var(--bg);}
 .fam-code{background:var(--bg3);border:1.5px dashed var(--border);border-radius:14px;padding:14px;text-align:center;font-size:22px;font-weight:800;letter-spacing:.26em;color:#5563D8;cursor:pointer;}
+/* AI assistant — draggable + resizable floating window */
+#voice-panel{position:fixed;z-index:300;left:16px;top:80px;width:380px;resize:both;overflow:auto;min-width:300px;min-height:240px;max-width:96vw;max-height:92vh;}
+#voice-head{cursor:move;user-select:none;}
 
 /* ── Dashboard content (matches Web App design) ── */
 .page{padding:30px 36px 48px;max-width:1320px;}
@@ -653,7 +656,7 @@ html.dark .tb-streak{color:#FF9A6B;background:rgba(255,122,61,.14);}
   /* let card lists breathe and form columns on wide screens */
   .stat-row,.lvl-wrap,.effort-card,.clean-card,.task-item,.room-card,.lb-card,.approval-card,.shdr,.tabs,.empty{max-width:1180px;}
   .shdr{padding-left:32px;padding-right:32px;}
-  #voice-panel{left:50% !important;right:auto !important;top:50% !important;bottom:auto !important;transform:translate(-50%,-50%);width:420px !important;max-width:92vw;max-height:80vh !important;box-shadow:0 30px 80px -20px rgba(40,30,90,.55);}
+  /* voice panel is positioned by JS (draggable/resizable) */
 }
 @media (max-width:1180px){
   #sidebar{width:78px;padding:20px 12px;}
@@ -902,14 +905,12 @@ html.dark .tb-streak{color:#FF9A6B;background:rgba(255,122,61,.14);}
 
 <!-- AI VOICE PANEL -->
 <div id="voice-panel" style="
-  position:fixed;bottom:calc(var(--navh)+58px);left:10px;right:10px;
   background:var(--bg2);border:1px solid var(--border);border-radius:16px;
-  padding:10px 12px;z-index:150;display:none;
+  padding:10px 12px;display:none;
   box-shadow:0 8px 40px rgba(0,0,0,0.7);
-  max-height:60vh;overflow-y:auto;
 ">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-    <div style="font-weight:800;font-size:14px">🤖 Asystent AI</div>
+  <div id="voice-head" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <div style="font-weight:800;font-size:14px">🤖 Asystent AI <span style="font-size:11px;color:var(--muted2);font-weight:600">· przeciągnij ↔ skaluj z rogu</span></div>
     <button onclick="closeVoice()" style="background:none;border:none;color:var(--muted2);font-size:22px;cursor:pointer;line-height:1">×</button>
   </div>
 
@@ -3954,9 +3955,39 @@ let isRecording = false;
 function openVoice() {
   const p = document.getElementById('voice-panel');
   p.style.display = 'block';
+  if (!p.dataset.placed) {
+    const w = Math.min(400, window.innerWidth - 32);
+    p.style.width = w + 'px';
+    p.style.left = Math.max(12, Math.round((window.innerWidth - w) / 2)) + 'px';
+    p.style.top  = Math.max(12, Math.round(window.innerHeight * 0.16)) + 'px';
+    p.dataset.placed = '1';
+  }
   const i = document.getElementById('voice-text');
   if (i) setTimeout(()=>i.focus(), 50);
 }
+// Make the assistant window draggable by its header.
+(function(){
+  function init(){
+    const p = document.getElementById('voice-panel');
+    const h = document.getElementById('voice-head');
+    if (!p || !h) return;
+    let drag = false, ox = 0, oy = 0;
+    const start = (cx, cy) => { const r = p.getBoundingClientRect(); ox = cx - r.left; oy = cy - r.top; drag = true; };
+    const move  = (cx, cy) => {
+      if (!drag) return;
+      let x = Math.max(0, Math.min(cx - ox, window.innerWidth  - p.offsetWidth));
+      let y = Math.max(0, Math.min(cy - oy, window.innerHeight - p.offsetHeight));
+      p.style.left = x + 'px'; p.style.top = y + 'px';
+    };
+    h.addEventListener('mousedown', e => { if (e.target.closest('button')) return; start(e.clientX, e.clientY); e.preventDefault(); });
+    window.addEventListener('mousemove', e => move(e.clientX, e.clientY));
+    window.addEventListener('mouseup', () => drag = false);
+    h.addEventListener('touchstart', e => { if (e.target.closest('button')) return; const t = e.touches[0]; start(t.clientX, t.clientY); }, {passive:true});
+    window.addEventListener('touchmove', e => { if (drag) { const t = e.touches[0]; move(t.clientX, t.clientY); } }, {passive:true});
+    window.addEventListener('touchend', () => drag = false);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
 function closeVoice() {
   document.getElementById('voice-panel').style.display = 'none';
   if (isRecording) stopRecording();
