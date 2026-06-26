@@ -7,6 +7,7 @@ import '../state.dart';
 import '../theme.dart';
 import '../widgets.dart';
 import 'rooms.dart';
+import 'leaderboard.dart';
 import 'family.dart';
 import 'badges.dart';
 import 'profile.dart';
@@ -45,6 +46,8 @@ class MoreScreen extends StatelessWidget {
                   const AssistantScreen(), highlight: true),
               _nav(context, Icons.grid_view_outlined, context.t('nav_rooms'),
                   const RoomsScreen()),
+              _nav(context, Icons.leaderboard_outlined,
+                  context.t('leaderboard_title'), const LeaderboardScreen()),
               _nav(context, Icons.people_outline, context.t('nav_family'),
                   const FamilyScreen()),
               _nav(context, Icons.emoji_events_outlined,

@@ -160,6 +160,9 @@ class L10n {
 
     // family
     'family_title': ['Family', 'Rodzina', 'Сім\'я'],
+    'leaderboard_title': ['Leaderboard', 'Ranking', 'Рейтинг'],
+    'nav_lb': ['Ranking', 'Ranking', 'Рейтинг'],
+    'manage_members': ['Manage household members', 'Zarządzaj domownikami', 'Керуйте учасниками'],
     'n_members': ['{n} members', '{n} domowników', '{n} учасників'],
     'period_week': ['This week', 'Ten tydzień', 'Цей тиждень'],
     'period_month': ['This month', 'Ten miesiąc', 'Цей місяць'],

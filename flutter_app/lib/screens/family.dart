@@ -8,36 +8,9 @@ import '../state.dart';
 import '../theme.dart';
 import '../widgets.dart';
 
-class FamilyScreen extends StatefulWidget {
+/// Manage household members — add, remove, change roles.
+class FamilyScreen extends StatelessWidget {
   const FamilyScreen({super.key});
-  @override
-  State<FamilyScreen> createState() => _FamilyScreenState();
-}
-
-class _FamilyScreenState extends State<FamilyScreen> {
-  int _period = 0; // 0 week, 1 month, 2 all
-  static const _periods = ['week', 'month', 'all'];
-  late Future<List<LeaderEntry>> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  void _load() {
-    final api = context.read<AppState>().api;
-    _future = api
-        .leaderboard(_periods[_period])
-        .then((list) => list
-            .map((e) => LeaderEntry.fromJson(e as Map<String, dynamic>))
-            .toList());
-  }
-
-  Future<void> _refresh() async {
-    await context.read<AppState>().refresh();
-    setState(_load);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,8 +21,8 @@ class _FamilyScreenState extends State<FamilyScreen> {
 
     return ChPage(
       title: context.t('family_title'),
-      subtitle: context.t('n_members', {'n': data.members.length}),
-      onRefresh: _refresh,
+      subtitle: context.t('manage_members'),
+      onRefresh: () => app.refresh(),
       trailing: data.amAdmin
           ? GestureDetector(
               onTap: () => _openAddMember(context),
@@ -64,56 +37,12 @@ class _FamilyScreenState extends State<FamilyScreen> {
             )
           : null,
       children: [
-        Segmented(
-          labels: [
-            context.t('period_week'),
-            context.t('period_month'),
-            context.t('period_all')
-          ],
-          index: _period,
-          onChanged: (i) => setState(() {
-            _period = i;
-            _load();
-          }),
-        ),
-        const SizedBox(height: 16),
-        FutureBuilder<List<LeaderEntry>>(
-          future: _future,
-          builder: (ctx, snap) {
-            if (snap.connectionState != ConnectionState.done) {
-              return const Padding(
-                  padding: EdgeInsets.only(top: 40), child: Loader());
-            }
-            if (snap.hasError) {
-              return Padding(
-                padding: const EdgeInsets.only(top: 40),
-                child: Center(
-                    child: Text(context.t('lb_error'),
-                        style: TextStyle(color: c.textSecondary))),
-              );
-            }
-            final entries = snap.data ?? [];
-            return Column(
-              children: [
-                for (int i = 0; i < entries.length; i++)
-                  _MemberCard(
-                    entry: entries[i],
-                    rank: i + 1,
-                    period: _period,
-                    isCreator: entries[i].id == data.adminMemberId,
-                    canManage: data.amAdmin,
-                    hasAccount: data.membersRoles.containsKey(entries[i].id),
-                    onManage: () => _openManage(context, data, entries[i]),
-                  ),
-              ],
-            );
-          },
-        ),
+        for (final m in data.members) _MemberRow(member: m, data: data),
       ],
     );
   }
 
-  void _openAddMember(BuildContext context) {
+  static void _openAddMember(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -121,13 +50,88 @@ class _FamilyScreenState extends State<FamilyScreen> {
       builder: (_) => const _AddMemberSheet(),
     );
   }
+}
 
-  Future<void> _openManage(
-      BuildContext context, HouseholdData data, LeaderEntry m) async {
+class _MemberRow extends StatelessWidget {
+  final Member member;
+  final HouseholdData data;
+  const _MemberRow({required this.member, required this.data});
+
+  bool get _isCreator => member.id == data.adminMemberId;
+  bool get _isAdmin => data.membersRoles[member.id] == 'admin';
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.ch;
+    final canManage = data.amAdmin && !_isCreator;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: GestureDetector(
+        onTap: canManage ? () => _openManage(context) : null,
+        child: AppCard(
+          child: Row(
+            children: [
+              Text(member.emoji, style: const TextStyle(fontSize: 32)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      Flexible(
+                        child: Text(member.name,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: c.textPrimary)),
+                      ),
+                      if (_isCreator) ...[
+                        const SizedBox(width: 6),
+                        const Text('👑', style: TextStyle(fontSize: 13)),
+                      ] else if (_isAdmin) ...[
+                        const SizedBox(width: 6),
+                        Icon(Icons.shield, size: 13, color: c.accent),
+                      ],
+                    ]),
+                    const SizedBox(height: 3),
+                    Text(
+                        '${levelIcon(member.points)} ${levelName(member.points)} · Lv.${levelOf(member.points)}',
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: c.accent)),
+                    const SizedBox(height: 5),
+                    Row(children: [
+                      Text('${member.points} ${context.t('pts')}',
+                          style:
+                              TextStyle(fontSize: 12, color: c.textSecondary)),
+                      const SizedBox(width: 10),
+                      const CoinDot(size: 12),
+                      const SizedBox(width: 3),
+                      Text('${member.coins}',
+                          style:
+                              TextStyle(fontSize: 12, color: c.textSecondary)),
+                      const SizedBox(width: 10),
+                      Text('🔥 ${member.streak}',
+                          style:
+                              TextStyle(fontSize: 12, color: c.textSecondary)),
+                    ]),
+                  ],
+                ),
+              ),
+              if (canManage)
+                Icon(Icons.more_horiz, color: c.textFaint),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openManage(BuildContext context) async {
     final c = context.ch;
     final app = context.read<AppState>();
-    final isCreator = m.id == data.adminMemberId;
-    final hasAccount = data.membersRoles.containsKey(m.id);
     await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -145,55 +149,47 @@ class _FamilyScreenState extends State<FamilyScreen> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                      color: c.divider, borderRadius: BorderRadius.circular(999))),
+                      color: c.divider,
+                      borderRadius: BorderRadius.circular(999))),
             ),
             const SizedBox(height: 16),
-            Text('${m.emoji}  ${m.name}',
+            Text('${member.emoji}  ${member.name}',
                 style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                     color: c.textPrimary)),
             const SizedBox(height: 12),
-            if (isCreator)
-              Padding(
-                padding: const EdgeInsets.all(8),
-                child: Text(context.t('creator_locked'),
-                    style: TextStyle(color: c.textSecondary)),
-              )
-            else ...[
-              if (hasAccount && data.amOwner)
-                ListTile(
-                  leading: Icon(
-                      m.isAdmin
-                          ? Icons.remove_moderator_outlined
-                          : Icons.admin_panel_settings_outlined,
-                      color: c.accent),
-                  title: Text(context.t(m.isAdmin ? 'make_member' : 'make_admin'),
-                      style: TextStyle(
-                          color: c.textPrimary, fontWeight: FontWeight.w600)),
-                  onTap: () async {
-                    Navigator.pop(ctx);
-                    await _run(
-                        context,
-                        () => app.setMemberRole(
-                            m.id, m.isAdmin ? 'member' : 'admin'),
-                        context.t('role_updated'));
-                    setState(_load);
-                  },
-                ),
+            if (data.amOwner)
               ListTile(
-                leading: const Icon(Icons.delete_outline, color: Color(0xFFB3261E)),
-                title: Text(context.t('remove_member'),
-                    style: const TextStyle(
-                        color: Color(0xFFB3261E), fontWeight: FontWeight.w600)),
+                leading: Icon(
+                    _isAdmin
+                        ? Icons.remove_moderator_outlined
+                        : Icons.admin_panel_settings_outlined,
+                    color: c.accent),
+                title: Text(context.t(_isAdmin ? 'make_member' : 'make_admin'),
+                    style: TextStyle(
+                        color: c.textPrimary, fontWeight: FontWeight.w600)),
                 onTap: () async {
                   Navigator.pop(ctx);
-                  await _run(context, () => app.deleteMember(m.id),
-                      context.t('member_removed'));
-                  setState(_load);
+                  await _run(
+                      context,
+                      () => app.setMemberRole(
+                          member.id, _isAdmin ? 'member' : 'admin'),
+                      context.t('role_updated'));
                 },
               ),
-            ],
+            ListTile(
+              leading:
+                  const Icon(Icons.delete_outline, color: Color(0xFFB3261E)),
+              title: Text(context.t('remove_member'),
+                  style: const TextStyle(
+                      color: Color(0xFFB3261E), fontWeight: FontWeight.w600)),
+              onTap: () async {
+                Navigator.pop(ctx);
+                await _run(context, () => app.deleteMember(member.id),
+                    context.t('member_removed'));
+              },
+            ),
           ],
         ),
       ),
@@ -208,133 +204,6 @@ class _FamilyScreenState extends State<FamilyScreen> {
     } on ApiException catch (e) {
       if (context.mounted) showSnack(context, e.message, error: true);
     }
-  }
-}
-
-class _MemberCard extends StatelessWidget {
-  final LeaderEntry entry;
-  final int rank;
-  final int period;
-  final bool isCreator;
-  final bool canManage;
-  final bool hasAccount;
-  final VoidCallback onManage;
-  const _MemberCard({
-    required this.entry,
-    required this.rank,
-    required this.period,
-    required this.isCreator,
-    required this.canManage,
-    required this.hasAccount,
-    required this.onManage,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.ch;
-    final medal = switch (rank) { 1 => '🥇', 2 => '🥈', 3 => '🥉', _ => '' };
-    final pts = period == 2 ? entry.points : entry.periodPts;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: GestureDetector(
-        onTap: canManage ? onManage : null,
-        child: AppCard(
-          child: Row(
-            children: [
-              SizedBox(
-                width: 30,
-                child: medal.isNotEmpty
-                    ? Text(medal, style: const TextStyle(fontSize: 22))
-                    : Text('$rank',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15,
-                            color: c.textFaint)),
-              ),
-              const SizedBox(width: 8),
-              Text(entry.emoji, style: const TextStyle(fontSize: 30)),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(children: [
-                      Flexible(
-                        child: Text(entry.name,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: c.textPrimary)),
-                      ),
-                      if (isCreator) ...[
-                        const SizedBox(width: 6),
-                        const Text('👑', style: TextStyle(fontSize: 13)),
-                      ] else if (entry.isAdmin) ...[
-                        const SizedBox(width: 6),
-                        Icon(Icons.shield, size: 13, color: c.accent),
-                      ],
-                    ]),
-                    const SizedBox(height: 3),
-                    Row(children: [
-                      Text(
-                          '${levelIcon(entry.points)} ${levelName(entry.points)} · Lv.${levelOf(entry.points)}',
-                          style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: c.accent)),
-                    ]),
-                    const SizedBox(height: 4),
-                    Row(children: [
-                      Text('🔥 ${entry.streak}',
-                          style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w700,
-                              color: c.flame)),
-                      const SizedBox(width: 12),
-                      Text('🏅 ${entry.achievements.length}',
-                          style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w700,
-                              color: c.textSecondary)),
-                    ]),
-                    const SizedBox(height: 5),
-                    SizedBox(
-                      width: 130,
-                      child: BarMeter(
-                          value: levelProgress(entry.points), height: 5),
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text('$pts',
-                      style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: rank == 1 ? c.accent : c.textPrimary)),
-                  Text(context.t('pts'),
-                      style: TextStyle(
-                          fontSize: 11,
-                          color: c.textFaint,
-                          fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 4),
-                  Row(mainAxisSize: MainAxisSize.min, children: [
-                    const CoinDot(size: 12),
-                    const SizedBox(width: 3),
-                    Text('${entry.coins}',
-                        style: TextStyle(fontSize: 12, color: c.textSecondary)),
-                  ]),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }
 
