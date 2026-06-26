@@ -6,155 +6,202 @@
 <title>CleanHouse — Sprzątanie bez stresu</title>
 <meta name="description" content="Zarządzaj sprzątaniem w domu razem z rodziną. Zadania, pokoje, nagrody — wszystko w jednej aplikacji.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --green:#22c55e;--green-dark:#16a34a;--green-light:#bbf7d0;
-  --navy:#0f172a;--slate:#1e293b;--muted:#64748b;--border:#e2e8f0;
-  --white:#ffffff;--off:#f8fafc;
+  --indigo:#5563D8;--indigo-a:#6D7BE6;--indigo-b:#5159D6;
+  --ink:#2B2840;--muted:#908AA8;--faint:#B0AAC8;
+  --page:#F4F2FC;--card:#FFFFFF;--border:#ECE9F7;--track:#E6E1F4;
+  --green:#2F8B5E;--green-bg:#E6F6EE;
+  --coin-a:#FFE08A;--coin-b:#E5A623;--star:#C98A00;--flame:#FF7A3D;
+  --quick-bg:#EDE8FB;--quick-fg:#6354C4;--epic-bg:#FFE6EE;--epic-fg:#E5557A;
+  --xp-a:#FFE08A;--xp-b:#FFC53D;
+  --shadow:0 18px 40px -24px rgba(60,45,120,.45);
+  --shadow-sm:0 12px 26px -18px rgba(60,45,120,.5);
 }
 html{scroll-behavior:smooth}
-body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--white);color:var(--navy);overflow-x:hidden}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--page);color:var(--ink);overflow-x:hidden;-webkit-font-smoothing:antialiased}
 body.lang-uk{font-family:'Manrope',sans-serif}
+.coin{display:inline-block;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--coin-a),var(--coin-b));box-shadow:0 0 0 1px rgba(139,98,0,.35) inset}
 
 /* NAV */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(255,255,255,0.88);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 2rem}
-.nav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:64px}
-.logo{display:flex;align-items:center;gap:.5rem;font-weight:800;font-size:1.2rem;text-decoration:none;color:var(--navy)}
-.logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--green),var(--green-dark));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem}
-.nav-right{display:flex;align-items:center;gap:1.5rem}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(244,242,252,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:0 2rem}
+.nav-inner{max-width:1120px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:66px}
+.logo{display:flex;align-items:center;gap:.6rem;font-weight:800;font-size:1.2rem;text-decoration:none;color:var(--ink);letter-spacing:-.01em}
+.logo-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--indigo-a),var(--indigo-b));border-radius:13px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px -6px rgba(85,89,214,.6)}
+.nav-right{display:flex;align-items:center;gap:1.4rem}
 .nav-links{display:flex;align-items:center;gap:2rem;list-style:none}
-.nav-links a{text-decoration:none;color:var(--muted);font-weight:500;font-size:.92rem;transition:color .2s}
-.nav-links a:hover{color:var(--green-dark)}
-.nav-cta{background:var(--green);color:#fff!important;padding:.45rem 1.1rem;border-radius:8px;font-weight:600!important;transition:background .2s!important}
-.nav-cta:hover{background:var(--green-dark)!important}
+.nav-links a{text-decoration:none;color:var(--muted);font-weight:600;font-size:.92rem;transition:color .2s}
+.nav-links a:hover{color:var(--indigo)}
+.nav-cta{background:linear-gradient(135deg,var(--indigo-a),var(--indigo-b));color:#fff!important;padding:.5rem 1.2rem;border-radius:12px;font-weight:700!important;box-shadow:0 10px 20px -8px rgba(85,89,214,.6);transition:transform .2s!important}
+.nav-cta:hover{transform:translateY(-1px)}
 
 /* LANG SWITCHER */
-.lang-switcher{display:flex;gap:2px;background:var(--off);border:1px solid var(--border);border-radius:8px;padding:3px}
-.lang-btn{border:none;background:transparent;padding:.25rem .55rem;border-radius:6px;font-size:.78rem;font-weight:700;cursor:pointer;color:var(--muted);transition:.18s;line-height:1}
-.lang-btn:hover{color:var(--navy)}
-.lang-btn.active{background:#fff;color:var(--navy);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.lang-switcher{display:flex;gap:2px;background:#fff;border:1px solid var(--border);border-radius:11px;padding:3px;box-shadow:0 6px 14px -10px rgba(60,45,120,.4)}
+.lang-btn{border:none;background:transparent;padding:.28rem .55rem;border-radius:8px;font-size:.78rem;font-weight:700;cursor:pointer;color:var(--muted);transition:.18s;line-height:1}
+.lang-btn:hover{color:var(--ink)}
+.lang-btn.active{background:linear-gradient(135deg,var(--indigo-a),var(--indigo-b));color:#fff}
 
 .nav-toggle{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:.3rem}
-.nav-toggle span{width:22px;height:2px;background:var(--navy);border-radius:2px;transition:.3s}
+.nav-toggle span{width:22px;height:2px;background:var(--ink);border-radius:2px;transition:.3s}
 @media(max-width:720px){
-  .nav-links{display:none;flex-direction:column;position:absolute;top:64px;left:0;right:0;background:#fff;padding:1rem 2rem 1.5rem;border-bottom:1px solid var(--border);gap:1rem}
+  .nav-links{display:none;flex-direction:column;position:absolute;top:66px;left:0;right:0;background:#fff;padding:1rem 2rem 1.5rem;border-bottom:1px solid var(--border);gap:1rem}
   .nav-links.open{display:flex}
   .nav-toggle{display:flex}
   .lang-switcher{order:-1}
 }
 
 /* HERO */
-.hero{min-height:100vh;display:flex;align-items:center;padding:5rem 2rem 3rem;background:linear-gradient(160deg,#f0fdf4 0%,#ffffff 60%,#eff6ff 100%)}
-.hero-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
+.hero{min-height:100vh;display:flex;align-items:center;padding:6rem 2rem 3rem;background:
+  radial-gradient(1100px 520px at 12% -10%,#E4DFFb 0%,transparent 60%),
+  radial-gradient(900px 500px at 100% 0%,#E7DDF0 0%,transparent 55%),
+  linear-gradient(160deg,#F4F2FC 0%,#EEEAFA 100%)}
+.hero-inner{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:1.05fr .95fr;gap:4rem;align-items:center}
 @media(max-width:860px){.hero-inner{grid-template-columns:1fr;text-align:center}.hero-visual{order:-1}}
-.badge{display:inline-flex;align-items:center;gap:.4rem;background:var(--green-light);color:var(--green-dark);padding:.3rem .8rem;border-radius:99px;font-size:.8rem;font-weight:700;margin-bottom:1.2rem;letter-spacing:.04em}
-h1{font-size:clamp(2rem,5vw,3.2rem);font-weight:800;line-height:1.15;letter-spacing:-.02em;margin-bottom:1.2rem}
-h1 span{color:var(--green)}
-.hero-sub{font-size:1.05rem;color:var(--muted);line-height:1.7;margin-bottom:2rem;max-width:480px}
+.badge{display:inline-flex;align-items:center;gap:.4rem;background:var(--quick-bg);color:var(--quick-fg);padding:.4rem .9rem;border-radius:99px;font-size:.8rem;font-weight:800;margin-bottom:1.3rem;letter-spacing:.01em}
+h1{font-size:clamp(2.1rem,5.2vw,3.4rem);font-weight:800;line-height:1.12;letter-spacing:-.025em;margin-bottom:1.2rem}
+h1 span{background:linear-gradient(120deg,var(--indigo-a),var(--epic-fg));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero-sub{font-size:1.06rem;color:var(--muted);line-height:1.7;margin-bottom:2rem;max-width:480px}
 @media(max-width:860px){.hero-sub{margin:0 auto 2rem}}
 .hero-btns{display:flex;gap:1rem;flex-wrap:wrap}
 @media(max-width:860px){.hero-btns{justify-content:center}}
-.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.6rem;border-radius:10px;font-weight:700;font-size:.95rem;text-decoration:none;transition:.2s}
-.btn-primary{background:var(--green);color:#fff}
-.btn-primary:hover{background:var(--green-dark);transform:translateY(-1px)}
-.btn-secondary{background:var(--off);color:var(--navy);border:1px solid var(--border)}
-.btn-secondary:hover{background:var(--border)}
-.hero-stats{display:flex;gap:2rem;margin-top:2.5rem}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.85rem 1.7rem;border-radius:14px;font-weight:800;font-size:.95rem;text-decoration:none;transition:.2s;border:none;cursor:pointer}
+.btn-primary{background:linear-gradient(135deg,var(--indigo-a),var(--indigo-b));color:#fff;box-shadow:0 16px 30px -10px rgba(85,89,214,.65)}
+.btn-primary:hover{transform:translateY(-2px)}
+.btn-secondary{background:#fff;color:var(--ink);box-shadow:var(--shadow-sm)}
+.btn-secondary:hover{transform:translateY(-2px)}
+.hero-stats{display:flex;gap:2.2rem;margin-top:2.6rem}
 @media(max-width:860px){.hero-stats{justify-content:center}}
-.stat-num{font-size:1.6rem;font-weight:800;color:var(--navy)}
-.stat-label{font-size:.8rem;color:var(--muted);font-weight:500}
+.stat-num{font-size:1.7rem;font-weight:800;color:var(--ink);letter-spacing:-.02em}
+.stat-label{font-size:.8rem;color:var(--muted);font-weight:600}
 
-/* PHONE MOCKUP */
+/* PHONE MOCKUP — Playful "Today" screen */
 .hero-visual{display:flex;justify-content:center;align-items:center}
-.phone{width:260px;height:520px;background:linear-gradient(160deg,var(--slate),var(--navy));border-radius:36px;padding:12px;box-shadow:0 40px 80px rgba(0,0,0,.25),0 0 0 1px rgba(255,255,255,.08);position:relative;flex-shrink:0}
-.phone-screen{width:100%;height:100%;background:linear-gradient(160deg,#0f1e0f,#1a2e1a);border-radius:26px;overflow:hidden;display:flex;flex-direction:column;padding:1.2rem}
-.phone-status{display:flex;justify-content:space-between;color:rgba(255,255,255,.5);font-size:.65rem;margin-bottom:1rem}
-.phone-header{color:#fff;font-weight:700;font-size:.95rem;margin-bottom:.3rem}
-.phone-sub{color:var(--green);font-size:.7rem;font-weight:600;margin-bottom:1rem}
-.task-card{background:rgba(255,255,255,.07);border-radius:12px;padding:.7rem .8rem;margin-bottom:.5rem;display:flex;align-items:center;gap:.6rem}
-.task-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0}
-.task-icon.g{background:rgba(34,197,94,.2)}
-.task-icon.b{background:rgba(59,130,246,.2)}
-.task-icon.y{background:rgba(234,179,8,.2)}
-.task-name{color:rgba(255,255,255,.85);font-size:.72rem;font-weight:600}
-.task-who{color:rgba(255,255,255,.4);font-size:.62rem}
-.task-check{margin-left:auto;width:18px;height:18px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:.65rem;color:#fff}
-.phone-bar{margin-top:auto;background:rgba(255,255,255,.06);border-radius:10px;padding:.6rem .8rem;display:flex;justify-content:space-around}
-.phone-bar span{color:rgba(255,255,255,.4);font-size:.6rem;text-align:center;cursor:pointer}
-.phone-bar span.active{color:var(--green)}
-.floating{animation:float 4s ease-in-out infinite}
+.phone{width:288px;height:580px;background:#14101f;border-radius:46px;padding:11px;box-shadow:0 50px 90px -30px rgba(60,40,120,.5),0 0 0 1px rgba(255,255,255,.05);position:relative;flex-shrink:0}
+.p-screen{width:100%;height:100%;background:var(--page);border-radius:36px;overflow:hidden;display:flex;flex-direction:column;padding:1.1rem 1rem .9rem}
+.p-status{display:flex;justify-content:space-between;align-items:center;color:var(--ink);font-size:.7rem;font-weight:600;padding:0 .4rem .7rem}
+.p-head{display:flex;align-items:center;gap:.6rem;margin-bottom:1rem}
+.p-avatar{width:38px;height:38px;border-radius:13px;background:linear-gradient(135deg,var(--indigo-a),var(--indigo-b));color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+.p-greet{font-size:.62rem;color:var(--muted);font-weight:600}
+.p-name{font-size:.92rem;color:var(--ink);font-weight:800;letter-spacing:-.01em}
+.p-coins{margin-left:auto;display:flex;align-items:center;gap:.3rem;background:#fff;padding:.35rem .6rem;border-radius:99px;font-size:.78rem;font-weight:800;color:var(--ink);box-shadow:var(--shadow-sm)}
+.p-coins .coin{width:14px;height:14px}
+.p-hero{position:relative;border-radius:22px;padding:.95rem 1rem;background:linear-gradient(140deg,var(--indigo-a),var(--indigo-b));overflow:hidden;box-shadow:0 18px 30px -14px rgba(85,89,214,.65);margin-bottom:1rem}
+.p-hero::after{content:"";position:absolute;top:-26px;right:-18px;width:96px;height:96px;border-radius:50%;background:rgba(255,255,255,.1)}
+.p-lvl{color:rgba(255,255,255,.82);font-size:.62rem;font-weight:600;position:relative}
+.p-xp{color:#fff;margin-top:.35rem;position:relative}
+.p-xp b{font-size:1.85rem;font-weight:800;letter-spacing:-.02em}
+.p-xp span{font-size:.78rem;font-weight:600;opacity:.85;margin-left:.15rem}
+.p-hbar{height:6px;border-radius:99px;background:rgba(0,0,0,.18);margin-top:.5rem;overflow:hidden;position:relative}
+.p-hbar i{display:block;height:100%;width:68%;border-radius:99px;background:linear-gradient(90deg,var(--xp-a),var(--xp-b))}
+.p-qhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:.55rem;padding:0 .15rem}
+.p-qhead .t{font-size:.82rem;font-weight:800;color:var(--ink)}
+.p-qhead .see{font-size:.68rem;font-weight:700;color:var(--indigo)}
+.q{display:flex;align-items:center;gap:.6rem;background:#fff;border-radius:15px;padding:.55rem .6rem;margin-bottom:.5rem;box-shadow:var(--shadow-sm)}
+.q.done{background:var(--green-bg);box-shadow:none}
+.q-ic{width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0}
+.q-ic.v{background:#F1ECFF}.q-ic.b{background:#E7F1FF}.q-ic.g{background:#C9E9D7}
+.q-name{font-size:.74rem;font-weight:700;color:var(--ink)}
+.q.done .q-name{color:#8FA398;text-decoration:line-through}
+.q-rew{display:flex;align-items:center;gap:.4rem;margin-top:.15rem}
+.q-rew .xp{font-size:.6rem;font-weight:800;color:var(--green)}
+.q-rew .cn{display:inline-flex;align-items:center;gap:.18rem;font-size:.6rem;font-weight:800;color:var(--star)}
+.q-rew .cn .coin{width:9px;height:9px}
+.q-rew .done-l{font-size:.6rem;font-weight:800;color:var(--green)}
+.q-ring{margin-left:auto;width:24px;height:24px;border-radius:50%;border:2.5px solid var(--track);flex-shrink:0}
+.q-check{margin-left:auto;width:26px;height:26px;border-radius:50%;background:#16C172;color:#fff;display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0}
+.p-nav{margin-top:auto;background:#fff;border-radius:18px;padding:.55rem .5rem;display:flex;justify-content:space-around;box-shadow:0 14px 30px -14px rgba(60,45,120,.45)}
+.p-nav span{font-size:.85rem;color:var(--faint);opacity:.7}
+.p-nav span.on{color:var(--indigo);opacity:1}
+.floating{animation:float 4.5s ease-in-out infinite}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
-.phone-badge{position:absolute;top:-10px;right:-14px;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:12px;padding:.4rem .7rem;color:#fff;font-size:.7rem;font-weight:700;box-shadow:0 8px 20px rgba(245,158,11,.4)}
+.phone-badge{position:absolute;top:-12px;right:-16px;background:linear-gradient(135deg,var(--xp-a),var(--coin-b));border-radius:14px;padding:.42rem .75rem;color:#5b3d00;font-size:.72rem;font-weight:800;box-shadow:0 12px 24px -8px rgba(229,166,35,.6);z-index:2}
+.phone-flame{position:absolute;bottom:46px;left:-18px;background:#fff;border-radius:14px;padding:.4rem .7rem;font-size:.74rem;font-weight:800;color:var(--ink);box-shadow:var(--shadow);z-index:2;display:flex;align-items:center;gap:.3rem}
 
 /* SECTIONS */
-section{padding:5rem 2rem}
-.section-inner{max-width:1100px;margin:0 auto}
-.section-tag{font-size:.8rem;font-weight:700;color:var(--green-dark);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.6rem}
-.section-title{font-size:clamp(1.6rem,3.5vw,2.4rem);font-weight:800;letter-spacing:-.02em;margin-bottom:1rem}
-.section-sub{color:var(--muted);font-size:1rem;line-height:1.7;max-width:560px}
+section{padding:5.5rem 2rem}
+.section-inner{max-width:1120px;margin:0 auto}
+.section-tag{font-size:.78rem;font-weight:800;color:var(--indigo);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.6rem}
+.section-title{font-size:clamp(1.7rem,3.6vw,2.5rem);font-weight:800;letter-spacing:-.025em;margin-bottom:1rem;color:var(--ink)}
+.section-sub{color:var(--muted);font-size:1.02rem;line-height:1.7;max-width:560px}
 
 /* FEATURES */
-#features{background:var(--off)}
-.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;margin-top:3rem}
-.feature-card{background:#fff;border-radius:16px;padding:1.8rem;border:1px solid var(--border);transition:.25s;cursor:default}
-.feature-card:hover{transform:translateY(-4px);box-shadow:0 20px 40px rgba(0,0,0,.08);border-color:var(--green-light)}
-.feature-emoji{font-size:2rem;margin-bottom:1rem;display:block}
-.feature-title{font-weight:700;font-size:1rem;margin-bottom:.5rem}
+#features{background:linear-gradient(180deg,#F4F2FC,#EFEBFA)}
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.4rem;margin-top:2.4rem}
+.feature-card{background:#fff;border-radius:22px;padding:1.7rem;box-shadow:var(--shadow);transition:.25s;cursor:default}
+.feature-card:hover{transform:translateY(-5px);box-shadow:0 26px 50px -22px rgba(60,45,120,.5)}
+.feature-emoji{width:52px;height:52px;border-radius:16px;background:var(--quick-bg);display:flex;align-items:center;justify-content:center;font-size:1.55rem;margin-bottom:1.1rem}
+.feature-card:nth-child(3n+2) .feature-emoji{background:#E7F1FF}
+.feature-card:nth-child(3n) .feature-emoji{background:var(--green-bg)}
+.feature-title{font-weight:800;font-size:1.02rem;margin-bottom:.5rem;color:var(--ink)}
 .feature-desc{color:var(--muted);font-size:.9rem;line-height:1.6}
 
 /* HOW */
 #how{background:#fff}
-.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:2rem;margin-top:3rem}
-.step-num{width:44px;height:44px;background:linear-gradient(135deg,var(--green),var(--green-dark));border-radius:12px;color:#fff;font-weight:800;font-size:1rem;display:flex;align-items:center;justify-content:center;margin-bottom:1rem}
-.step h3{font-weight:700;font-size:1rem;margin-bottom:.5rem}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.8rem;margin-top:2.6rem}
+.step{background:var(--page);border-radius:22px;padding:1.6rem;box-shadow:var(--shadow-sm)}
+.step-num{width:46px;height:46px;background:linear-gradient(135deg,var(--indigo-a),var(--indigo-b));border-radius:14px;color:#fff;font-weight:800;font-size:1.05rem;display:flex;align-items:center;justify-content:center;margin-bottom:1.1rem;box-shadow:0 12px 22px -8px rgba(85,89,214,.6)}
+.step h3{font-weight:800;font-size:1.02rem;margin-bottom:.5rem;color:var(--ink)}
 .step p{color:var(--muted);font-size:.9rem;line-height:1.6}
 
 /* FAMILY */
-#family{background:linear-gradient(160deg,#0f172a,#1e293b);color:#fff}
-#family .section-tag{color:var(--green)}
+#family{background:linear-gradient(160deg,#241D33 0%,#191527 100%);color:#fff;border-radius:0}
+#family .section-tag{color:#A99CF0}
 #family .section-title{color:#fff}
-#family .section-sub{color:rgba(255,255,255,.6)}
+#family .section-sub{color:rgba(255,255,255,.62)}
 .family-grid{display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center;margin-top:3rem}
 @media(max-width:720px){.family-grid{grid-template-columns:1fr}}
-.family-features{display:flex;flex-direction:column;gap:1.2rem}
+.family-features{display:flex;flex-direction:column;gap:1.1rem}
 .family-item{display:flex;gap:1rem;align-items:flex-start}
-.family-icon{width:40px;height:40px;background:rgba(34,197,94,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
-.family-item h4{color:#fff;font-weight:700;margin-bottom:.25rem;font-size:.95rem}
+.family-icon{width:44px;height:44px;background:rgba(169,156,240,.16);border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:1.15rem;flex-shrink:0}
+.family-item h4{color:#fff;font-weight:800;margin-bottom:.25rem;font-size:.96rem}
 .family-item p{color:rgba(255,255,255,.55);font-size:.85rem;line-height:1.5}
-.leaderboard-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:1.5rem;backdrop-filter:blur(10px)}
-.lb-title{color:rgba(255,255,255,.5);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:1rem}
-.lb-row{display:flex;align-items:center;gap:.8rem;padding:.6rem 0;border-bottom:1px solid rgba(255,255,255,.06)}
-.lb-row:last-child{border:none}
+.leaderboard-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:24px;padding:1.5rem;backdrop-filter:blur(10px)}
+.lb-title{color:rgba(255,255,255,.55);font-size:.74rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:1rem}
+.lb-row{display:flex;align-items:center;gap:.8rem;padding:.62rem 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.lb-row:last-of-type{border:none}
 .lb-pos{width:24px;font-weight:800;font-size:.9rem;color:rgba(255,255,255,.3);flex-shrink:0}
-.lb-pos.gold{color:#f59e0b}.lb-pos.silver{color:#94a3b8}.lb-pos.bronze{color:#b45309}
-.lb-avatar{width:32px;height:32px;border-radius:50%;font-size:.85rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.lb-name{color:#fff;font-weight:600;font-size:.88rem;flex:1}
-.lb-pts{color:var(--green);font-weight:700;font-size:.88rem}
+.lb-pos.gold{color:var(--xp-b)}.lb-pos.silver{color:#B9B4D8}.lb-pos.bronze{color:#C98A55}
+.lb-avatar{width:34px;height:34px;border-radius:11px;font-size:.9rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.lb-name{color:#fff;font-weight:700;font-size:.88rem;flex:1}
+.lb-pts{color:#A99CF0;font-weight:800;font-size:.88rem}
+.lb-goal{margin-top:1rem;background:linear-gradient(140deg,var(--indigo-a),var(--indigo-b));border-radius:16px;padding:.9rem;position:relative;overflow:hidden}
+.lb-goal::after{content:"";position:absolute;top:-20px;right:-12px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.1)}
+.lb-goal .g-l{color:rgba(255,255,255,.78);font-size:.66rem;font-weight:700;margin-bottom:.35rem;position:relative}
+.lb-goal .g-n{color:#fff;font-weight:800;font-size:.92rem;position:relative}
+.lb-goal .g-bar{height:6px;background:rgba(0,0,0,.2);border-radius:3px;margin:.45rem 0;position:relative;overflow:hidden}
+.lb-goal .g-bar i{display:block;height:100%;width:71%;background:linear-gradient(90deg,var(--xp-a),var(--xp-b));border-radius:3px}
+.lb-goal .g-p{color:#fff;font-size:.72rem;font-weight:700;position:relative;opacity:.92}
 
 /* DOWNLOAD */
-#download{background:linear-gradient(135deg,#f0fdf4,#dcfce7);text-align:center;padding:5rem 2rem}
-.download-inner{max-width:600px;margin:0 auto}
-.download-inner h2{font-size:clamp(1.8rem,4vw,2.8rem);font-weight:800;margin-bottom:1rem;letter-spacing:-.02em}
-.download-inner p{color:var(--muted);font-size:1rem;line-height:1.7;margin-bottom:2rem}
-.download-btns{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
-.store-btn{display:flex;align-items:center;gap:.7rem;background:var(--navy);color:#fff;padding:.7rem 1.4rem;border-radius:12px;text-decoration:none;font-weight:600;font-size:.9rem;transition:.2s}
-.store-btn:hover{background:var(--slate);transform:translateY(-2px)}
-.store-btn .sb-icon{font-size:1.4rem}
-.store-btn .sb-text small{display:block;font-size:.65rem;opacity:.7;font-weight:400}
-.web-badge{background:var(--green);padding:.3rem .9rem;border-radius:99px;font-size:.78rem;font-weight:700;color:#fff;margin-bottom:1.5rem;display:inline-block}
+#download{padding:5.5rem 2rem}
+.download-inner{max-width:760px;margin:0 auto;position:relative;border-radius:32px;padding:3.5rem 2.5rem;text-align:center;background:linear-gradient(140deg,var(--indigo-a),var(--indigo-b));color:#fff;overflow:hidden;box-shadow:0 40px 70px -30px rgba(85,89,214,.7)}
+.download-inner::before{content:"";position:absolute;top:-60px;right:-40px;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.08)}
+.download-inner::after{content:"";position:absolute;bottom:-80px;left:-50px;width:240px;height:240px;border-radius:50%;background:rgba(255,255,255,.06)}
+.web-badge{background:rgba(255,255,255,.18);padding:.35rem 1rem;border-radius:99px;font-size:.78rem;font-weight:800;color:#fff;margin-bottom:1.3rem;display:inline-block;position:relative}
+.download-inner h2{font-size:clamp(1.9rem,4vw,2.9rem);font-weight:800;margin-bottom:1rem;letter-spacing:-.02em;position:relative}
+.download-inner p{color:rgba(255,255,255,.82);font-size:1.02rem;line-height:1.7;margin-bottom:2rem;position:relative}
+.download-btns{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;position:relative}
+.store-btn{display:flex;align-items:center;gap:.7rem;background:#fff;color:var(--ink);padding:.8rem 1.5rem;border-radius:15px;text-decoration:none;font-weight:800;font-size:.92rem;transition:.2s}
+.store-btn:hover{transform:translateY(-2px)}
+.store-btn .sb-icon{font-size:1.45rem}
+.store-btn .sb-text{text-align:left}
+.store-btn .sb-text small{display:block;font-size:.64rem;opacity:.6;font-weight:600}
+.dl-note{margin-top:2rem;font-size:.82rem;color:rgba(255,255,255,.75);position:relative}
+.dl-note a{color:#fff;font-weight:700}
 
-footer{background:var(--navy);color:rgba(255,255,255,.5);padding:2.5rem 2rem;text-align:center;font-size:.85rem}
-footer a{color:var(--green);text-decoration:none}
+footer{background:#191527;color:rgba(255,255,255,.5);padding:2.6rem 2rem;text-align:center;font-size:.85rem}
+footer a{color:#A99CF0;text-decoration:none;font-weight:600}
 footer a:hover{text-decoration:underline}
 
 .reveal{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease}
 .reveal.visible{opacity:1;transform:none}
 
-.tabs{display:flex;gap:.5rem;background:var(--border);border-radius:12px;padding:.3rem;margin-bottom:2rem;width:fit-content}
-.tab{padding:.5rem 1.2rem;border-radius:9px;font-weight:600;font-size:.88rem;cursor:pointer;color:var(--muted);transition:.2s;border:none;background:transparent}
-.tab.active{background:#fff;color:var(--navy);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.tabs{display:flex;gap:.4rem;background:#fff;border-radius:14px;padding:.35rem;margin-bottom:2rem;width:fit-content;box-shadow:var(--shadow-sm)}
+.tab{padding:.55rem 1.25rem;border-radius:11px;font-weight:700;font-size:.88rem;cursor:pointer;color:var(--muted);transition:.2s;border:none;background:transparent}
+.tab.active{background:linear-gradient(135deg,var(--indigo-a),var(--indigo-b));color:#fff;box-shadow:0 10px 18px -8px rgba(85,89,214,.6)}
 .tab-panel{display:none}
 .tab-panel.active{display:block}
 </style>
@@ -164,7 +211,9 @@ footer a:hover{text-decoration:underline}
 <nav>
   <div class="nav-inner">
     <a href="#" class="logo">
-      <div class="logo-icon">🏠</div>
+      <div class="logo-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-5h5v5"/></svg>
+      </div>
       CleanHouse
     </a>
     <div class="nav-right">
@@ -207,31 +256,43 @@ footer a:hover{text-decoration:underline}
     <div class="hero-visual">
       <div class="phone floating">
         <div class="phone-badge">🏆 <span data-i18n="phone_rank">Ranking</span></div>
-        <div class="phone-screen">
-          <div class="phone-status"><span>9:41</span><span>●●●</span></div>
-          <div class="phone-header" data-i18n="phone_today">Dzisiaj 🌿</div>
-          <div class="phone-sub" data-i18n="phone_tasks">3 zadania do zrobienia</div>
-          <div class="task-card">
-            <div class="task-icon g">🧹</div>
-            <div><div class="task-name" data-i18n="phone_t1">Odkurzanie salonu</div><div class="task-who">Ania · 15 pkt</div></div>
-            <div class="task-check">✓</div>
+        <div class="phone-flame">🔥 12</div>
+        <div class="p-screen">
+          <div class="p-status"><span>9:30</span><span>5G ▪ 100%</span></div>
+          <div class="p-head">
+            <div class="p-avatar">G</div>
+            <div>
+              <div class="p-greet" data-i18n="phone_greet">dzień dobry</div>
+              <div class="p-name" data-i18n="phone_today">Dzisiaj 🌿</div>
+            </div>
+            <div class="p-coins"><span class="coin"></span>128</div>
           </div>
-          <div class="task-card">
-            <div class="task-icon b">🍽️</div>
-            <div><div class="task-name" data-i18n="phone_t2">Zmywarka</div><div class="task-who">Marek · 10 pkt</div></div>
+          <div class="p-hero">
+            <div class="p-lvl" data-i18n="phone_level">poziom 7 · mistrz porządku</div>
+            <div class="p-xp"><b>340</b><span>xp</span></div>
+            <div class="p-hbar"><i></i></div>
           </div>
-          <div class="task-card">
-            <div class="task-icon y">🛁</div>
-            <div><div class="task-name" data-i18n="phone_t3">Łazienka</div><div class="task-who">Ty · 20 pkt</div></div>
+          <div class="p-qhead">
+            <span class="t" data-i18n="phone_tasks">3 zadania do zrobienia</span>
+            <span class="see" data-i18n="phone_seeall">zobacz</span>
           </div>
-          <div style="height:.8rem"></div>
-          <div style="background:rgba(34,197,94,.15);border-radius:10px;padding:.6rem .8rem;margin-top:auto">
-            <div style="color:rgba(255,255,255,.5);font-size:.62rem;margin-bottom:.3rem" data-i18n="phone_progress">TWÓJ POSTĘP</div>
-            <div style="height:6px;background:rgba(255,255,255,.1);border-radius:3px"><div style="width:65%;height:100%;background:var(--green);border-radius:3px"></div></div>
-            <div style="color:var(--green);font-size:.68rem;margin-top:.3rem;font-weight:700">65 / 100 pkt → LV5</div>
+          <div class="q">
+            <div class="q-ic v">🧹</div>
+            <div style="flex:1"><div class="q-name" data-i18n="phone_t1">Odkurzanie salonu</div><div class="q-rew"><span class="xp">+20 xp</span><span class="cn"><span class="coin"></span>+1</span></div></div>
+            <div class="q-ring"></div>
           </div>
-          <div class="phone-bar" style="margin-top:.8rem">
-            <span class="active">🏠</span><span>✅</span><span>📅</span><span>🏆</span><span>⋯</span>
+          <div class="q">
+            <div class="q-ic b">🍽️</div>
+            <div style="flex:1"><div class="q-name" data-i18n="phone_t2">Zmywarka</div><div class="q-rew"><span class="xp">+20 xp</span><span class="cn"><span class="coin"></span>+1</span></div></div>
+            <div class="q-ring"></div>
+          </div>
+          <div class="q done">
+            <div class="q-ic g">🛁</div>
+            <div style="flex:1"><div class="q-name" data-i18n="phone_t3">Łazienka</div><div class="q-rew"><span class="done-l" data-i18n="phone_claimed">odebrano +40 xp 🎉</span></div></div>
+            <div class="q-check">✓</div>
+          </div>
+          <div class="p-nav">
+            <span class="on">🏠</span><span>✅</span><span>📅</span><span>🏆</span><span>⋯</span>
           </div>
         </div>
       </div>
@@ -320,15 +381,15 @@ footer a:hover{text-decoration:underline}
       <div class="reveal">
         <div class="leaderboard-card">
           <div class="lb-title">🏆 <span data-i18n="lb_title">Ranking tygodnia</span></div>
-          <div class="lb-row"><div class="lb-pos gold">1</div><div class="lb-avatar" style="background:rgba(245,158,11,.2)">👦</div><div class="lb-name">Kacper</div><div class="lb-pts">342 pkt</div></div>
-          <div class="lb-row"><div class="lb-pos silver">2</div><div class="lb-avatar" style="background:rgba(148,163,184,.2)">👧</div><div class="lb-name">Zosia</div><div class="lb-pts">289 pkt</div></div>
-          <div class="lb-row"><div class="lb-pos bronze">3</div><div class="lb-avatar" style="background:rgba(180,83,9,.2)">👩</div><div class="lb-name" data-i18n="lb_mom">Mama</div><div class="lb-pts">251 pkt</div></div>
+          <div class="lb-row"><div class="lb-pos gold">1</div><div class="lb-avatar" style="background:rgba(255,224,138,.18)">👦</div><div class="lb-name">Kacper</div><div class="lb-pts">342 pkt</div></div>
+          <div class="lb-row"><div class="lb-pos silver">2</div><div class="lb-avatar" style="background:rgba(185,180,216,.18)">👧</div><div class="lb-name">Zosia</div><div class="lb-pts">289 pkt</div></div>
+          <div class="lb-row"><div class="lb-pos bronze">3</div><div class="lb-avatar" style="background:rgba(201,138,85,.18)">👩</div><div class="lb-name" data-i18n="lb_mom">Mama</div><div class="lb-pts">251 pkt</div></div>
           <div class="lb-row"><div class="lb-pos">4</div><div class="lb-avatar" style="background:rgba(255,255,255,.08)">👨</div><div class="lb-name" data-i18n="lb_dad">Tata</div><div class="lb-pts">180 pkt</div></div>
-          <div style="margin-top:1rem;background:rgba(34,197,94,.1);border-radius:10px;padding:.8rem;border:1px solid rgba(34,197,94,.2)">
-            <div style="color:rgba(255,255,255,.5);font-size:.68rem;margin-bottom:.4rem" data-i18n="lb_goal">AKTYWNY CEL RODZINY</div>
-            <div style="color:#fff;font-weight:700;font-size:.88rem">🎮 PlayStation 5</div>
-            <div style="height:6px;background:rgba(255,255,255,.1);border-radius:3px;margin:.4rem 0"><div style="width:73%;height:100%;background:var(--green);border-radius:3px"></div></div>
-            <div style="color:var(--green);font-size:.72rem;font-weight:600">1062 / 1500 pkt</div>
+          <div class="lb-goal">
+            <div class="g-l" data-i18n="lb_goal">AKTYWNY CEL RODZINY</div>
+            <div class="g-n">🎮 PlayStation 5</div>
+            <div class="g-bar"><i></i></div>
+            <div class="g-p">1062 / 1500 <span data-i18n="lb_pts_lc">pkt</span></div>
           </div>
         </div>
       </div>
@@ -340,13 +401,13 @@ footer a:hover{text-decoration:underline}
 <section id="download">
   <div class="download-inner reveal">
     <div class="web-badge" data-i18n="dl_badge">Dostępna teraz</div>
-    <h2 data-i18n="dl_title">Zacznij za darmo<br>już dziś</h2>
+    <h2 data-i18n-html="dl_title">Zacznij za darmo<br>już dziś</h2>
     <p data-i18n="dl_sub">Działa w przeglądarce, na Androidzie i przez asystenta głosowego. Zero instalacji, zero opłat.</p>
     <div class="download-btns">
       <a href="/app" class="store-btn"><span class="sb-icon">🌐</span><div class="sb-text"><small data-i18n="dl_open_small">Otwórz w</small><span data-i18n="dl_open">Przeglądarce</span></div></a>
       <a href="/download/app" class="store-btn store-btn-android"><span class="sb-icon">🤖</span><div class="sb-text"><small data-i18n="dl_android_small">Pobierz na</small><span data-i18n="dl_android">Android APK</span></div></a>
     </div>
-    <p style="margin-top:2rem;font-size:.8rem;color:var(--muted)" data-i18n-html="dl_contact">Masz pytania? <a href="mailto:myro@mrosupply.com" style="color:var(--green-dark);font-weight:600">Napisz do nas</a></p>
+    <p class="dl-note" data-i18n-html="dl_contact">Masz pytania? <a href="mailto:myro@mrosupply.com">Napisz do nas</a></p>
   </div>
 </section>
 
@@ -364,7 +425,8 @@ const T = {
     hero_sub:'Przydziel zadania, śledź postępy i motywuj całą rodzinę do utrzymania porządku — w jednej prostej aplikacji.',
     hero_btn_open:'🚀 Otwórz aplikację', hero_btn_how:'Zobacz jak działa',
     stat_lang:'języki UI', stat_tasks:'pokoje i zadania', stat_free:'za darmo',
-    phone_rank:'Ranking', phone_today:'Dzisiaj 🌿', phone_tasks:'3 zadania do zrobienia',
+    phone_rank:'Ranking', phone_greet:'dzień dobry', phone_today:'Dzisiaj 🌿', phone_tasks:'3 zadania do zrobienia',
+    phone_seeall:'zobacz', phone_level:'poziom 7 · mistrz porządku', phone_claimed:'odebrano +40 xp 🎉',
     phone_t1:'Odkurzanie salonu', phone_t2:'Zmywarka', phone_t3:'Łazienka',
     phone_progress:'TWÓJ POSTĘP',
     feat_tag:'Funkcje', feat_title:'Wszystko czego potrzebuje dom',
@@ -400,11 +462,11 @@ const T = {
     role2t:'Administrator', role2d:'Zatwierdza wykonane zadania, dodaje pokoje i zarządza codziennym sprzątaniem.',
     role3t:'Domownik', role3d:'Widzi swoje zadania, oznacza je jako wykonane i zbiera punkty do rankingu.',
     role4t:'Bezpieczeństwo', role4d:'Dane rodziny są prywatne. Każdy dom ma osobny kod dostępu, dane szyfrowane.',
-    lb_title:'Ranking tygodnia', lb_mom:'Mama', lb_dad:'Tata', lb_goal:'AKTYWNY CEL RODZINY',
+    lb_title:'Ranking tygodnia', lb_mom:'Mama', lb_dad:'Tata', lb_goal:'AKTYWNY CEL RODZINY', lb_pts_lc:'pkt',
     dl_badge:'Dostępna teraz', dl_title:'Zacznij za darmo<br>już dziś',
     dl_sub:'Działa w przeglądarce, na Androidzie i przez asystenta głosowego. Zero instalacji, zero opłat.',
     dl_open_small:'Otwórz w', dl_open:'Przeglądarce', dl_android_small:'Pobierz na', dl_android:'Android APK',
-    dl_contact:'Masz pytania? <a href="mailto:myro@mrosupply.com" style="color:var(--green-dark);font-weight:600">Napisz do nas</a>',
+    dl_contact:'Masz pytania? <a href="mailto:myro@mrosupply.com">Napisz do nas</a>',
     footer_privacy:'Polityka prywatności', footer_app:'Otwórz aplikację',
   },
   en: {
@@ -414,7 +476,8 @@ const T = {
     hero_sub:'Assign tasks, track progress and motivate the whole family to keep the house tidy — in one simple app.',
     hero_btn_open:'🚀 Open app', hero_btn_how:'See how it works',
     stat_lang:'UI languages', stat_tasks:'rooms & tasks', stat_free:'free forever',
-    phone_rank:'Ranking', phone_today:'Today 🌿', phone_tasks:'3 tasks to do',
+    phone_rank:'Ranking', phone_greet:'good morning', phone_today:'Today 🌿', phone_tasks:'3 tasks to do',
+    phone_seeall:'see all', phone_level:'level 7 · tidy champion', phone_claimed:'claimed +40 xp 🎉',
     phone_t1:'Vacuuming living room', phone_t2:'Dishwasher', phone_t3:'Bathroom',
     phone_progress:'YOUR PROGRESS',
     feat_tag:'Features', feat_title:'Everything your home needs',
@@ -450,11 +513,11 @@ const T = {
     role2t:'Administrator', role2d:'Approves completed tasks, adds rooms and manages daily cleaning.',
     role3t:'Member', role3d:'Sees their tasks, marks them as done and collects points for the ranking.',
     role4t:'Security', role4d:'Family data is private. Each home has a separate access code, data encrypted.',
-    lb_title:'Weekly ranking', lb_mom:'Mom', lb_dad:'Dad', lb_goal:'ACTIVE FAMILY GOAL',
+    lb_title:'Weekly ranking', lb_mom:'Mom', lb_dad:'Dad', lb_goal:'ACTIVE FAMILY GOAL', lb_pts_lc:'pts',
     dl_badge:'Available now', dl_title:'Start for free<br>today',
     dl_sub:'Works in browser, on Android and via voice assistant. Zero installation, zero fees.',
     dl_open_small:'Open in', dl_open:'Browser', dl_android_small:'Download for', dl_android:'Android APK',
-    dl_contact:'Have questions? <a href="mailto:myro@mrosupply.com" style="color:var(--green-dark);font-weight:600">Contact us</a>',
+    dl_contact:'Have questions? <a href="mailto:myro@mrosupply.com">Contact us</a>',
     footer_privacy:'Privacy policy', footer_app:'Open app',
   },
   uk: {
@@ -464,7 +527,8 @@ const T = {
     hero_sub:'Призначайте завдання, відстежуйте прогрес і мотивуйте всю родину підтримувати порядок — в одному простому застосунку.',
     hero_btn_open:'🚀 Відкрити застосунок', hero_btn_how:'Дізнатися як це працює',
     stat_lang:'мови інтерфейсу', stat_tasks:'кімнати та завдання', stat_free:'безкоштовно',
-    phone_rank:'Рейтинг', phone_today:'Сьогодні 🌿', phone_tasks:'3 завдання на сьогодні',
+    phone_rank:'Рейтинг', phone_greet:'доброго ранку', phone_today:'Сьогодні 🌿', phone_tasks:'3 завдання на сьогодні',
+    phone_seeall:'усі', phone_level:'рівень 7 · майстер порядку', phone_claimed:'отримано +40 xp 🎉',
     phone_t1:'Пилосос у вітальні', phone_t2:'Посудомийна машина', phone_t3:'Ванна кімната',
     phone_progress:'ВАШ ПРОГРЕС',
     feat_tag:'Функції', feat_title:'Все що потрібно дому',
@@ -500,11 +564,11 @@ const T = {
     role2t:'Адміністратор', role2d:'Підтверджує виконані завдання, додає кімнати та керує щоденним прибиранням.',
     role3t:'Мешканець', role3d:'Бачить свої завдання, позначає їх як виконані та збирає бали для рейтингу.',
     role4t:'Безпека', role4d:'Дані родини є приватними. Кожен дім має окремий код доступу, дані зашифровані.',
-    lb_title:'Рейтинг тижня', lb_mom:'Мама', lb_dad:'Тато', lb_goal:'АКТИВНА ЦІЛЬ РОДИНИ',
+    lb_title:'Рейтинг тижня', lb_mom:'Мама', lb_dad:'Тато', lb_goal:'АКТИВНА ЦІЛЬ РОДИНИ', lb_pts_lc:'балів',
     dl_badge:'Доступно зараз', dl_title:'Починайте безкоштовно<br>вже сьогодні',
     dl_sub:'Працює в браузері, на Android та через голосовий помічник. Нуль встановлень, нуль плати.',
     dl_open_small:'Відкрити в', dl_open:'Браузері', dl_android_small:'Завантажити для', dl_android:'Android APK',
-    dl_contact:'Маєте питання? <a href="mailto:myro@mrosupply.com" style="color:var(--green-dark);font-weight:600">Напишіть нам</a>',
+    dl_contact:'Маєте питання? <a href="mailto:myro@mrosupply.com">Напишіть нам</a>',
     footer_privacy:'Політика конфіденційності', footer_app:'Відкрити застосунок',
   }
 };
@@ -517,29 +581,24 @@ function setLang(lang) {
   document.documentElement.lang = lang;
   document.body.className = lang === 'uk' ? 'lang-uk' : '';
 
-  // update lang buttons
   document.querySelectorAll('.lang-btn').forEach(btn => {
     btn.classList.toggle('active', btn.textContent.toLowerCase().includes(lang));
   });
 
   const d = T[lang];
-  // text nodes
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.dataset.i18n;
     if (d[key] !== undefined) el.textContent = d[key];
   });
-  // html nodes (allow <br>, <span>, <a>)
   document.querySelectorAll('[data-i18n-html]').forEach(el => {
     const key = el.dataset.i18nHtml;
     if (d[key] !== undefined) el.innerHTML = d[key];
   });
 
-  // update page title
   const titles = {pl:'CleanHouse — Sprzątanie bez stresu', en:'CleanHouse — Cleaning without stress', uk:'CleanHouse — Прибирання без стресу'};
   document.title = titles[lang];
 }
 
-// ─── TAB SWITCHING ────────────────────────────────────────────────────────
 function switchTab(e, id) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -548,7 +607,6 @@ function switchTab(e, id) {
   setTimeout(revealCheck, 50);
 }
 
-// ─── SCROLL REVEAL ────────────────────────────────────────────────────────
 function revealCheck() {
   document.querySelectorAll('.reveal').forEach(el => {
     if (el.getBoundingClientRect().top < window.innerHeight - 60) el.classList.add('visible');
@@ -556,7 +614,6 @@ function revealCheck() {
 }
 window.addEventListener('scroll', revealCheck, {passive:true});
 
-// ─── INIT ─────────────────────────────────────────────────────────────────
 setLang(currentLang);
 revealCheck();
 
