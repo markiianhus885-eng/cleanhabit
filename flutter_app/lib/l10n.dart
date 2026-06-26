@@ -316,6 +316,7 @@ class L10n {
     'voice_completed': ['Marked as done ✅', 'Oznaczono jako zrobione ✅', 'Позначено як виконане ✅'],
     'mic_denied': ['Microphone permission denied', 'Brak dostępu do mikrofonu', 'Немає доступу до мікрофона'],
     'mic_unavailable': ['Speech recognition unavailable on this device', 'Rozpoznawanie mowy niedostępne', 'Розпізнавання мовлення недоступне'],
+    'no_speech': ['No speech detected — check your microphone', 'Nie wykryto mowy — sprawdź mikrofon', 'Мовлення не виявлено — перевірте мікрофон'],
   };
 }
 

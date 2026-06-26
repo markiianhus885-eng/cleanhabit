@@ -285,6 +285,20 @@ class _MemberCard extends StatelessWidget {
                               fontWeight: FontWeight.w600,
                               color: c.accent)),
                     ]),
+                    const SizedBox(height: 4),
+                    Row(children: [
+                      Text('🔥 ${entry.streak}',
+                          style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              color: c.flame)),
+                      const SizedBox(width: 12),
+                      Text('🏅 ${entry.achievements.length}',
+                          style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              color: c.textSecondary)),
+                    ]),
                     const SizedBox(height: 5),
                     SizedBox(
                       width: 130,

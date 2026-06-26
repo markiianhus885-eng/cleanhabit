@@ -62,6 +62,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
     // Capture localized strings before any async gap.
     final micDenied = context.t('mic_denied');
     final micUnavailable = context.t('mic_unavailable');
+    final noSpeech = context.t('no_speech');
 
     try {
       final granted = await Permission.microphone.request();
@@ -72,7 +73,13 @@ class _AssistantScreenState extends State<AssistantScreen> {
       final ok = await _speech.initialize(
         onStatus: (s) {
           if (s == 'done' || s == 'notListening') {
-            if (mounted) setState(() => _listening = false);
+            if (mounted) {
+              setState(() => _listening = false);
+              // Nothing was recognised and nothing is being sent → tell the user.
+              if (_heard.trim().isEmpty && !_busy) {
+                _setReply(noSpeech, 'warn');
+              }
+            }
           }
         },
         onError: (_) {

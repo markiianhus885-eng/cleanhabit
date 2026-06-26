@@ -4019,6 +4019,10 @@ function startRecording() {
   recognition.lang = voiceLang;
   recognition.continuous = false;
   recognition.interimResults = true;
+  let gotResult = false;
+  const noSpeechMsg = voiceLang.startsWith('pl') ? 'Nie wykryto mowy — sprawdź mikrofon'
+                    : voiceLang.startsWith('uk') ? 'Мовлення не виявлено — перевірте мікрофон'
+                    : 'No speech detected — check your microphone';
 
   recognition.onstart = () => {
     isRecording = true;
@@ -4030,16 +4034,31 @@ function startRecording() {
   recognition.onresult = (e) => {
     let transcript = '';
     for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+    if (transcript.trim()) gotResult = true;
     const t = document.getElementById('voice-transcript');
     t.textContent = transcript;
     t.style.display = 'block';
     document.getElementById('voice-send').style.display = 'block';
   };
   recognition.onerror = (e) => {
-    document.getElementById('rec-status').textContent = 'Błąd: ' + e.error;
+    const st = document.getElementById('rec-status');
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      st.textContent = voiceLang.startsWith('pl') ? 'Brak dostępu do mikrofonu' : 'Microphone access blocked';
+    } else if (e.error === 'no-speech' || e.error === 'audio-capture' || e.error === 'aborted') {
+      st.textContent = noSpeechMsg;
+    } else {
+      st.textContent = 'Błąd: ' + e.error;
+    }
     stopRecording();
   };
-  recognition.onend = () => { stopRecording(); };
+  recognition.onend = () => {
+    stopRecording();
+    if (!gotResult) {
+      const st = document.getElementById('rec-status');
+      if (st && !st.textContent.includes('Brak dostępu') && !st.textContent.includes('blocked'))
+        st.textContent = noSpeechMsg;
+    }
+  };
   recognition.start();
 }
 
