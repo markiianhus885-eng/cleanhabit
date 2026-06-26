@@ -1,5 +1,5 @@
-name: app
-description: "CleanHouse — family cleaning tasks (native client)."
+name: cleanhouse
+description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -34,18 +34,17 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-
-  dio: ^5.7.0
-  dio_cookie_manager: ^3.1.1
-  cookie_jar: ^4.0.8
-  provider: ^6.1.2
-  path_provider: ^2.1.4
-  shared_preferences: ^2.3.2
-  google_fonts: ^6.2.1
-  speech_to_text: ^7.0.0
-  flutter_tts: ^4.2.0
-  permission_handler: ^11.3.1
-  url_launcher: ^6.3.0
+  provider: ^6.1.5+1
+  shared_preferences: ^2.5.3
+  google_fonts: ^6.3.2
+  dio: ^5.9.2
+  dio_cookie_manager: ^3.4.0
+  cookie_jar: ^4.0.9
+  path_provider: ^2.1.5
+  speech_to_text: ^7.4.0
+  flutter_tts: ^4.2.5
+  permission_handler: ^12.0.3
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
@@ -57,6 +56,15 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon/app_icon.png"
+  min_sdk_android: 24
+  adaptive_icon_background: "assets/icon/ic_bg.png"
+  adaptive_icon_foreground: "assets/icon/ic_fg.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

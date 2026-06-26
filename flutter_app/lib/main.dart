@@ -33,6 +33,15 @@ class CleanHouseApp extends StatelessWidget {
       theme: buildLightTheme(lang),
       darkTheme: buildDarkTheme(lang),
       themeMode: themeMode,
+      // Scaffold does not wrap its body in a Material, so Text widgets in
+      // screen bodies fall back to DefaultTextStyle.fallback() — which renders
+      // the dreaded yellow underline. Wrapping every route in a transparent
+      // Material gives the whole tree the theme's (decoration-stripped) text
+      // style and kills the yellow lines globally.
+      builder: (context, child) => Material(
+        type: MaterialType.transparency,
+        child: child ?? const SizedBox.shrink(),
+      ),
       home: const _Root(),
     );
   }
