@@ -831,7 +831,7 @@ def complete_task(tid):
     member = db.execute("SELECT * FROM members WHERE id=? AND household_id=?", [member_id, hid]).fetchone()
     if not member:
         # fallback: first member of household
-        member = db.execute("SELECT * FROM members WHERE household_id=? ORDER BY created_at ASC LIMIT 1", [hid]).fetchone()
+        member = db.execute("SELECT * FROM members WHERE household_id=? ORDER BY rowid ASC LIMIT 1", [hid]).fetchone()
     if not member: return jsonify({'error': 'member not found'}), 404
     member_id = member['id']
 
@@ -1174,10 +1174,19 @@ def claude_intent(transcript, rooms, members, tasks):
         "You are the voice assistant of a family chore app. The user speaks English, Polish or "
         "Ukrainian. Decide what to do and reply with a JSON object ONLY — no prose, no markdown. "
         'Schema: {"action":"add_task|complete_task|unknown","task_id":"","task_name":"",'
-        '"room_id":"","member_id":"","diff":"easy|medium|hard"}. '
+        '"room_id":"","member_id":"","diff":"easy|medium|hard",'
+        '"freq":"daily|weekly|biweekly|monthly","approval":false,"one_time":false}. '
         "If the user reports they DID/finished a chore → action complete_task and set task_id to the "
-        "closest existing task id. If they WANT/need to do or add a chore → action add_task with a "
-        "short task_name in the user's language. Otherwise action unknown. Use empty strings when not applicable."
+        "closest existing task id. If they WANT/need to add a chore → action add_task with a "
+        "short task_name in the user's language. Otherwise action unknown. "
+        "member_id = the household member the chore is ASSIGNED to — match by name or role word "
+        "('mom/mama/mamie'→a member named Mama, 'dad/tata'→Tata, a child's name→that member); "
+        "leave empty if the user did not say who. "
+        "approval = true only if the user says it must be approved/checked/confirmed by a parent. "
+        "one_time = true if the user says it is a one-off / only once / just today. "
+        "freq = a sensible recurrence for the chore when recurring (dishes/trash→daily, "
+        "vacuum/floors→weekly, windows→monthly); use 'weekly' if unsure. "
+        "Use empty strings / false when not applicable."
     )
     prompt = (f"ROOMS:\n{rooms_txt}\n\nMEMBERS:\n{members_txt}\n\nEXISTING TASKS:\n{tasks_txt}\n\n"
               f'USER SAID: "{transcript}"\n\nReturn only the JSON object.')
@@ -1185,7 +1194,7 @@ def claude_intent(transcript, rooms, members, tasks):
         client = anthropic.Anthropic(api_key=api_key)
         msg = client.messages.create(
             model=os.environ.get('CLAUDE_MODEL', 'claude-haiku-4-5-20251001'),
-            max_tokens=300,
+            max_tokens=400,
             system=system,
             messages=[{"role": "user", "content": prompt}],
         )
@@ -1269,6 +1278,27 @@ def voice_command():
         'mycie okien':['okna','вікна','window','windows'],
         'sprzątanie':['posprzątać','спrzątać','прибирання','clean','tidy','tidy up'],
     }
+    FREQ_LABELS = {'daily':'codziennie','weekly':'co tydzień','biweekly':'co 2 tyg.','monthly':'co miesiąc','custom':'własne'}
+    APPROVAL_WORDS = ['zatwierdz','akceptacj','do akceptacji','approval','approve','confirm','підтвердж']
+    ONETIME_WORDS = ['jednorazow','tylko raz','jeden raz','one-time','one time','once','одноразов','лише раз']
+    FREQ_WORDS = {
+        'daily':   ['codziennie','codzienne','każdego dnia','daily','every day','щодня','щоденно'],
+        'monthly': ['miesiąc','miesięcznie','co miesiąc','monthly','every month','щомісяця','kwartał','quarter'],
+        'biweekly':['dwa tygodnie','2 tygodnie','co dwa tygodnie','biweekly','двотижн'],
+        'weekly':  ['tydzień','tygodniowo','co tydzień','weekly','every week','щотижня'],
+    }
+    def detect_freq(text):
+        for fk, fwords in FREQ_WORDS.items():
+            if any(w in text for w in fwords): return fk
+        return 'weekly'
+    def add_msg(name, rname, freq, mname, one_time, approval):
+        parts = [f'➕ "{name}"']
+        if rname: parts.append(rname)
+        parts.append(FREQ_LABELS.get(freq, freq))
+        if mname: parts.append(f'dla {mname}')
+        if one_time: parts.append('jednorazowe')
+        if approval: parts.append('wymaga zatwierdzenia')
+        return ' · '.join(parts)
 
     def find_member(text):
         for m in members:
@@ -1325,13 +1355,17 @@ def voice_command():
                 room_id = rooms[0]['id'] if rooms else ''
             member_id = (gm or {}).get('id') or (members[0]['id'] if members else '')
             diff = intent.get('diff') if intent.get('diff') in ('easy', 'medium', 'hard') else 'medium'
+            freq = intent.get('freq') if intent.get('freq') in ('daily','weekly','biweekly','monthly') else detect_freq(transcript)
+            approval = 1 if (intent.get('approval') or any(w in transcript for w in APPROVAL_WORDS)) else 0
+            one_time = 1 if (intent.get('one_time') or any(w in transcript for w in ONETIME_WORDS)) else 0
             name = (intent.get('task_name') or '').strip()[:60] or 'Sprzątanie'
             db.execute(
-                "INSERT INTO tasks(id,household_id,name,room_id,assigned_to,freq,diff,last_completed,approval_needed,created_at) VALUES (?,?,?,?,?,?,?,NULL,0,?)",
-                [uid(), hid, name, room_id, member_id, 'weekly', diff, datetime.now().isoformat()])
+                "INSERT INTO tasks(id,household_id,name,room_id,assigned_to,freq,diff,last_completed,approval_needed,created_at,one_time) VALUES (?,?,?,?,?,?,?,NULL,?,?,?)",
+                [uid(), hid, name, room_id, member_id, freq, diff, approval, datetime.now().isoformat(), one_time])
             db.commit()
             rname = next((r['name'] for r in rooms if r['id'] == room_id), '')
-            return jsonify({'action': 'add_task', 'message': f'➕ "{name}" ({rname})'})
+            mname = next((m['name'] for m in members if m['id'] == member_id), '')
+            return jsonify({'action': 'add_task', 'message': add_msg(name, rname, freq, mname, one_time, approval)})
 
     is_done = any(w in transcript for w in DONE_WORDS)
     is_want = any(w in transcript for w in WANT_WORDS)
@@ -1369,11 +1403,15 @@ def voice_command():
         task_name = guess_task_name(transcript)
         member_id = actor['id'] if actor else (members[0]['id'] if members else '')
         room_id = room['id'] if room else (rooms[0]['id'] if rooms else '')
-        db.execute("INSERT INTO tasks(id,household_id,name,room_id,assigned_to,freq,diff,last_completed,approval_needed,created_at) VALUES (?,?,?,?,?,?,?,NULL,0,?)",
-                   [uid(), hid, task_name, room_id, member_id, 'weekly', 'medium', datetime.now().isoformat()])
+        freq = detect_freq(transcript)
+        approval = 1 if any(w in transcript for w in APPROVAL_WORDS) else 0
+        one_time = 1 if any(w in transcript for w in ONETIME_WORDS) else 0
+        db.execute("INSERT INTO tasks(id,household_id,name,room_id,assigned_to,freq,diff,last_completed,approval_needed,created_at,one_time) VALUES (?,?,?,?,?,?,?,NULL,?,?,?)",
+                   [uid(), hid, task_name, room_id, member_id, freq, 'medium', approval, datetime.now().isoformat(), one_time])
         db.commit()
+        mname = next((m['name'] for m in members if m['id']==member_id), '')
         return jsonify({'action':'add_task',
-                        'message':f'➕ Dodano "{task_name}" w pokoju {room["name"] if room else ""}!'})
+                        'message': add_msg(task_name, room['name'] if room else '', freq, mname, one_time, approval)})
 
     return jsonify({'action':'unknown','message':'Nie rozumiem. Powiedz np. "Chcę odkurzyć salon".'})
 
