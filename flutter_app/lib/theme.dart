@@ -74,7 +74,7 @@ class ChColors extends ThemeExtension<ChColors> {
       );
 
   static const light = ChColors(
-    pageBg: Color(0xFFFFFFFF),
+    pageBg: Color(0xFFF4F2FC),
     card: Color(0xFFFFFFFF),
     accent: Color(0xFF5563D8),
     accentGradA: Color(0xFF6D7BE6),
@@ -102,7 +102,7 @@ class ChColors extends ThemeExtension<ChColors> {
   );
 
   static const dark = ChColors(
-    pageBg: Color(0xFFFFFFFF),
+    pageBg: Color(0xFF191527),
     card: Color(0xFF241D33),
     accent: Color(0xFF8E97F2),
     accentGradA: Color(0xFF6D7BE6),
@@ -264,6 +264,7 @@ ThemeData _build(ChColors c, Brightness brightness, String lang) {
       brightness: brightness,
     ),
     textTheme: textTheme,
+    primaryTextTheme: textTheme,
     dividerColor: c.divider,
     extensions: [c],
     splashFactory: InkSparkle.splashFactory,

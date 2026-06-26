@@ -1,16 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for the app to reach its backend API over the network. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Used by the voice assistant (speech-to-text). -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-    <queries>
-        <intent>
-            <action android:name="android.speech.RecognitionService"/>
-        </intent>
-        <intent>
-            <action android:name="android.intent.action.TTS_SERVICE"/>
-        </intent>
-    </queries>
     <application
-        android:label="CleanHouse"
+        android:label="cleanhouse"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

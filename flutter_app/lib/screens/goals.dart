@@ -43,13 +43,8 @@ class GoalsScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 90),
             children: [
               // Coins hero
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                      colors: [c.accent, c.accent.withValues(alpha: 0.82)]),
-                  borderRadius: BorderRadius.circular(24),
-                ),
+              GradientHero(
+                radius: 24,
                 child: Row(
                   children: [
                     const CoinDot(size: 40),
@@ -58,16 +53,16 @@ class GoalsScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(context.t('your_coins'),
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 1,
-                                color: Colors.white70)),
+                                color: c.onAccent.withValues(alpha: 0.7))),
                         Text('$coins',
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 30,
                                 fontWeight: FontWeight.w800,
-                                color: Colors.white)),
+                                color: c.onAccent)),
                       ],
                     ),
                   ],

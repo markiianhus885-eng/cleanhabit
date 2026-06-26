@@ -1,4 +1,4 @@
-package com.cleanhouse.app
+package com.cleanhouse.cleanhouse
 
 import io.flutter.embedding.android.FlutterActivity
 
