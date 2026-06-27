@@ -507,7 +507,7 @@ MEMBER_EMOJIS = ['😊','😎','🤩','🥳','😄','🦸','🧑','👦','👧',
 @app.route('/api/auth/register', methods=['POST'])
 @limiter.limit('10 per hour')
 def auth_register():
-    d = request.json or {}
+    d = request.get_json(silent=True) or {}
     username     = d.get('username', '').strip().lower()
     password     = d.get('password', '').strip()
     email        = d.get('email', '').strip().lower()
@@ -577,7 +577,7 @@ def auth_register():
 @app.route('/api/auth/login', methods=['POST'])
 @limiter.limit('10 per minute')
 def auth_login():
-    d = request.json or {}
+    d = request.get_json(silent=True) or {}
     username = d.get('username', '').strip().lower()
     password = d.get('password', '').strip()
     db = get_db()
@@ -603,7 +603,7 @@ def auth_logout():
 @app.route('/api/auth/forgot-password', methods=['POST'])
 @limiter.limit('5 per hour')
 def auth_forgot_password():
-    d = request.json or {}
+    d = request.get_json(silent=True) or {}
     email = d.get('email', '').strip().lower()
     if not email:
         return jsonify({'error': 'Podaj adres email'}), 400
@@ -630,7 +630,7 @@ def auth_forgot_password():
 @app.route('/api/auth/reset-password', methods=['POST'])
 @limiter.limit('10 per hour')
 def auth_reset_password():
-    d = request.json or {}
+    d = request.get_json(silent=True) or {}
     email    = d.get('email', '').strip().lower()
     code     = d.get('code', '').strip()
     new_pass = d.get('password', '').strip()
@@ -680,7 +680,7 @@ def api_household():
     if err: return err
     if not is_admin(hid):
         return jsonify({'error': 'Tylko właściciel może zmienić nazwę rodziny'}), 403
-    name = (request.json or {}).get('name', '').strip()
+    name = (request.get_json(silent=True) or {}).get('name', '').strip()
     if name:
         db = get_db()
         db.execute("INSERT OR REPLACE INTO config(key,household_id,value) VALUES ('household',?,?)", [hid, name])
@@ -695,7 +695,7 @@ def add_member():
     if err: return err
     if not is_admin(hid):
         return jsonify({'error': 'Tylko właściciel może dodawać domowników'}), 403
-    d = request.json or {}
+    d = request.get_json(silent=True) or {}
     get_db().execute(
         "INSERT INTO members(id,household_id,name,emoji,points,coins,streak,streak_date,owned) VALUES (?,?,?,?,0,0,0,NULL,'[]')",
         [uid(), hid, d['name'], d['emoji']])
@@ -731,7 +731,7 @@ def set_member_role(mid):
     creator = db.execute(
         "SELECT member_id FROM users WHERE household_id=? AND role='admin' ORDER BY created_at ASC LIMIT 1",
         [hid]).fetchone()
-    d = request.json or {}
+    d = request.get_json(silent=True) or {}
     new_role = d.get('role', 'member')
     if new_role not in ('admin', 'member'):
         return jsonify({'error': 'Nieprawidłowa rola'}), 400
@@ -752,7 +752,7 @@ def set_member_role(mid):
 def add_room():
     err = require_auth(); hid = get_hid()
     if err: return err
-    d = request.json or {}
+    d = request.get_json(silent=True) or {}
     get_db().execute(
         "INSERT INTO rooms(id,household_id,name,emoji,cleanliness,last_cleaned,color) VALUES (?,?,?,?,100,NULL,'#38BDF8')",
         [uid(), hid, d['name'], d['emoji']])
@@ -774,7 +774,7 @@ def del_room(rid):
 def add_task():
     err = require_auth(); hid = get_hid()
     if err: return err
-    d = request.json or {}
+    d = request.get_json(silent=True) or {}
     specific_days = d.get('specificDays')  # e.g. "0,2,4" = Mon,Wed,Fri or None
     if specific_days and not isinstance(specific_days, str):
         specific_days = ','.join(str(x) for x in specific_days)
@@ -822,7 +822,7 @@ def complete_task(tid):
     err = require_auth(); hid = get_hid()
     if err: return err
     db = get_db()
-    data = request.json or {}
+    data = request.get_json(silent=True) or {}
     task = db.execute("SELECT * FROM tasks WHERE id=? AND household_id=?", [tid, hid]).fetchone()
     if not task: return jsonify({'error': 'not found'}), 404
     task = dict(task)
@@ -879,7 +879,7 @@ def approve_task(aid):
     approval = db.execute("SELECT * FROM approvals WHERE id=? AND household_id=?", [aid, hid]).fetchone()
     if not approval: return jsonify({'error': 'not found'}), 404
     approval = dict(approval)
-    if (request.json or {}).get('approved', True):
+    if (request.get_json(silent=True) or {}).get('approved', True):
         task   = db.execute("SELECT * FROM tasks WHERE id=? AND household_id=?", [approval['task_id'], hid]).fetchone()
         member = db.execute("SELECT * FROM members WHERE id=? AND household_id=?", [approval['member_id'], hid]).fetchone()
         if task and member:
@@ -906,7 +906,7 @@ def buy_item():
     err = require_auth(); hid = get_hid()
     if err: return err
     db = get_db()
-    d = request.json or {}
+    d = request.get_json(silent=True) or {}
     member = db.execute("SELECT * FROM members WHERE id=? AND household_id=?", [d['memberId'], hid]).fetchone()
     if not member: return jsonify({'error': 'not found'}), 404
     member = dict(member)
@@ -1094,7 +1094,7 @@ def create_goal():
     if err: return err
     if not is_admin(hid):
         return jsonify({'error': 'Tylko właściciel może tworzyć cele'}), 403
-    d = request.json or {}
+    d = request.get_json(silent=True) or {}
     name  = d.get('name', '').strip()
     price = int(d.get('price', 0))
     if not name or price < 1:
@@ -1125,7 +1125,7 @@ def buy_goal(gid):
     err = require_auth(); hid = get_hid()
     if err: return err
     u = current_user()
-    member_id = (request.json or {}).get('memberId') or u.get('member_id')
+    member_id = (request.get_json(silent=True) or {}).get('memberId') or u.get('member_id')
     if not member_id:
         return jsonify({'error': 'Nie jesteś połączony z profilem domownika'}), 400
     db = get_db()
@@ -1233,7 +1233,7 @@ def _voice_complete(db, hid, task, member_id):
 def voice_command():
     err = require_auth(); hid = get_hid()
     if err: return err
-    body = request.json or {}
+    body = request.get_json(silent=True) or {}
     transcript = body.get('transcript', '').strip().lower()
     if not transcript:
         return jsonify({'error': 'empty transcript'}), 400
