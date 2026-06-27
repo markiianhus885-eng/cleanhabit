@@ -1180,6 +1180,7 @@ const LANGS = {
     goals_waiting:'⏳ Zakupiono — czeka na realizację przez właściciela',
     goals_login_to_buy:'Zaloguj się jako domownik żeby kupić',
     goals_fulfilled_section:'Zrealizowane',
+    goals_to_approve:'Do zatwierdzenia', goals_to_do:'Do wykonania',
     badges_earned_title:'Zdobyte odznaki', badges_pct:'ukończono',
     badges_all_filter:'👨‍👩‍👧 Wszyscy',
     badge_cat_first:'Pierwsze kroki', badge_cat_streak:'Serie dni',
@@ -1309,6 +1310,7 @@ const LANGS = {
     goals_waiting:'⏳ Purchased — awaiting fulfillment by owner',
     goals_login_to_buy:'Sign in as a member to buy',
     goals_fulfilled_section:'Fulfilled',
+    goals_to_approve:'To approve', goals_to_do:'To do',
     badges_earned_title:'Earned badges', badges_pct:'completed',
     badges_all_filter:'👨‍👩‍👧 All',
     badge_cat_first:'First steps', badge_cat_streak:'Day streaks',
@@ -1439,6 +1441,7 @@ const LANGS = {
     goals_waiting:'⏳ Куплено — очікує виконання власника',
     goals_login_to_buy:'Увійдіть як мешканець щоб купити',
     goals_fulfilled_section:'Виконані',
+    goals_to_approve:'До підтвердження', goals_to_do:'Зробити',
     badges_earned_title:'Отримані значки', badges_pct:'завершено',
     badges_all_filter:'👨‍👩‍👧 Всі',
     badge_cat_first:'Перші кроки', badge_cat_streak:'Серії днів',
@@ -3428,6 +3431,7 @@ function renderGoals(){
         <div style="flex:1">
           <div style="font-size:13px;font-weight:700">${esc(p.goal.name)}</div>
           <div style="font-size:11px;color:var(--muted2)">${p.member_emoji} ${esc(p.member_name)} · ${dt}</div>
+          <div style="font-size:11px;font-weight:700;color:var(--yellow);margin-top:2px">${t('goals_to_approve')}</div>
         </div>
         <button class="btn btn-success btn-xs" onclick="fulfillPurchase('${p.id}')">✓ ${t('goals_fulfill')}</button>
       </div>`;
@@ -3476,7 +3480,10 @@ function renderGoals(){
         </div>
 
         ${hasBought
-          ? `<div style="background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);border-radius:12px;padding:8px 12px;font-size:12px;color:#C084FC;font-weight:700;text-align:center">${t('goals_waiting')}</div>`
+          ? `<div style="background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);border-radius:12px;padding:8px 12px;text-align:center">
+              <div style="font-size:12px;color:#C084FC;font-weight:700">${t('goals_waiting')}</div>
+              <div style="font-size:11px;color:#C084FC;font-weight:600;margin-top:2px;opacity:0.85">${t('goals_to_do')}</div>
+            </div>`
           : myMemberId
             ? `<button onclick="buyGoal('${g.id}')" ${!canAfford?'disabled':''} style="
                 width:100%;padding:12px;border-radius:14px;border:none;cursor:${canAfford?'pointer':'not-allowed'};font-weight:800;font-size:14px;
