@@ -3497,8 +3497,9 @@ function renderGoals(){
     });
   }
 
-  // Fulfilled purchases history (collapsed)
-  const fulfilled = goals.flatMap(g=>(g.purchases||[]).filter(p=>p.fulfilled).map(p=>({...p,goal:g})));
+  // Fulfilled purchases history (collapsed) — owner/admin see everyone's,
+  // a regular member only sees their own.
+  const fulfilled = goals.flatMap(g=>(g.purchases||[]).filter(p=>p.fulfilled && (isOwner || p.member_id === myMemberId)).map(p=>({...p,goal:g})));
   if(fulfilled.length > 0){
     html += `
     <div style="margin:8px 16px 16px">
