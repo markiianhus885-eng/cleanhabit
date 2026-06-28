@@ -199,7 +199,7 @@ def gen_token():
 MAIL_FROM    = os.environ.get('MAIL_FROM',    'markiianhus885@gmail.com')
 MAIL_USER    = os.environ.get('MAIL_USER',    'markiianhus885@gmail.com')
 MAIL_PASS    = os.environ.get('MAIL_PASS',    '')
-MAIL_NAME    = os.environ.get('MAIL_NAME',    'CleanHouse')
+MAIL_NAME    = os.environ.get('MAIL_NAME',    'CleanHabit')
 
 def send_email(to: str, subject: str, html: str):
     msg = MIMEMultipart('alternative')
@@ -217,7 +217,7 @@ def send_reset_email(to: str, code: str):
     <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px">
       <div style="text-align:center;margin-bottom:24px">
         <span style="font-size:48px">🏠</span>
-        <h2 style="margin:8px 0;color:#6d7be6">CleanHouse</h2>
+        <h2 style="margin:8px 0;color:#6d7be6">CleanHabit</h2>
       </div>
       <h3 style="color:#1a1a2e">Reset hasła</h3>
       <p style="color:#555">Twój jednorazowy kod weryfikacyjny:</p>
@@ -229,7 +229,7 @@ def send_reset_email(to: str, code: str):
       Jeśli nie prosiłeś o reset hasła, zignoruj tę wiadomość.</p>
     </div>
     """
-    send_email(to, 'CleanHouse — kod resetowania hasła', html)
+    send_email(to, 'CleanHabit — kod resetowania hasła', html)
 
 # ─── AUTH HELPERS ─────────────────────────────────────────────
 def current_user():
@@ -443,7 +443,7 @@ def download_apk():
         apk_path,
         mimetype='application/vnd.android.package-archive',
         as_attachment=True,
-        download_name='CleanHouse.apk',
+        download_name='CleanHabit.apk',
         conditional=True,
     ))
     resp.headers['X-Accel-Buffering'] = 'no'
@@ -454,14 +454,14 @@ def download_apk():
 def privacy():
     return '''<!DOCTYPE html><html lang="pl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Polityka prywatności — CleanHouse</title>
+<title>Polityka prywatności — CleanHabit</title>
 <style>body{font-family:sans-serif;max-width:680px;margin:40px auto;padding:0 20px;color:#333;line-height:1.7}
 h1{color:#6d7be6}h2{color:#444;margin-top:32px}a{color:#6d7be6}</style></head>
 <body>
-<h1>🏠 Polityka prywatności CleanHouse</h1>
+<h1>🏠 Polityka prywatności CleanHabit</h1>
 <p>Ostatnia aktualizacja: 2026-06-23</p>
 <h2>1. Administrator danych</h2>
-<p>Administratorem danych osobowych jest właściciel aplikacji CleanHouse. Kontakt: <a href="mailto:cleanhouse@myroapp.org">cleanhouse@myroapp.org</a></p>
+<p>Administratorem danych osobowych jest właściciel aplikacji CleanHabit. Kontakt: <a href="mailto:cleanhouse@myroapp.org">cleanhouse@myroapp.org</a></p>
 <h2>2. Jakie dane zbieramy</h2>
 <ul>
   <li>Nazwa użytkownika</li>
@@ -469,7 +469,7 @@ h1{color:#6d7be6}h2{color:#444;margin-top:32px}a{color:#6d7be6}</style></head>
   <li>Dane o aktywności w aplikacji (ukończone zadania, punkty)</li>
 </ul>
 <h2>3. Cel przetwarzania danych</h2>
-<p>Dane przetwarzamy wyłącznie w celu świadczenia usługi — zarządzania gospodarstwem domowym w ramach aplikacji CleanHouse.</p>
+<p>Dane przetwarzamy wyłącznie w celu świadczenia usługi — zarządzania gospodarstwem domowym w ramach aplikacji CleanHabit.</p>
 <h2>4. Podstawa prawna</h2>
 <p>Przetwarzanie opiera się na zgodzie użytkownika (art. 6 ust. 1 lit. a RODO), wyrażonej podczas rejestracji.</p>
 <h2>5. Przechowywanie danych</h2>

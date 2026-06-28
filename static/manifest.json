@@ -1,6 +1,6 @@
 {
-  "name": "CleanHouse",
-  "short_name": "CleanHouse",
+  "name": "CleanHabit",
+  "short_name": "CleanHabit",
   "description": "Zarządzanie porządkami domowymi",
   "start_url": "/",
   "display": "standalone",
