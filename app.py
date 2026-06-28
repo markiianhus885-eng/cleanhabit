@@ -19,6 +19,14 @@ app = Flask(__name__)
 # (X-Forwarded-For) — needed for Secure cookies and per-IP rate limiting.
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
+# CleanHouse -> CleanHabit rebrand: permanently redirect the old hostname so
+# existing bookmarks/PWA installs land on the new domain.
+@app.before_request
+def _redirect_old_domain():
+    from flask import redirect
+    if request.host == 'cleanhouse.myroapp.org':
+        return redirect(f'https://cleanhabit.myroapp.org{request.full_path.rstrip("?")}', code=301)
+
 # Use the SECRET_KEY env var in production. If it is missing, fall back to a
 # random per-process key (no secret is hard-coded in the source).
 app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
