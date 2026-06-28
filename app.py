@@ -469,7 +469,7 @@ h1{color:#6d7be6}h2{color:#444;margin-top:32px}a{color:#6d7be6}</style></head>
 <h1>🏠 Polityka prywatności CleanHabit</h1>
 <p>Ostatnia aktualizacja: 2026-06-23</p>
 <h2>1. Administrator danych</h2>
-<p>Administratorem danych osobowych jest właściciel aplikacji CleanHabit. Kontakt: <a href="mailto:cleanhouse@myroapp.org">cleanhouse@myroapp.org</a></p>
+<p>Administratorem danych osobowych jest właściciel aplikacji CleanHabit. Kontakt: <a href="mailto:cleanhabit@myroapp.org">cleanhabit@myroapp.org</a></p>
 <h2>2. Jakie dane zbieramy</h2>
 <ul>
   <li>Nazwa użytkownika</li>
