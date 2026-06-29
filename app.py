@@ -1084,10 +1084,9 @@ def calendar_view():
             anchors_before = [a for a in all_anchors.get(t['id'], []) if a <= day.date()]
 
             if t.get('one_time'):
-                # One-time tasks have a single occurrence: due every day from
-                # creation until the one time they're ever completed (they get
-                # deleted the next day, see cleanup_one_time) - never recurring.
-                if anchors_before:
+                # One-time tasks have no recurrence at all: show only on the day
+                # they were created, never smeared across every following day.
+                if day.date() != created.date():
                     continue
             elif t.get('specific_days'):
                 # show only on the chosen weekdays
