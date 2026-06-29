@@ -145,6 +145,11 @@ def _ensure_db():
             user_id TEXT NOT NULL,
             expires_at TEXT NOT NULL
         )""",
+        # Belt-and-suspenders for the app-level duplicate-email check in
+        # register(): only non-empty emails are constrained, so legacy
+        # accounts created before email collection (NULL/'') don't collide.
+        """CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_unique
+            ON users(email) WHERE email IS NOT NULL AND email != ''""",
     ]:
         try:
             db.execute(migration)
