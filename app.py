@@ -19,14 +19,6 @@ app = Flask(__name__)
 # (X-Forwarded-For) — needed for Secure cookies and per-IP rate limiting.
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
-# CleanHouse -> CleanHabit rebrand: permanently redirect the old hostname so
-# existing bookmarks/PWA installs land on the new domain.
-@app.before_request
-def _redirect_old_domain():
-    from flask import redirect
-    if request.host == 'cleanhouse.myroapp.org':
-        return redirect(f'https://cleanhabit.myroapp.org{request.full_path.rstrip("?")}', code=301)
-
 # Use the SECRET_KEY env var in production. If it is missing, fall back to a
 # random per-process key (no secret is hard-coded in the source).
 app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
@@ -56,9 +48,6 @@ except Exception:  # pragma: no cover - if the package is missing, no-op decorat
 
 if os.environ.get('DATABASE_PATH'):
     DB = os.environ['DATABASE_PATH']
-elif os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('RENDER'):
-    _data_dir = os.environ.get('RAILWAY_VOLUME_MOUNT_PATH', '/tmp')
-    DB = os.path.join(_data_dir, 'sweepy.db')
 else:
     DB = os.path.join(os.path.dirname(__file__), 'sweepy.db')
 
@@ -445,7 +434,7 @@ def download_apk():
     from flask import send_file, make_response
     apk_path = os.path.join(
         os.environ.get('APK_DIR', os.path.join(os.path.dirname(__file__), 'static_ext')),
-        'cleanhouse.apk'
+        'cleanhabit.apk'
     )
     resp = make_response(send_file(
         apk_path,
@@ -536,6 +525,8 @@ def auth_register():
     db = get_db()
     if db.execute("SELECT 1 FROM users WHERE username=?", [username]).fetchone():
         return jsonify({'error': 'Ta nazwa użytkownika jest już zajęta'}), 400
+    if db.execute("SELECT 1 FROM users WHERE email=?", [email]).fetchone():
+        return jsonify({'error': 'Ten adres email jest już używany przez inne konto'}), 400
 
     if action == 'join':
         household = db.execute("SELECT * FROM households WHERE token=?", [token]).fetchone()

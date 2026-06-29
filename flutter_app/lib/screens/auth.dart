@@ -162,7 +162,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Text('CleanHouse',
+                  Text('CleanHabit',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                           fontSize: 28,
@@ -282,7 +282,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                         WidgetSpan(
                                           child: GestureDetector(
                                             onTap: () => launchUrl(Uri.parse(
-                                                'https://cleanhouse.myroapp.org/privacy')),
+                                                'https://cleanhabit.myroapp.org/privacy')),
                                             child: Text(
                                               context.t('privacy_policy'),
                                               style: TextStyle(

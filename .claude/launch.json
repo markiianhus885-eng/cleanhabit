@@ -2,7 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "cleanhouse",
+      "name": "cleanhabit",
       "runtimeExecutable": "py",
       "runtimeArgs": ["C:\\Users\\Admin\\Documents\\MC\\app.py"],
       "port": 5000

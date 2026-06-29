@@ -10,5 +10,5 @@ sweepy.db
 flutter_app/build/
 
 # APK too large for GitHub — uploaded directly to Pi via SCP
-static/cleanhouse.apk
+static/cleanhabit.apk
 flutter_app/.dart_tool/

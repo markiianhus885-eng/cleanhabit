@@ -4,7 +4,7 @@
     <!-- Used by the voice assistant (speech-to-text). -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <application
-        android:label="cleanhouse"
+        android:label="cleanhabit"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

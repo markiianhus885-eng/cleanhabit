@@ -16,19 +16,19 @@ Future<void> main() async {
   runApp(
     ChangeNotifierProvider(
       create: (_) => AppState(api, prefs),
-      child: const CleanHouseApp(),
+      child: const CleanHabitApp(),
     ),
   );
 }
 
-class CleanHouseApp extends StatelessWidget {
-  const CleanHouseApp({super.key});
+class CleanHabitApp extends StatelessWidget {
+  const CleanHabitApp({super.key});
   @override
   Widget build(BuildContext context) {
     final themeMode = context.select<AppState, ThemeMode>((s) => s.themeMode);
     final lang = context.select<AppState, String>((s) => s.lang);
     return MaterialApp(
-      title: 'CleanHouse',
+      title: 'CleanHabit',
       debugShowCheckedModeBanner: false,
       theme: buildLightTheme(lang),
       darkTheme: buildDarkTheme(lang),

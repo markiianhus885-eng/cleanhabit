@@ -1,22 +1,22 @@
-# CleanHouse
+# CleanHabit
 
 Aplikacja webowa do zarządzania sprzątaniem dla gospodarstw domowych.
 
-**URL produkcyjny:** https://web-production-65a7a.up.railway.app  
-**Deploy:** Railway (automatyczny push do gita = deploy)
+**URL produkcyjny:** https://cleanhabit.myroapp.org (Raspberry Pi, Docker + Cloudflare Tunnel)
+**Deploy:** ssh na Pi, edycja /home/myro/cleanhabit, docker restart cleanhabit
 
 ## Stack
 
 - Backend: `app.py` — Flask 3.1.3, SQLite
 - Frontend: `templates/index.html` — Vanilla JS SPA (cały UI w jednym pliku)
 - AI: Anthropic SDK (asystent głosowy)
-- MCP server: `mcp-package/index.js` — opublikowany na npm jako `cleanhouse-mcp@1.0.1`
+- MCP server: `mcp-package/index.js` — opublikowany na npm jako `cleanhouse-mcp@1.0.1` (NIEAKTUALNA nazwa — TODO: republikowac jako cleanhabit-mcp, npm nie pozwala zmienic nazwy istniejacego pakietu)
 - Android (stary): APK przez Bubblewrap (TWA), plik `C:\Users\Admin\app-release-signed.apk`
 - Android (nowy): **Flutter** natywny klient w `flutter_app/` — konsumuje to samo API Flask. Zastępuje TWA.
 
 ## Flutter app (`flutter_app/`)
 
-Natywny klient API (backend Flask bez zmian). `applicationId = com.cleanhouse.app`.
+Natywny klient API (backend Flask bez zmian). `applicationId = com.cleanhouse.app` (zostaje — zmiana usunie istniejaca apke z Google Play).
 - Stan: `provider` + `AppState` (lib/state.dart) trzyma payload `/api/data`; mutacje → API → `refresh()`.
 - Auth: sesja ciasteczkowa Flask, `dio` + `PersistCookieJar` (trwała między uruchomieniami).
 - Design: redesign „Clean modern" — zielony akcent, Plus Jakarta Sans, light+dark (`lib/theme.dart`, `ChColors`). Nawigacja 5 zakładek: Today · Tasks · Rooms · Family · More.
@@ -27,8 +27,8 @@ Natywny klient API (backend Flask bez zmian). `applicationId = com.cleanhouse.ap
 - **Szablony:** `lib/templates.dart` — 20 sugestii zadań + 15 szablonów celów (per język). Sugestie w arkuszu „Nowe zadanie" (przycisk 💡), szablony w „Nowy cel".
 - **Role:** owner = twórca (👜 nieusuwalny). `admin` nadawany przez owner/admina. Owner+admin: zatwierdzanie zadań, zarządzanie domownikami, cele, zmiana nazwy domu (More → ołówek). Backend wymusza `is_admin` (m.in. `/api/approvals/*/approve`).
 - Odznaki: `kBadgeCatalog`/`kBadgeByKey`, nazwy/opisy tłumaczone w l10n (`b_<key>_n/_d`). Zadania jednorazowe nie są usuwane od razu (`cleanup_one_time`).
-- `minSdk = 24` (wymóg flutter_tts). **Backend zmiany wymagają deployu na Railway.**
-- **Odłożone:** podpisany release APK (keystore `com.cleanhouse.app`).
+- `minSdk = 24` (wymóg flutter_tts). **Backend zmiany wymagają docker restart cleanhabit na Pi.**
+- **Odłożone:** podpisany release APK (keystore `com.cleanhouse.app`, applicationId zostaje stare).
 - Build: `cd flutter_app && C:\flutter2\flutter\bin\flutter.bat build apk --debug` (emulator: `emulator-5556`).
 
 ## Struktura
@@ -66,7 +66,7 @@ requirements.txt
 
 ## MCP server
 
-Opublikowany na npm: `npx -y cleanhouse-mcp`  
+Opublikowany na npm: `npx -y cleanhouse-mcp  # TODO: zmienic po republikacji jako cleanhabit-mcp`  
 Narzędzia: `get_members`, `get_rooms`, `get_tasks`, `add_task`, `complete_task`, `add_room`, `get_leaderboard`
 
 Aby zaktualizować i opublikować:

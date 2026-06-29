@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// CleanHouse design tokens — "Playful" gamified redesign.
+/// CleanHabit design tokens — "Playful" gamified redesign.
 /// Light-first purple/indigo palette with a dark variant. Exposed as a
 /// [ThemeExtension] so widgets pull the right value for the active brightness
 /// via `context.ch`.

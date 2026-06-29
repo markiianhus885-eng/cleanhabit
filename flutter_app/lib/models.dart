@@ -1,4 +1,4 @@
-/// Data models for the CleanHouse API payloads.
+/// Data models for the CleanHabit API payloads.
 ///
 /// IMPORTANT: `/api/data` returns rows in snake_case, but `POST /api/tasks`
 /// expects camelCase. Models parse snake_case here; the API layer sends
