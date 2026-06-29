@@ -1,17 +1,17 @@
 """
-CleanHouse MCP Server
-Allows Claude Code to interact with a CleanHouse household.
+CleanHabit MCP Server
+Allows Claude Code to interact with a CleanHabit household.
 
 Setup in Claude Code (~/.claude/claude_desktop_config.json or .mcp.json):
 {
   "mcpServers": {
-    "cleanhouse": {
+    "cleanhabit": {
       "command": "python",
       "args": ["mcp_server.py"],
       "env": {
-        "CLEANHOUSE_URL": "https://web-production-65a7a.up.railway.app",
-        "CLEANHOUSE_USERNAME": "your_username",
-        "CLEANHOUSE_PASSWORD": "your_password"
+        "CLEANHABIT_URL": "https://cleanhabit.myroapp.org",
+        "CLEANHABIT_USERNAME": "your_username",
+        "CLEANHABIT_PASSWORD": "your_password"
       }
     }
   }
@@ -26,9 +26,9 @@ import urllib.parse
 import urllib.error
 import http.cookiejar
 
-CLEANHOUSE_URL = os.environ.get("CLEANHOUSE_URL", "https://web-production-65a7a.up.railway.app")
-USERNAME = os.environ.get("CLEANHOUSE_USERNAME", "")
-PASSWORD = os.environ.get("CLEANHOUSE_PASSWORD", "")
+CLEANHABIT_URL = os.environ.get("CLEANHABIT_URL", "https://cleanhabit.myroapp.org")
+USERNAME = os.environ.get("CLEANHABIT_USERNAME", "")
+PASSWORD = os.environ.get("CLEANHABIT_PASSWORD", "")
 
 # Cookie jar for session
 _cookie_jar = http.cookiejar.CookieJar()
@@ -37,7 +37,7 @@ _logged_in = False
 
 
 def _request(method, path, body=None):
-    url = CLEANHOUSE_URL.rstrip("/") + path
+    url = CLEANHABIT_URL.rstrip("/") + path
     data = json.dumps(body).encode() if body else None
     req = urllib.request.Request(url, data=data, method=method)
     req.add_header("Content-Type", "application/json")
@@ -143,7 +143,7 @@ TOOLS = [
 
 def handle_tool(name, args):
     if not _ensure_logged_in():
-        return f"Login failed. Check CLEANHOUSE_USERNAME and CLEANHOUSE_PASSWORD env vars."
+        return f"Login failed. Check CLEANHABIT_USERNAME and CLEANHABIT_PASSWORD env vars."
 
     if name == "get_data":
         data = _request("GET", "/api/data")
@@ -247,7 +247,7 @@ def main():
                 "result": {
                     "protocolVersion": "2024-11-05",
                     "capabilities": {"tools": {}},
-                    "serverInfo": {"name": "cleanhouse", "version": "1.0.0"}
+                    "serverInfo": {"name": "cleanhabit", "version": "1.0.0"}
                 }
             }
         elif method == "tools/list":
