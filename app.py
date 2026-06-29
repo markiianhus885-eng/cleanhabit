@@ -1054,6 +1054,16 @@ def calendar_view():
         d = h['completed_at'][:10]
         done_dates.setdefault(d, set()).add(h['task_id'])
 
+    # Full completion history (not just this month) is needed to know, for any
+    # given day, when the task's cycle was last reset - both real completions
+    # and expire_task() "missed" entries advance last_completed, so every row
+    # here is a valid cycle anchor.
+    all_anchors = {}
+    for r in db.execute("SELECT task_id, completed_at FROM history WHERE household_id=?", [hid]):
+        all_anchors.setdefault(r['task_id'], []).append(datetime.fromisoformat(r['completed_at']).date())
+    for k in all_anchors:
+        all_anchors[k].sort()
+
     days_in_month = cal_mod.monthrange(year, month)[1]
     result = []
     for day_num in range(1, days_in_month + 1):
@@ -1068,22 +1078,28 @@ def calendar_view():
                 continue
             member = members.get(t['assigned_to'], {})
             room   = rooms.get(t['room_id'], {})
+            anchors_before = [a for a in all_anchors.get(t['id'], []) if a <= day.date()]
 
-            if t.get('specific_days'):
+            if t.get('one_time'):
+                # One-time tasks are due every day from creation until the single
+                # time they're ever completed (they get deleted the day after, see
+                # cleanup_one_time) - they must never be projected as recurring.
+                if anchors_before:
+                    continue
+            elif t.get('specific_days'):
                 # show only on the chosen weekdays
                 chosen = [int(x) for x in t['specific_days'].split(',') if x.strip().isdigit()]
                 if day_dow not in chosen:
                     continue
             else:
                 freq_days = FREQ_DAYS.get(t['freq'], 7)
-                if t['last_completed']:
-                    last = datetime.fromisoformat(t['last_completed'])
-                    next_due = last + timedelta(days=freq_days)
-                else:
-                    next_due = created
-                diff = (day.date() - next_due.date()).days
-                if not (0 <= diff < freq_days or freq_days == 1):
-                    continue
+                if anchors_before:
+                    # Due from freq_days after the most recent prior reset, and stays
+                    # due every day after that (until the next completion) - matches
+                    # the frontend's isDue() semantics instead of a fixed-width window
+                    # that incorrectly re-matched every single day.
+                    if (day.date() - anchors_before[-1]).days < freq_days:
+                        continue
 
             day_tasks.append({
                 'id': t['id'], 'name': t['name'], 'diff': t['diff'], 'freq': t['freq'],
