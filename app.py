@@ -522,7 +522,8 @@ def auth_register():
 
     if not username or not password:
         return jsonify({'error': 'Podaj nazwę użytkownika i hasło'}), 400
-    if not email or '@' not in email:
+    import re as _re
+    if not email or not _re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
         return jsonify({'error': 'Podaj poprawny adres email'}), 400
     if len(password) < 4:
         return jsonify({'error': 'Hasło musi mieć min. 4 znaki'}), 400
@@ -582,13 +583,17 @@ def auth_register():
 @limiter.limit('10 per minute')
 def auth_login():
     d = request.get_json(silent=True) or {}
-    username = d.get('username', '').strip().lower()
+    identifier = d.get('username', '').strip().lower()
     password = d.get('password', '').strip()
     db = get_db()
-    row = db.execute("SELECT * FROM users WHERE username=?", [username]).fetchone()
+    # Accounts log in with the email they registered with; username is kept
+    # as a fallback so legacy accounts (created before email was required)
+    # still work.
+    row = db.execute("SELECT * FROM users WHERE email=? OR username=?",
+                      [identifier, identifier]).fetchone()
     ok, needs_upgrade = verify_pw(row['password_hash'], password) if row else (False, False)
     if not row or not ok:
-        return jsonify({'error': 'Błędna nazwa użytkownika lub hasło'}), 401
+        return jsonify({'error': 'Błędny email lub hasło'}), 401
     if needs_upgrade:
         # Transparently migrate the legacy SHA-256 hash to a salted one.
         db.execute("UPDATE users SET password_hash=? WHERE id=?", [make_pw(password), row['id']])

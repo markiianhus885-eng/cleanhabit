@@ -1539,6 +1539,7 @@ function applyAuthLang(){
   const js=document.querySelector('#hact-join span');   if(js) js.textContent=t('auth_join');
   const ab=$('auth-btn');
   if(ab) ab.textContent = (typeof authMode!=='undefined' && authMode==='register') ? t('auth_btn_register') : t('auth_btn_login');
+  applyAuthIdentifierField();
 }
 
 // ─── STATE ────────────────────────────────────────────────────
@@ -1802,19 +1803,39 @@ function showAuthTab(mode){
   $('auth-btn').textContent = mode==='login' ? 'Zaloguj się' : 'Zarejestruj się';
   $('auth-error').style.display = 'none';
   if(mode==='register') { householdAction='create'; setHouseholdAction('create'); }
+  applyAuthIdentifierField();
 }
 
+// The login screen authenticates by email; registration still collects a
+// separate username. Both share the #auth-username input, so swap its
+// placeholder/type/autocomplete to match the active mode.
+function applyAuthIdentifierField(){
+  const el = $('auth-username');
+  if(!el) return;
+  if(typeof authMode!=='undefined' && authMode==='login'){
+    el.type = 'email';
+    el.autocomplete = 'email';
+    el.placeholder = _lang==='pl'?'Adres email':_lang==='uk'?'Адреса електронної пошти':'Email address';
+  } else {
+    el.type = 'text';
+    el.autocomplete = 'username';
+    el.placeholder = t('auth_username');
+  }
+}
+
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 async function doAuth(){
   const username = $('auth-username').value.trim();
   const password = $('auth-password').value.trim();
   const errEl = $('auth-error');
   errEl.style.display = 'none';
   if(!username||!password){ errEl.style.display='block'; errEl.textContent='Wypełnij wszystkie pola'; return; }
+  if(authMode==='login' && !EMAIL_RE.test(username)){ errEl.style.display='block'; errEl.textContent='Podaj poprawny adres email'; return; }
   const url = authMode==='login' ? '/api/auth/login' : '/api/auth/register';
   const body = {username, password};
   if(authMode==='register'){
     const email = $('auth-email').value.trim();
-    if(!email || !email.includes('@')){ errEl.style.display='block'; errEl.textContent='Podaj poprawny adres email'; return; }
+    if(!email || !EMAIL_RE.test(email)){ errEl.style.display='block'; errEl.textContent='Podaj poprawny adres email'; return; }
     if(!$('auth-gdpr').checked){ errEl.style.display='block'; errEl.textContent='Musisz zaakceptować politykę prywatności'; return; }
     body.email = email;
     body.action = householdAction;
