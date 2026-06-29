@@ -510,7 +510,6 @@ MEMBER_EMOJIS = ['😊','😎','🤩','🥳','😄','🦸','🧑','👦','👧',
 @limiter.limit('10 per hour')
 def auth_register():
     d = request.get_json(silent=True) or {}
-    username     = d.get('username', '').strip().lower()
     password     = d.get('password', '').strip()
     email        = d.get('email', '').strip().lower()
     display_name = d.get('display_name', '').strip()
@@ -520,8 +519,8 @@ def auth_register():
     chosen_emoji = d.get('emoji', '').strip()
     member_id    = d.get('member_id', '').strip()  # for join: pick existing member
 
-    if not username or not password:
-        return jsonify({'error': 'Podaj nazwę użytkownika i hasło'}), 400
+    if not password:
+        return jsonify({'error': 'Podaj hasło'}), 400
     import re as _re
     if not email or not _re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
         return jsonify({'error': 'Podaj poprawny adres email'}), 400
@@ -529,10 +528,19 @@ def auth_register():
         return jsonify({'error': 'Hasło musi mieć min. 4 znaki'}), 400
 
     db = get_db()
-    if db.execute("SELECT 1 FROM users WHERE username=?", [username]).fetchone():
-        return jsonify({'error': 'Ta nazwa użytkownika jest już zajęta'}), 400
     if db.execute("SELECT 1 FROM users WHERE email=?", [email]).fetchone():
         return jsonify({'error': 'Ten adres email jest już używany przez inne konto'}), 400
+
+    # Accounts log in with email now; username is just an internal handle
+    # derived from the email's local part (kept unique with a numeric suffix).
+    base_username = _re.sub(r'[^a-z0-9_.]', '', email.split('@')[0]) or 'user'
+    username = base_username
+    suffix = 1
+    while db.execute("SELECT 1 FROM users WHERE username=?", [username]).fetchone():
+        suffix += 1
+        username = f'{base_username}{suffix}'
+    if not display_name:
+        display_name = email.split('@')[0]
 
     if action == 'join':
         household = db.execute("SELECT * FROM households WHERE token=?", [token]).fetchone()
@@ -550,8 +558,6 @@ def auth_register():
             return jsonify({'error': 'Ten domownik ma już konto — zaloguj się'}), 400
     else:
         # Create new household
-        if not display_name:
-            display_name = username
         household_id = uid()
         new_token = gen_token()
         while db.execute("SELECT 1 FROM households WHERE token=?", [new_token]).fetchone():

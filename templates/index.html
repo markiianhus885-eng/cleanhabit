@@ -719,7 +719,10 @@ html.dark .tb-streak{color:#FF9A6B;background:rgba(255,122,61,.14);}
     <div id="auth-error" style="display:none;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:10px 14px;color:var(--red);font-size:13px;margin-bottom:14px"></div>
 
     <div class="card" style="padding:20px;gap:12px;display:flex;flex-direction:column">
-      <input class="inp" id="auth-username" placeholder="Nazwa użytkownika" autocomplete="username"/>
+      <!-- login identifier: email (login only — register/join use auth-email below) -->
+      <div id="auth-username-wrap">
+        <input class="inp" id="auth-username" placeholder="Adres email" type="email" autocomplete="email"/>
+      </div>
       <!-- email shown only on register -->
       <div id="auth-email-wrap" style="display:none">
         <input class="inp" id="auth-email" placeholder="Adres email" type="email" autocomplete="email"/>
@@ -1524,7 +1527,7 @@ function applyAuthLang(){
   const setPh =(id,v)=>{const e=$(id); if(e) e.placeholder=v;};
   setTxt('tab-login', t('auth_login'));
   setTxt('tab-register', t('auth_register'));
-  setPh('auth-username', t('auth_username'));
+  setPh('auth-username', _lang==='pl'?'Adres email':_lang==='uk'?'Адреса електронної пошти':'Email address');
   setPh('auth-password', t('auth_password'));
   setPh('auth-email', _lang==='pl'?'Adres email':_lang==='uk'?'Адреса електронної пошти':'Email address');
   setPh('auth-hname', t('auth_hname'));
@@ -1793,6 +1796,7 @@ function showAuthTab(mode){
   $('tab-register').style.background = mode==='register' ? 'var(--blue)' : 'transparent';
   $('tab-register').style.color = mode==='register' ? '#fff' : 'var(--muted2)';
   $('auth-household-wrap').style.display = mode==='register' ? 'block' : 'none';
+  $('auth-username-wrap').style.display = mode==='login' ? 'block' : 'none';
   $('auth-email-wrap').style.display = mode==='register' ? 'block' : 'none';
   $('auth-gdpr-wrap').style.display = mode==='register' ? 'flex' : 'none';
   $('auth-forgot-link').style.display = mode==='login' ? 'block' : 'none';
@@ -1806,34 +1810,25 @@ function showAuthTab(mode){
   applyAuthIdentifierField();
 }
 
-// The login screen authenticates by email; registration still collects a
-// separate username. Both share the #auth-username input, so swap its
-// placeholder/type/autocomplete to match the active mode.
-function applyAuthIdentifierField(){
-  const el = $('auth-username');
-  if(!el) return;
-  if(typeof authMode!=='undefined' && authMode==='login'){
-    el.type = 'email';
-    el.autocomplete = 'email';
-    el.placeholder = _lang==='pl'?'Adres email':_lang==='uk'?'Адреса електронної пошти':'Email address';
-  } else {
-    el.type = 'text';
-    el.autocomplete = 'username';
-    el.placeholder = t('auth_username');
-  }
-}
+// The login field is email-only now (registration collects email via
+// auth-email instead), so there's nothing mode-dependent left to swap —
+// kept as a no-op so any stray callers don't break.
+function applyAuthIdentifierField(){}
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 async function doAuth(){
-  const username = $('auth-username').value.trim();
   const password = $('auth-password').value.trim();
   const errEl = $('auth-error');
   errEl.style.display = 'none';
-  if(!username||!password){ errEl.style.display='block'; errEl.textContent='Wypełnij wszystkie pola'; return; }
-  if(authMode==='login' && !EMAIL_RE.test(username)){ errEl.style.display='block'; errEl.textContent='Podaj poprawny adres email'; return; }
   const url = authMode==='login' ? '/api/auth/login' : '/api/auth/register';
-  const body = {username, password};
-  if(authMode==='register'){
+  const body = {password};
+  if(authMode==='login'){
+    const identifier = $('auth-username').value.trim();
+    if(!identifier||!password){ errEl.style.display='block'; errEl.textContent='Wypełnij wszystkie pola'; return; }
+    if(!EMAIL_RE.test(identifier)){ errEl.style.display='block'; errEl.textContent='Podaj poprawny adres email'; return; }
+    body.username = identifier;
+  } else {
+    if(!password){ errEl.style.display='block'; errEl.textContent='Wypełnij wszystkie pola'; return; }
     const email = $('auth-email').value.trim();
     if(!email || !EMAIL_RE.test(email)){ errEl.style.display='block'; errEl.textContent='Podaj poprawny adres email'; return; }
     if(!$('auth-gdpr').checked){ errEl.style.display='block'; errEl.textContent='Musisz zaakceptować politykę prywatności'; return; }
@@ -1848,7 +1843,7 @@ async function doAuth(){
       body.member_id = mid;
     } else {
       body.household_name = $('auth-hname').value.trim() || 'Moja Rodzina';
-      body.display_name = $('auth-displayname').value.trim() || username;
+      body.display_name = $('auth-displayname').value.trim() || email.split('@')[0];
       body.emoji = _selectedAuthEmoji || '😊';
     }
   }
