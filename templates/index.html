@@ -2733,10 +2733,13 @@ function renderTasks(d){
     .map(h=>h.task_id);
   const pendingApprovalIds = new Set((d.approvals||[]).map(a=>a.task_id));
 
+  if(!state.taskFilterMember) state.taskFilterMember = state.user?.member_id || 'all';
+
   let tasks = d.tasks;
   if(state.filter_task==='today') tasks = tasks.filter(isDue);
   if(state.filter_task==='done')  tasks = tasks.filter(t=>doneTodayIds.includes(t.id));
   if(state.diff_filter!=='all')   tasks = tasks.filter(t=>t.diff===state.diff_filter);
+  if(state.taskFilterMember!=='all') tasks = tasks.filter(t=>!t.assigned_to || t.assigned_to===state.taskFilterMember);
 
   let html = `
   <div class="topbar">
@@ -2749,6 +2752,10 @@ function renderTasks(d){
     </div>
   </div>
   <div style="padding:0 16px;margin-bottom:10px">
+    <div class="chips" style="margin-bottom:8px">
+      <button class="chip${state.taskFilterMember==='all'?' on':''}" onclick="state.taskFilterMember='all';renderTasks(state.data)">${t('cal_filter_all')}</button>
+      ${(d.members||[]).map(m=>`<button class="chip${state.taskFilterMember===m.id?' on':''}" onclick="state.taskFilterMember='${m.id}';renderTasks(state.data)">${m.emoji||'🙂'} ${esc(m.name)}</button>`).join('')}
+    </div>
     <div class="chips" style="margin-bottom:8px">
       ${['all','today','done'].map(v=>`
         <button class="chip${state.filter_task===v?' on':''}" onclick="state.filter_task='${v}';renderTasks(state.data)">
