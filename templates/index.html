@@ -1210,7 +1210,7 @@ const LANGS = {
     modal_task_cyclic:'🔄 Cykliczne', modal_task_once:'⚡ Jednorazowe',
     modal_task_sched_freq:'🔄 Cyklicznie', modal_task_sched_days:'📅 Konkretne dni',
     modal_task_days_hint:'Kliknij dni w których ma być wykonywane:',
-    modal_task_add_btn:'Dodaj zadanie', modal_task_save_btn:'Zapisz zmiany',
+    modal_task_add_btn:'Dodaj zadanie', modal_task_save_btn:'Zapisz zmiany', cal_filter_all:'Wszyscy',
     modal_new_goal:'Nowy cel rodziny', modal_goal_subtitle:'Stwórz nagrodę motywującą do sprzątania',
     modal_goal_templates:'Szybkie szablony', modal_goal_emoji:'Emoji',
     modal_goal_emoji_ph:'lub wpisz własne emoji', modal_goal_name:'Nazwa nagrody',
@@ -1341,7 +1341,7 @@ const LANGS = {
     modal_task_sched_freq:'🔄 Recurring', modal_task_sched_days:'📅 Specific days',
     freq_daily:'Daily', freq_every2:'Every 2 days', freq_weekly:'Weekly', freq_biweekly:'Every 2 weeks', freq_monthly:'Monthly',
     modal_task_days_hint:'Click the days it should be done:',
-    modal_task_add_btn:'Add task', modal_task_save_btn:'Save changes',
+    modal_task_add_btn:'Add task', modal_task_save_btn:'Save changes', cal_filter_all:'Everyone',
     modal_new_goal:'New family goal', modal_goal_subtitle:'Create a reward to motivate cleaning',
     modal_goal_templates:'Quick templates', modal_goal_emoji:'Emoji',
     modal_goal_emoji_ph:'or type your own emoji', modal_goal_name:'Reward name',
@@ -1471,7 +1471,7 @@ const LANGS = {
     modal_task_cyclic:'🔄 Повторюване', modal_task_once:'⚡ Одноразове',
     modal_task_sched_freq:'🔄 Циклічно', modal_task_sched_days:'📅 Конкретні дні',
     modal_task_days_hint:'Натисніть дні, у які потрібно виконувати:',
-    modal_task_add_btn:'Додати завдання', modal_task_save_btn:'Зберегти зміни',
+    modal_task_add_btn:'Додати завдання', modal_task_save_btn:'Зберегти зміни', cal_filter_all:'Усі',
     modal_new_goal:'Нова ціль сім\'ї', modal_goal_subtitle:'Створіть нагороду для мотивації прибирання',
     modal_goal_templates:'Швидкі шаблони', modal_goal_emoji:'Emoji',
     modal_goal_emoji_ph:'або введіть своє emoji', modal_goal_name:'Назва нагороди',
@@ -1980,9 +1980,12 @@ function scheduleNotifications(){
 // ─── CALENDAR ─────────────────────────────────────────────────
 let calYear  = new Date().getFullYear();
 let calMonth = new Date().getMonth(); // 0-based
+let calFilterMember = null; // null on first render -> defaults to state.user.member_id
 
 async function renderCalendar(){
-  const month = await GET(`/api/calendar?year=${calYear}&month=${calMonth+1}`);
+  const d0 = state.data;
+  if(calFilterMember===null) calFilterMember = (state.user?.member_id) || 'all';
+  const month = await GET(`/api/calendar?year=${calYear}&month=${calMonth+1}&memberId=${calFilterMember}`);
   const today = new Date().toISOString().slice(0,10);
   const _locale = _lang==='en'?'en-GB':_lang==='uk'?'uk-UA':'pl-PL';
   const MONTHS_PL = Array.from({length:12},(_,i)=>new Date(calYear,i,1).toLocaleDateString(_locale,{month:'long'}).replace(/^./,c=>c.toUpperCase()));
@@ -2003,6 +2006,12 @@ async function renderCalendar(){
     <div class="topbar-left">
       <h1>📅 ${t('nav_cal')}</h1>
     </div>
+  </div>
+
+  <!-- Member filter -->
+  <div class="chips" style="padding:0 16px 12px">
+    <button class="chip${calFilterMember==='all'?' on':''}" onclick="calFilterMember='all';renderCalendar()">${t('cal_filter_all')||'Wszyscy'}</button>
+    ${(d0?.members||[]).map(m=>`<button class="chip${calFilterMember===m.id?' on':''}" onclick="calFilterMember='${m.id}';renderCalendar()">${m.emoji||'🙂'} ${esc(m.name)}</button>`).join('')}
   </div>
 
   <!-- Month nav -->

@@ -1042,8 +1042,11 @@ def calendar_view():
     now = datetime.now()
     year  = int(request.args.get('year',  now.year))
     month = int(request.args.get('month', now.month))
+    filter_member = request.args.get('memberId') or None  # None/'all' = everyone
 
     tasks   = [dict(r) for r in db.execute("SELECT * FROM tasks WHERE household_id=?", [hid])]
+    if filter_member and filter_member != 'all':
+        tasks = [t for t in tasks if not t['assigned_to'] or t['assigned_to'] == filter_member]
     members = {r['id']: dict(r) for r in db.execute("SELECT * FROM members WHERE household_id=?", [hid])}
     rooms   = {r['id']: dict(r) for r in db.execute("SELECT * FROM rooms WHERE household_id=?", [hid])}
     history = [dict(r) for r in db.execute(
@@ -1055,9 +1058,9 @@ def calendar_view():
         done_dates.setdefault(d, set()).add(h['task_id'])
 
     # Full completion history (not just this month) is needed to know, for any
-    # given day, when the task's cycle was last reset - both real completions
-    # and expire_task() "missed" entries advance last_completed, so every row
-    # here is a valid cycle anchor.
+    # given day, which cycle the task is on - both real completions and
+    # expire_task() "missed" entries advance last_completed, so every row here
+    # is a valid cycle anchor.
     all_anchors = {}
     for r in db.execute("SELECT task_id, completed_at FROM history WHERE household_id=?", [hid]):
         all_anchors.setdefault(r['task_id'], []).append(datetime.fromisoformat(r['completed_at']).date())
@@ -1081,9 +1084,9 @@ def calendar_view():
             anchors_before = [a for a in all_anchors.get(t['id'], []) if a <= day.date()]
 
             if t.get('one_time'):
-                # One-time tasks are due every day from creation until the single
-                # time they're ever completed (they get deleted the day after, see
-                # cleanup_one_time) - they must never be projected as recurring.
+                # One-time tasks have a single occurrence: due every day from
+                # creation until the one time they're ever completed (they get
+                # deleted the next day, see cleanup_one_time) - never recurring.
                 if anchors_before:
                     continue
             elif t.get('specific_days'):
@@ -1092,14 +1095,16 @@ def calendar_view():
                 if day_dow not in chosen:
                     continue
             else:
+                # Discrete recurring schedule: mark exactly the cycle days (the
+                # anchor itself, then every freq_days after it), not every day
+                # from the anchor onward - a sticky "still due" window tiled the
+                # whole month with no gaps and looked like a daily task no
+                # matter what the actual frequency was.
                 freq_days = FREQ_DAYS.get(t['freq'], 7)
-                if anchors_before:
-                    # Due from freq_days after the most recent prior reset, and stays
-                    # due every day after that (until the next completion) - matches
-                    # the frontend's isDue() semantics instead of a fixed-width window
-                    # that incorrectly re-matched every single day.
-                    if (day.date() - anchors_before[-1]).days < freq_days:
-                        continue
+                anchor = anchors_before[-1] if anchors_before else created.date()
+                diff = (day.date() - anchor).days
+                if diff < 0 or diff % freq_days != 0:
+                    continue
 
             day_tasks.append({
                 'id': t['id'], 'name': t['name'], 'diff': t['diff'], 'freq': t['freq'],
