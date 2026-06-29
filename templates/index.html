@@ -369,6 +369,7 @@ html.dark .bnav{box-shadow:0 16px 36px -10px rgba(0,0,0,0.55);}
 }
 .task-chk.done{background:var(--green);border-color:var(--green);}
 .task-chk.due{border-color:var(--orange);}
+.task-chk.pending{background:var(--yellow);border-color:var(--yellow);}
 .task-name{font-size:14px;font-weight:700;margin-bottom:3px;}
 .task-meta{font-size:12px;color:var(--muted2);display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
 .task-meta .dot{color:var(--muted);}
@@ -1166,7 +1167,7 @@ const LANGS = {
     filter_all:'Wszystkie', filter_today:'Na dziś', filter_done:'Wykonane',
     task_no_filter:'Brak zadań dla wybranych filtrów',
     task_suggestions:'Sugestie gotowych zadań',
-    task_delete_confirm:'Usunąć zadanie?', task_acceptance:'akceptacja',
+    task_delete_confirm:'Usunąć zadanie?', task_acceptance:'akceptacja', task_pending_approval:'czeka na zatwierdzenie',
     cal_free_day:'Brak zadań — wolny dzień! 🎉',
     cal_days:'Pn,Wt,Śr,Cz,Pt,Sb,Nd',
     lb_cleaner:'🧹 Czyściciel', lb_expert:'💎 Ekspert', lb_master:'👑 Mistrz',
@@ -1296,7 +1297,7 @@ const LANGS = {
     filter_all:'All', filter_today:'Today', filter_done:'Done',
     task_no_filter:'No tasks for selected filters',
     task_suggestions:'Task suggestions',
-    task_delete_confirm:'Delete task?', task_acceptance:'approval',
+    task_delete_confirm:'Delete task?', task_acceptance:'approval', task_pending_approval:'awaiting approval',
     cal_free_day:'No tasks — free day! 🎉',
     cal_days:'Mo,Tu,We,Th,Fr,Sa,Su',
     lb_cleaner:'🧹 Cleaner', lb_expert:'💎 Expert', lb_master:'👑 Master',
@@ -1427,7 +1428,7 @@ const LANGS = {
     filter_all:'Всі', filter_today:'Сьогодні', filter_done:'Виконані',
     task_no_filter:'Немає завдань для вибраних фільтрів',
     task_suggestions:'Пропозиції завдань',
-    task_delete_confirm:'Видалити завдання?', task_acceptance:'підтвердження',
+    task_delete_confirm:'Видалити завдання?', task_acceptance:'підтвердження', task_pending_approval:'очікує підтвердження',
     cal_free_day:'Немає завдань — вільний день! 🎉',
     cal_days:'Пн,Вт,Ср,Чт,Пт,Сб,Нд',
     lb_cleaner:'🧹 Прибиральник', lb_expert:'💎 Експерт', lb_master:'👑 Майстер',
@@ -2303,7 +2304,8 @@ function renderHome(d){
   const missedTodayIds = (d.history||[])
     .filter(h=>h.type==='missed' && new Date(h.completed_at)>new Date(Date.now()-86400000*2))
     .map(h=>h.task_id);
-  const pending = dueTasks.filter(t=>!doneTodayIds.includes(t.id));
+  const pendingApprovalIds = new Set((d.approvals||[]).map(a=>a.task_id));
+  const pending = dueTasks.filter(t=>!doneTodayIds.includes(t.id) && !pendingApprovalIds.has(t.id));
   const effortToday = (d.history||[])
     .filter(h=>new Date(h.completed_at)>new Date(Date.now()-86400000))
     .reduce((a,h)=>a+h.pts,0);
@@ -2711,6 +2713,7 @@ function renderTasks(d){
   const doneTodayIds = (d.history||[])
     .filter(h=>new Date(h.completed_at)>new Date(Date.now()-86400000))
     .map(h=>h.task_id);
+  const pendingApprovalIds = new Set((d.approvals||[]).map(a=>a.task_id));
 
   let tasks = d.tasks;
   if(state.filter_task==='today') tasks = tasks.filter(isDue);
@@ -2750,13 +2753,14 @@ function renderTasks(d){
     const room = d.rooms.find(r=>r.id===task.room_id);
     const mbr  = d.members.find(m=>m.id===task.assigned_to);
     const done = doneTodayIds.includes(task.id);
+    const pendingAppr = pendingApprovalIds.has(task.id);
     const due  = isDue(task);
     const pts  = DIFF_PTS[task.diff]||1;
     html += `
     <div class="task-item${done?' done':''}" id="ti-${task.id}">
-      <div class="task-chk${done?' done':due?' due':''}"
-        onclick="${!done?`handleCheck('${task.id}',this)`:'void 0'}">
-        ${done?'<span style="color:#fff;font-size:14px">✓</span>':due?'<span style="font-size:10px;color:var(--orange)">!</span>':'<span style="font-size:10px;color:var(--muted2)">○</span>'}
+      <div class="task-chk${done?' done':pendingAppr?' pending':due?' due':''}"
+        onclick="${!done&&!pendingAppr?`handleCheck('${task.id}',this)`:'void 0'}">
+        ${done?'<span style="color:#fff;font-size:14px">✓</span>':pendingAppr?'<span style="font-size:13px">⏳</span>':due?'<span style="font-size:10px;color:var(--orange)">!</span>':'<span style="font-size:10px;color:var(--muted2)">○</span>'}
       </div>
       <div style="flex:1;min-width:0">
         <div class="task-name" style="text-decoration:${done?'line-through':'none'}">${esc(task.name)}</div>
@@ -2764,7 +2768,7 @@ function renderTasks(d){
           ${room?`<span>${room.emoji} ${esc(room.name)}</span><span class="dot">·</span>`:''}
           ${mbr?`<span>${mbr.emoji} ${esc(mbr.name)}</span><span class="dot">·</span>`:''}
           <span>${fmtSchedule(task)}</span>
-          ${task.approval_needed?`<span class="dot">·</span><span style="color:var(--yellow)">🔒 ${t('task_acceptance')}</span>`:''}
+          ${pendingAppr?`<span class="dot">·</span><span style="color:var(--yellow);font-weight:700">⏳ ${t('task_pending_approval')}</span>`:task.approval_needed?`<span class="dot">·</span><span style="color:var(--yellow)">🔒 ${t('task_acceptance')}</span>`:''}
         </div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">
