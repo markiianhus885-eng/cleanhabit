@@ -1,7 +1,7 @@
 // CleanHabit service worker — light redesign.
 // HTML/navigations are ALWAYS fetched fresh (no stale app shell); other GET
 // assets use network-first with a cache fallback for offline.
-const CACHE = 'cleanhabit-v6-light';
+const CACHE = 'cleanhabit-v7-light';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
