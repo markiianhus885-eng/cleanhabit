@@ -1202,7 +1202,7 @@ const LANGS = {
     badge_hard_worker_name:'Twardziel', badge_hard_worker_desc:'Wykonaj 5 trudnych zadań',
     badge_early_bird_name:'Ranny Ptaszek', badge_early_bird_desc:'Wykonaj zadanie przed 9:00',
     badge_night_owl_name:'Nocna Sowa', badge_night_owl_desc:'Wykonaj zadanie po 22:00',
-    modal_new_task:'Nowe zadanie', modal_task_name:'Nazwa zadania', modal_task_name_ph:'np. Odkurzanie',
+    modal_new_task:'Nowe zadanie', modal_edit_task:'Edytuj zadanie', modal_task_name:'Nazwa zadania', modal_task_name_ph:'np. Odkurzanie',
     modal_task_room:'Pokój', modal_task_room_ph:'Wybierz pokój...',
     modal_task_assign:'Przypisz do', modal_task_assign_ph:'Wybierz osobę...',
     modal_task_diff:'Trudność / Punkty', modal_task_type:'Typ zadania',
@@ -1210,7 +1210,7 @@ const LANGS = {
     modal_task_cyclic:'🔄 Cykliczne', modal_task_once:'⚡ Jednorazowe',
     modal_task_sched_freq:'🔄 Cyklicznie', modal_task_sched_days:'📅 Konkretne dni',
     modal_task_days_hint:'Kliknij dni w których ma być wykonywane:',
-    modal_task_add_btn:'Dodaj zadanie',
+    modal_task_add_btn:'Dodaj zadanie', modal_task_save_btn:'Zapisz zmiany',
     modal_new_goal:'Nowy cel rodziny', modal_goal_subtitle:'Stwórz nagrodę motywującą do sprzątania',
     modal_goal_templates:'Szybkie szablony', modal_goal_emoji:'Emoji',
     modal_goal_emoji_ph:'lub wpisz własne emoji', modal_goal_name:'Nazwa nagrody',
@@ -1332,7 +1332,7 @@ const LANGS = {
     badge_hard_worker_name:'Tough Guy', badge_hard_worker_desc:'Complete 5 hard tasks',
     badge_early_bird_name:'Early Bird', badge_early_bird_desc:'Complete a task before 9:00',
     badge_night_owl_name:'Night Owl', badge_night_owl_desc:'Complete a task after 22:00',
-    modal_new_task:'New task', modal_task_name:'Task name', modal_task_name_ph:'e.g. Vacuuming',
+    modal_new_task:'New task', modal_edit_task:'Edit task', modal_task_name:'Task name', modal_task_name_ph:'e.g. Vacuuming',
     modal_task_room:'Room', modal_task_room_ph:'Choose a room...',
     modal_task_assign:'Assign to', modal_task_assign_ph:'Choose a person...',
     modal_task_diff:'Difficulty / Points', modal_task_type:'Task type',
@@ -1341,7 +1341,7 @@ const LANGS = {
     modal_task_sched_freq:'🔄 Recurring', modal_task_sched_days:'📅 Specific days',
     freq_daily:'Daily', freq_every2:'Every 2 days', freq_weekly:'Weekly', freq_biweekly:'Every 2 weeks', freq_monthly:'Monthly',
     modal_task_days_hint:'Click the days it should be done:',
-    modal_task_add_btn:'Add task',
+    modal_task_add_btn:'Add task', modal_task_save_btn:'Save changes',
     modal_new_goal:'New family goal', modal_goal_subtitle:'Create a reward to motivate cleaning',
     modal_goal_templates:'Quick templates', modal_goal_emoji:'Emoji',
     modal_goal_emoji_ph:'or type your own emoji', modal_goal_name:'Reward name',
@@ -1463,7 +1463,7 @@ const LANGS = {
     badge_hard_worker_name:'Міцний горішок', badge_hard_worker_desc:'Виконайте 5 важких завдань',
     badge_early_bird_name:'Ранній птах', badge_early_bird_desc:'Виконайте завдання до 9:00',
     badge_night_owl_name:'Нічна сова', badge_night_owl_desc:'Виконайте завдання після 22:00',
-    modal_new_task:'Нове завдання', modal_task_name:'Назва завдання', modal_task_name_ph:'напр. Пилосос',
+    modal_new_task:'Нове завдання', modal_edit_task:'Редагувати завдання', modal_task_name:'Назва завдання', modal_task_name_ph:'напр. Пилосос',
     modal_task_room:'Кімната', modal_task_room_ph:'Оберіть кімнату...',
     modal_task_assign:'Призначити', modal_task_assign_ph:'Оберіть людину...',
     modal_task_diff:'Складність / Бали', modal_task_type:'Тип завдання',
@@ -1471,7 +1471,7 @@ const LANGS = {
     modal_task_cyclic:'🔄 Повторюване', modal_task_once:'⚡ Одноразове',
     modal_task_sched_freq:'🔄 Циклічно', modal_task_sched_days:'📅 Конкретні дні',
     modal_task_days_hint:'Натисніть дні, у які потрібно виконувати:',
-    modal_task_add_btn:'Додати завдання',
+    modal_task_add_btn:'Додати завдання', modal_task_save_btn:'Зберегти зміни',
     modal_new_goal:'Нова ціль сім\'ї', modal_goal_subtitle:'Створіть нагороду для мотивації прибирання',
     modal_goal_templates:'Швидкі шаблони', modal_goal_emoji:'Emoji',
     modal_goal_emoji_ph:'або введіть своє emoji', modal_goal_name:'Назва нагороди',
@@ -2879,7 +2879,7 @@ function showAddTask(prefillName='', prefillDiff='medium', existingTask=null){
   const d = state.data;
   const isEdit = !!existingTask;
   openModal(`
-    <h2>${isEdit?(t('modal_edit_task')||'Edytuj zadanie'):t('modal_new_task')}</h2>
+    <h2>${isEdit?t('modal_edit_task'):t('modal_new_task')}</h2>
     <div class="field">
       <label>${t('modal_task_name')}</label>
       <input class="inp" id="task-name" placeholder="${t('modal_task_name_ph')}" value="${esc(isEdit?existingTask.name:prefillName)}"/>
@@ -2931,7 +2931,7 @@ function showAddTask(prefillName='', prefillDiff='medium', existingTask=null){
       <div class="chips" id="task-appr-chips"></div>
     </div>
     <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px"
-      onclick="submitAddTask(${isEdit?`'${existingTask.id}'`:'null'})">${isEdit?(t('modal_task_save_btn')||'Zapisz zmiany'):t('modal_task_add_btn')}</button>
+      onclick="submitAddTask(${isEdit?`'${existingTask.id}'`:'null'})">${isEdit?t('modal_task_save_btn'):t('modal_task_add_btn')}</button>
   `);
 
   let selFreq = isEdit&&existingTask.freq!=='custom' ? existingTask.freq : 'weekly';
