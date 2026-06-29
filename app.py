@@ -204,7 +204,7 @@ def verify_pw(stored, pw):
 def gen_token():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
-MAIL_FROM    = os.environ.get('MAIL_FROM',    'markiianhus885@gmail.com')
+MAIL_FROM    = os.environ.get('MAIL_FROM',    'cleanhabit@myroapp.org')
 MAIL_USER    = os.environ.get('MAIL_USER',    'markiianhus885@gmail.com')
 MAIL_PASS    = os.environ.get('MAIL_PASS',    '')
 MAIL_NAME    = os.environ.get('MAIL_NAME',    'CleanHabit')
