@@ -787,6 +787,27 @@ def add_task():
     db.commit()
     return jsonify({'ok': True})
 
+@app.route('/api/tasks/<tid>', methods=['PUT'])
+def edit_task(tid):
+    err = require_auth(); hid = get_hid()
+    if err: return err
+    db = get_db()
+    task = db.execute("SELECT * FROM tasks WHERE id=? AND household_id=?", [tid, hid]).fetchone()
+    if not task: return jsonify({'error': 'not found'}), 404
+    d = request.get_json(silent=True) or {}
+    specific_days = d.get('specificDays')
+    if specific_days and not isinstance(specific_days, str):
+        specific_days = ','.join(str(x) for x in specific_days)
+    freq = d.get('freq', 'weekly') if not specific_days else 'custom'
+    one_time = 1 if d.get('oneTime') else 0
+    db.execute(
+        "UPDATE tasks SET name=?, room_id=?, assigned_to=?, freq=?, diff=?, approval_needed=?, specific_days=?, one_time=? "
+        "WHERE id=? AND household_id=?",
+        [d['name'], d['roomId'], d['assignedTo'], freq, d['diff'],
+         1 if d.get('approvalNeeded') else 0, specific_days, one_time, tid, hid])
+    db.commit()
+    return jsonify({'ok': True})
+
 @app.route('/api/tasks/<tid>/expire', methods=['POST'])
 def expire_task(tid):
     """Mark a task as missed/expired — advance cycle without awarding points."""

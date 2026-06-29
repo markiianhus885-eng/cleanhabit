@@ -2783,6 +2783,8 @@ function renderTasks(d){
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">
         <span class="pts-pill">+${pts} ${t('points_abbr')}</span>
         <span class="coin-pill">🪙 +${pts}</span>
+        <button class="btn btn-ghost btn-xs" style="padding:3px 7px;font-size:11px;margin-top:2px"
+          onclick="showEditTask('${task.id}')">✏️</button>
         <button class="btn btn-ghost btn-xs" style="color:var(--red);padding:3px 7px;font-size:11px;margin-top:2px"
           onclick="if(confirm(t('task_delete_confirm')))deleteTask('${task.id}')">✕</button>
       </div>
@@ -2873,26 +2875,27 @@ const _GOAL_TPL = {
 };
 function getGoalTemplates(){ return _GOAL_TPL[_lang] || _GOAL_TPL.pl; }
 
-function showAddTask(prefillName='', prefillDiff='medium'){
+function showAddTask(prefillName='', prefillDiff='medium', existingTask=null){
   const d = state.data;
+  const isEdit = !!existingTask;
   openModal(`
-    <h2>${t('modal_new_task')}</h2>
+    <h2>${isEdit?(t('modal_edit_task')||'Edytuj zadanie'):t('modal_new_task')}</h2>
     <div class="field">
       <label>${t('modal_task_name')}</label>
-      <input class="inp" id="task-name" placeholder="${t('modal_task_name_ph')}" value="${esc(prefillName)}"/>
+      <input class="inp" id="task-name" placeholder="${t('modal_task_name_ph')}" value="${esc(isEdit?existingTask.name:prefillName)}"/>
     </div>
     <div class="field">
       <label>${t('modal_task_room')}</label>
       <select class="inp" id="task-room">
         <option value="">${t('modal_task_room_ph')}</option>
-        ${d.rooms.map(r=>`<option value="${r.id}">${r.emoji} ${esc(r.name)}</option>`).join('')}
+        ${d.rooms.map(r=>`<option value="${r.id}" ${isEdit&&existingTask.room_id===r.id?'selected':''}>${r.emoji} ${esc(r.name)}</option>`).join('')}
       </select>
     </div>
     <div class="field">
       <label>${t('modal_task_assign')}</label>
       <select class="inp" id="task-member">
         <option value="">${t('modal_task_assign_ph')}</option>
-        ${d.members.map(m=>`<option value="${m.id}">${m.emoji} ${esc(m.name)}</option>`).join('')}
+        ${d.members.map(m=>`<option value="${m.id}" ${isEdit&&existingTask.assigned_to===m.id?'selected':''}>${m.emoji} ${esc(m.name)}</option>`).join('')}
       </select>
     </div>
 
@@ -2928,12 +2931,15 @@ function showAddTask(prefillName='', prefillDiff='medium'){
       <div class="chips" id="task-appr-chips"></div>
     </div>
     <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px"
-      onclick="submitAddTask()">${t('modal_task_add_btn')}</button>
+      onclick="submitAddTask(${isEdit?`'${existingTask.id}'`:'null'})">${isEdit?(t('modal_task_save_btn')||'Zapisz zmiany'):t('modal_task_add_btn')}</button>
   `);
 
-  let selFreq = 'weekly', selDiff = prefillDiff, selAppr = false, selOneTime = false;
-  let schedMode = 'freq';
-  let selDays = new Set(); // weekday indices 0=Mon..6=Sun
+  let selFreq = isEdit&&existingTask.freq!=='custom' ? existingTask.freq : 'weekly';
+  let selDiff = isEdit ? existingTask.diff : prefillDiff;
+  let selAppr = isEdit ? !!existingTask.approval_needed : false;
+  let selOneTime = isEdit ? !!existingTask.one_time : false;
+  let schedMode = isEdit && existingTask.specific_days ? 'days' : 'freq';
+  let selDays = new Set(isEdit && existingTask.specific_days ? existingTask.specific_days.split(',').map(Number) : []); // weekday indices 0=Mon..6=Sun
 
   // freq chips
   const freqChips = $('task-freq-chips');
@@ -2957,6 +2963,7 @@ function showAddTask(prefillName='', prefillDiff='medium'){
       display:flex;align-items:center;justify-content:center;
     `;
     btn.textContent=label;
+    if(selDays.has(i)){ btn.style.background='rgba(109,123,230,0.2)'; btn.style.borderColor='var(--blue)'; btn.style.color='var(--blue2)'; }
     btn.onclick=()=>{
       if(selDays.has(i)){ selDays.delete(i); btn.style.background='var(--bg3)'; btn.style.borderColor='var(--border)'; btn.style.color=isWe?'var(--red)':'var(--text2)'; }
       else { selDays.add(i); btn.style.background='rgba(109,123,230,0.2)'; btn.style.borderColor='var(--blue)'; btn.style.color='var(--blue2)'; }
@@ -2965,6 +2972,10 @@ function showAddTask(prefillName='', prefillDiff='medium'){
     };
     dowGrid.appendChild(btn);
   });
+  if(selDays.size>0){
+    const names=['Pn','Wt','Śr','Cz','Pt','Sb','Nd'];
+    $('task-dow-hint').textContent = 'Wybrane: '+[...selDays].sort().map(d=>names[d]).join(', ');
+  }
 
   // diff chips
   const diffChips = $('task-diff-chips');
@@ -3015,21 +3026,29 @@ function showAddTask(prefillName='', prefillDiff='medium'){
     }
     return {freq:selFreq, diff:selDiff, approvalNeeded:selAppr, specificDays:null, oneTime:false};
   };
+
+  window.setTaskType(selOneTime?'once':'cyclic');
+  window.setSchedMode(schedMode);
 }
 
-async function submitAddTask(){
+async function submitAddTask(editId=null){
   const f = window._getTaskForm();
   if(!f) return;
   const name=$('task-name').value.trim();
   const roomId=$('task-room').value;
   const assignedTo=$('task-member').value;
   if(!name||!roomId||!assignedTo) return;
-  await POST('/api/tasks',{name,roomId,assignedTo,...f});
+  if(editId) await PUT(`/api/tasks/${editId}`,{name,roomId,assignedTo,...f});
+  else await POST('/api/tasks',{name,roomId,assignedTo,...f});
   closeModal(); await loadData();
 }
 async function deleteTask(id){
   await DEL(`/api/tasks/${id}`);
   await loadData();
+}
+function showEditTask(id){
+  const task = state.data.tasks.find(t=>t.id===id);
+  if(task) showAddTask('', task.diff, task);
 }
 function canCompleteTask(task){
   if(state.user?.role==='admin') return true;
