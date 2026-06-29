@@ -1110,7 +1110,7 @@ const LANGS = {
     task_approval:'Wymaga zatwierdzenia?', task_add:'Dodaj zadanie',
     task_no_tasks:'Brak zadań. Dodaj pierwsze!', task_once_hint:'Zadanie zniknie po wykonaniu.',
     task_cyclic_hint:'Zadanie będzie powtarzać się według harmonogramu.',
-    task_one_time_badge:'raz',
+    task_one_time_badge:'raz', task_one_time_sched:'Jednorazowo',
     // rooms
     room_new:'Nowy pokój', room_name:'Nazwa pokoju', room_clean:'Czysty',
     room_dirty:'Brudny', room_add:'Dodaj pokój',
@@ -1248,7 +1248,7 @@ const LANGS = {
     task_approval:'Requires approval?', task_add:'Add task',
     task_no_tasks:'No tasks yet. Add the first one!', task_once_hint:'Task will disappear after completion.',
     task_cyclic_hint:'Task will repeat on schedule.',
-    task_one_time_badge:'once',
+    task_one_time_badge:'once', task_one_time_sched:'One-time',
     room_new:'New room', room_name:'Room name', room_clean:'Clean',
     room_dirty:'Dirty', room_add:'Add room',
     room_name_ph:'e.g. Living room', room_icon:'Icon',
@@ -1379,7 +1379,7 @@ const LANGS = {
     task_approval:'Потребує підтвердження?', task_add:'Додати завдання',
     task_no_tasks:'Немає завдань. Додайте перше!', task_once_hint:'Завдання зникне після виконання.',
     task_cyclic_hint:'Завдання повторюватиметься за розкладом.',
-    task_one_time_badge:'раз',
+    task_one_time_badge:'раз', task_one_time_sched:'Одноразово',
     room_new:'Нова кімната', room_name:'Назва кімнати', room_clean:'Чисто',
     room_dirty:'Брудно', room_add:'Додати кімнату',
     room_name_ph:'напр. Вітальня', room_icon:'Іконка',
@@ -1616,6 +1616,7 @@ async function autoExpireTasks(){
 }
 
 function fmtSchedule(task){
+  if(task.one_time) return t('task_one_time_sched');
   if(task.specific_days){
     const names=['Pn','Wt','Śr','Cz','Pt','Sb','Nd'];
     return task.specific_days.split(',').map(Number).sort().map(d=>names[d]).join(', ');
