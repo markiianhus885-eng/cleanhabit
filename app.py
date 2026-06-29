@@ -784,6 +784,8 @@ def add_task():
     err = require_auth(); hid = get_hid()
     if err: return err
     d = request.get_json(silent=True) or {}
+    if not d.get('assignedTo'):
+        return jsonify({'error': 'Wybierz, kto wykonuje zadanie'}), 400
     specific_days = d.get('specificDays')  # e.g. "0,2,4" = Mon,Wed,Fri or None
     if specific_days and not isinstance(specific_days, str):
         specific_days = ','.join(str(x) for x in specific_days)
@@ -805,6 +807,8 @@ def edit_task(tid):
     task = db.execute("SELECT * FROM tasks WHERE id=? AND household_id=?", [tid, hid]).fetchone()
     if not task: return jsonify({'error': 'not found'}), 404
     d = request.get_json(silent=True) or {}
+    if not d.get('assignedTo'):
+        return jsonify({'error': 'Wybierz, kto wykonuje zadanie'}), 400
     specific_days = d.get('specificDays')
     if specific_days and not isinstance(specific_days, str):
         specific_days = ','.join(str(x) for x in specific_days)
