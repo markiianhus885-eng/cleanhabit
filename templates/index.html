@@ -2349,10 +2349,11 @@ function renderHome(d){
   const _AWAIT = _lang==='pl'?'czeka na akceptację':_lang==='uk'?'очікує підтвердження':'awaiting approval';
   const _pal = ['#E7F1FF','#FFF1D6','#E1F1FB','#EFE7FF','#DCF1E6','#FFE4EC'];
 
+  const _isAdmin = state.user?.role === 'admin';
   let questsHtml = '';
   (d.approvals||[]).forEach(ap=>{
     const tk=d.tasks.find(t=>t.id===ap.task_id), mbr=d.members.find(m=>m.id===ap.member_id);
-    questsHtml += `<div class="quest"><span class="quest-ic" style="background:#FFF1D6">⏳</span><div class="quest-main"><div class="quest-t">${esc(tk?.name||'?')}</div><div class="quest-sub">${mbr?.emoji||''} ${esc(mbr?.name||'')} · ${_AWAIT}</div></div><div style="display:flex;gap:8px;flex:none"><button class="btn btn-success btn-xs" onclick="handleApproval('${ap.id}',true)">✓</button><button class="btn btn-danger btn-xs" onclick="handleApproval('${ap.id}',false)">✕</button></div></div>`;
+    questsHtml += `<div class="quest"><span class="quest-ic" style="background:#FFF1D6">⏳</span><div class="quest-main"><div class="quest-t">${esc(tk?.name||'?')}</div><div class="quest-sub">${mbr?.emoji||''} ${esc(mbr?.name||'')} · ${_AWAIT}</div></div>${_isAdmin?`<div style="display:flex;gap:8px;flex:none"><button class="btn btn-success btn-xs" onclick="handleApproval('${ap.id}',true)">✓</button><button class="btn btn-danger btn-xs" onclick="handleApproval('${ap.id}',false)">✕</button></div>`:''}</div>`;
   });
   if(_qn===0 && doneTodayIds.length===0){
     questsHtml += `<div class="empty"><div class="ico">☀️</div><p>${t('home_no_tasks_add').replace('\n','<br>')}</p></div>`;
