@@ -2797,12 +2797,12 @@ function renderTasks(d){
           ${pendingAppr?`<span class="dot">·</span><span style="color:var(--yellow);font-weight:700">⏳ ${t('task_pending_approval')}</span>`:task.approval_needed?`<span class="dot">·</span><span style="color:var(--yellow)">🔒 ${t('task_acceptance')}</span>`:''}
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
         <span class="pts-pill">+${pts} ${t('points_abbr')}</span>
         <span class="coin-pill">🪙 +${pts}</span>
-        <button class="btn btn-ghost btn-xs" style="padding:3px 7px;font-size:11px;margin-top:2px"
+        <button class="btn btn-ghost btn-xs" style="padding:3px 7px;font-size:11px"
           onclick="showEditTask('${task.id}')">✏️</button>
-        <button class="btn btn-ghost btn-xs" style="color:var(--red);padding:3px 7px;font-size:11px;margin-top:2px"
+        <button class="btn btn-ghost btn-xs" style="color:var(--red);padding:3px 7px;font-size:11px"
           onclick="if(confirm(t('task_delete_confirm')))deleteTask('${task.id}')">✕</button>
       </div>
     </div>`;
