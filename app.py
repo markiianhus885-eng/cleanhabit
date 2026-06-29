@@ -826,6 +826,9 @@ def complete_task(tid):
     if not task: return jsonify({'error': 'not found'}), 404
     task = dict(task)
     u = current_user()
+    if task['assigned_to'] and not is_admin(hid):
+        if not u or u.get('member_id') != task['assigned_to']:
+            return jsonify({'error': 'Tylko przypisana osoba lub admin może wykonać to zadanie'}), 403
     member_id = data.get('memberId') or task['assigned_to'] or (u.get('member_id') if u else None)
     member = db.execute("SELECT * FROM members WHERE id=? AND household_id=?", [member_id, hid]).fetchone()
     if not member:

@@ -621,6 +621,8 @@ html.dark .tb-streak{color:#FF9A6B;background:rgba(255,122,61,.14);}
 .quest-coins{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:800;color:var(--text);flex:none;}
 .quest-chk{width:30px;height:30px;border-radius:50%;border:2px solid var(--track);flex:none;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .quest-chk.done{border:none;background:linear-gradient(135deg,#6D7BE6,#5159D6);}
+.quest-chk.locked{cursor:default;opacity:0.45;}
+.task-chk.locked{cursor:default;opacity:0.45;}
 .dash-card{background:var(--card);border-radius:22px;padding:20px;box-shadow:var(--card-shadow);border:1px solid var(--border);}
 .dash-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
 .dash-card-head h3{font-size:15.5px;font-weight:800;margin:0;}
@@ -2305,7 +2307,9 @@ function renderHome(d){
     .filter(h=>h.type==='missed' && new Date(h.completed_at)>new Date(Date.now()-86400000*2))
     .map(h=>h.task_id);
   const pendingApprovalIds = new Set((d.approvals||[]).map(a=>a.task_id));
-  const pending = dueTasks.filter(t=>!doneTodayIds.includes(t.id) && !pendingApprovalIds.has(t.id));
+  if(!state.questFilterMember) state.questFilterMember = state.user?.member_id || (d.members[0] && d.members[0].id) || null;
+  const _filterMember = state.questFilterMember;
+  const pending = dueTasks.filter(t=>!doneTodayIds.includes(t.id) && !pendingApprovalIds.has(t.id) && (!t.assigned_to || t.assigned_to===_filterMember));
   const effortToday = (d.history||[])
     .filter(h=>new Date(h.completed_at)>new Date(Date.now()-86400000))
     .reduce((a,h)=>a+h.pts,0);
@@ -2350,8 +2354,9 @@ function renderHome(d){
   const _pal = ['#E7F1FF','#FFF1D6','#E1F1FB','#EFE7FF','#DCF1E6','#FFE4EC'];
 
   const _isAdmin = state.user?.role === 'admin';
+  const _filterChips = (d.members||[]).map(m=>`<button class="chip${_filterMember===m.id?' on':''}" onclick="state.questFilterMember='${m.id}';renderHome(state.data)">${m.emoji||'🙂'} ${esc(m.name)}</button>`).join('');
   let questsHtml = '';
-  (d.approvals||[]).forEach(ap=>{
+  (d.approvals||[]).filter(ap=>ap.member_id===_filterMember).forEach(ap=>{
     const tk=d.tasks.find(t=>t.id===ap.task_id), mbr=d.members.find(m=>m.id===ap.member_id);
     questsHtml += `<div class="quest"><span class="quest-ic" style="background:#FFF1D6">⏳</span><div class="quest-main"><div class="quest-t">${esc(tk?.name||'?')}</div><div class="quest-sub">${mbr?.emoji||''} ${esc(mbr?.name||'')} · ${_AWAIT}</div></div>${_isAdmin?`<div style="display:flex;gap:8px;flex:none"><button class="btn btn-success btn-xs" onclick="handleApproval('${ap.id}',true)">✓</button><button class="btn btn-danger btn-xs" onclick="handleApproval('${ap.id}',false)">✕</button></div>`:''}</div>`;
   });
@@ -2362,9 +2367,10 @@ function renderHome(d){
     const room=d.rooms.find(r=>r.id===task.room_id), mbr=d.members.find(m=>m.id===task.assigned_to);
     const pts=DIFF_PTS[task.diff]||1, bg=_pal[i%_pal.length], ico=room?room.emoji:'🧹';
     const sub=`${room?esc(room.name):''}${room&&mbr?' · ':''}${mbr?_FORWORD+esc(mbr.name):''}` || fmtSchedule(task);
-    questsHtml += `<div class="quest" id="ti-${task.id}"><span class="quest-ic" style="background:${bg}">${ico}</span><div class="quest-main"><div class="quest-t">${esc(task.name)}</div><div class="quest-sub">${sub}</div></div><span class="quest-coins"><span class="coin" style="width:14px;height:14px"></span>${pts}</span><span class="quest-chk" onclick="handleCheck('${task.id}',this)"></span></div>`;
+    const _can = canCompleteTask(task);
+    questsHtml += `<div class="quest" id="ti-${task.id}"><span class="quest-ic" style="background:${bg}">${ico}</span><div class="quest-main"><div class="quest-t">${esc(task.name)}</div><div class="quest-sub">${sub}</div></div><span class="quest-coins"><span class="coin" style="width:14px;height:14px"></span>${pts}</span><span class="quest-chk${_can?'':' locked'}" onclick="${_can?`handleCheck('${task.id}',this)`:'void 0'}">${_can?'':'🔒'}</span></div>`;
   });
-  d.tasks.filter(t=>doneTodayIds.includes(t.id)).forEach((task,i)=>{
+  d.tasks.filter(t=>doneTodayIds.includes(t.id) && (!t.assigned_to || t.assigned_to===_filterMember)).forEach((task,i)=>{
     const room=d.rooms.find(r=>r.id===task.room_id), mbr=d.members.find(m=>m.id===task.assigned_to);
     const pts=DIFF_PTS[task.diff]||1, bg=_pal[i%_pal.length], ico=room?room.emoji:'✅';
     questsHtml += `<div class="quest done"><span class="quest-ic" style="background:${bg}">${ico}</span><div class="quest-main"><div class="quest-t">${esc(task.name)}</div><div class="quest-sub">${room?esc(room.name):''}${room&&mbr?' · ':''}${mbr?esc(mbr.name):''}</div></div><span class="quest-coins"><span class="coin" style="width:14px;height:14px"></span>${pts}</span><span class="quest-chk done"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span></div>`;
@@ -2405,6 +2411,7 @@ function renderHome(d){
     <div class="dash-split">
       <div class="dash-main">
         <div class="dash-secthead"><h2>${_QUESTS_H}</h2><span onclick="setTab('tasks')">${_VIEWALL}</span></div>
+        <div class="chips" style="margin:0 0 14px">${_filterChips}</div>
         <div class="quests">${questsHtml}</div>
       </div>
       <div class="dash-aside">${asideHtml}</div>
@@ -2757,11 +2764,12 @@ function renderTasks(d){
     const pendingAppr = pendingApprovalIds.has(task.id);
     const due  = isDue(task);
     const pts  = DIFF_PTS[task.diff]||1;
+    const canDo = canCompleteTask(task);
     html += `
     <div class="task-item${done?' done':''}" id="ti-${task.id}">
-      <div class="task-chk${done?' done':pendingAppr?' pending':due?' due':''}"
-        onclick="${!done&&!pendingAppr?`handleCheck('${task.id}',this)`:'void 0'}">
-        ${done?'<span style="color:#fff;font-size:14px">✓</span>':pendingAppr?'<span style="font-size:13px">⏳</span>':due?'<span style="font-size:10px;color:var(--orange)">!</span>':'<span style="font-size:10px;color:var(--muted2)">○</span>'}
+      <div class="task-chk${done?' done':pendingAppr?' pending':due?' due':''}${!done&&!pendingAppr&&!canDo?' locked':''}"
+        onclick="${!done&&!pendingAppr&&canDo?`handleCheck('${task.id}',this)`:'void 0'}">
+        ${done?'<span style="color:#fff;font-size:14px">✓</span>':pendingAppr?'<span style="font-size:13px">⏳</span>':!canDo?'<span style="font-size:11px">🔒</span>':due?'<span style="font-size:10px;color:var(--orange)">!</span>':'<span style="font-size:10px;color:var(--muted2)">○</span>'}
       </div>
       <div style="flex:1;min-width:0">
         <div class="task-name" style="text-decoration:${done?'line-through':'none'}">${esc(task.name)}</div>
@@ -3023,7 +3031,14 @@ async function deleteTask(id){
   await DEL(`/api/tasks/${id}`);
   await loadData();
 }
+function canCompleteTask(task){
+  if(state.user?.role==='admin') return true;
+  if(!task.assigned_to) return true;
+  return task.assigned_to === state.user?.member_id;
+}
 function handleCheck(taskId, el){
+  const task = state.data.tasks.find(t=>t.id===taskId);
+  if(task && !canCompleteTask(task)) return;
   el.innerHTML='<span style="color:#fff;font-size:14px">✓</span>';
   el.classList.add('done');
   completeTask(taskId, el);
