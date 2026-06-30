@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
 <title>CleanHabit</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <link rel="manifest" href="/static/manifest.json"/>
 <meta name="theme-color" content="#6D7BE6"/>
 <meta name="mobile-web-app-capable" content="yes"/>
@@ -800,6 +801,40 @@ html.dark .tb-streak{color:#FF9A6B;background:rgba(255,122,61,.14);}
         padding:14px;border-radius:14px;border:none;cursor:pointer;font-weight:800;font-size:15px;
         background:linear-gradient(135deg,var(--bluedark),var(--blue2));color:#fff;
       " id="auth-btn">Zaloguj się</button>
+
+      <div style="display:flex;align-items:center;gap:10px;margin:14px 0 2px">
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+        <span style="font-size:12px;color:var(--muted2)">lub</span>
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+      </div>
+      <div id="google-signin-btn" style="display:flex;justify-content:center"></div>
+
+      <!-- shown only after Google sign-in for a brand-new email; lets the
+           user pick create-household vs join-household before the account
+           actually gets created (mirrors the normal register tabs) -->
+      <div id="google-setup-wrap" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <div style="font-size:12px;color:var(--muted2);margin-bottom:10px" id="google-setup-email"></div>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <button onclick="setGoogleSetupAction('create')" id="gs-tab-create" style="flex:1;padding:10px 8px;border-radius:12px;border:2px solid var(--blue);background:rgba(109,123,230,0.1);color:var(--blue2);font-weight:700;font-size:12px;cursor:pointer">🏠 Stwórz dom</button>
+          <button onclick="setGoogleSetupAction('join')" id="gs-tab-join" style="flex:1;padding:10px 8px;border-radius:12px;border:2px solid var(--border);background:transparent;color:var(--muted2);font-weight:700;font-size:12px;cursor:pointer">🔑 Dołącz</button>
+        </div>
+        <div id="gs-create-wrap">
+          <input class="inp" id="gs-displayname" placeholder="Twoje imię" style="margin-bottom:10px"/>
+          <input class="inp" id="gs-hname" placeholder="Nazwa rodziny (np. Kowalski Family)"/>
+        </div>
+        <div id="gs-join-wrap" style="display:none">
+          <input class="inp" id="gs-token" placeholder="KOD RODZINY" maxlength="6"
+            oninput="this.value=this.value.toUpperCase();onGsTokenInput(this.value)"
+            style="text-transform:uppercase;letter-spacing:5px;font-size:18px;font-weight:900;text-align:center;margin-bottom:10px"/>
+          <div id="gs-member-wrap" style="display:none">
+            <div style="font-size:12px;color:var(--muted2);margin-bottom:8px;font-weight:700">Kim jesteś w tej rodzinie?</div>
+            <div id="gs-member-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px"></div>
+            <input type="hidden" id="gs-member" value=""/>
+          </div>
+        </div>
+        <div id="google-setup-err" style="display:none;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:10px 14px;color:var(--red);font-size:13px;margin-bottom:10px"></div>
+        <button onclick="completeGoogleSetup()" style="width:100%;padding:13px;border-radius:14px;border:none;cursor:pointer;font-weight:800;font-size:14px;background:linear-gradient(135deg,var(--bluedark),var(--blue2));color:#fff">Dołącz do CleanHabit</button>
+      </div>
     </div>
 
     <!-- Forgot password link (login mode only) -->
@@ -1812,6 +1847,8 @@ function showAuthTab(mode){
   $('auth-emoji-wrap').style.display = 'none';
   $('auth-btn').textContent = mode==='login' ? 'Zaloguj się' : 'Zarejestruj się';
   $('auth-error').style.display = 'none';
+  $('google-setup-wrap').style.display = 'none';
+  _googleIdToken = null;
   if(mode==='register') { householdAction='create'; setHouseholdAction('create'); }
   applyAuthIdentifierField();
 }
@@ -2015,6 +2052,111 @@ async function checkAuth(){
     $('bnav').style.display = 'none';
   }
 }
+// ─── GOOGLE SIGN-IN ───────────────────────────────────────────
+const GOOGLE_WEB_CLIENT_ID = '957970436165-nddupot9otscvlm15ual30fagrkfaj5b.apps.googleusercontent.com';
+let _googleIdToken = null;
+let _gsAction = 'create';
+let _gsTokenTimer = null;
+
+function initGoogleSignIn(){
+  if(!window.google || !google.accounts || !google.accounts.id) { setTimeout(initGoogleSignIn, 300); return; }
+  google.accounts.id.initialize({
+    client_id: GOOGLE_WEB_CLIENT_ID,
+    callback: handleGoogleCredential,
+  });
+  google.accounts.id.renderButton($('google-signin-btn'), {
+    theme: 'outline', size: 'large', width: 320, text: 'continue_with',
+  });
+}
+
+async function handleGoogleCredential(response){
+  _googleIdToken = response.credential;
+  const res = await POST('/api/auth/google', {id_token: _googleIdToken});
+  if(res.error){
+    $('auth-error').style.display = 'block';
+    $('auth-error').textContent = res.error;
+    return;
+  }
+  if(res.needs_setup){
+    $('google-setup-wrap').style.display = 'block';
+    $('google-setup-email').textContent = `Konto Google: ${res.email}`;
+    if(res.suggested_name) $('gs-displayname').value = res.suggested_name;
+    $('google-setup-wrap').scrollIntoView({behavior:'smooth', block:'nearest'});
+    return;
+  }
+  await _finishAuth(res);
+}
+
+function setGoogleSetupAction(action){
+  _gsAction = action;
+  $('gs-tab-create').style.background = action==='create' ? 'rgba(109,123,230,0.1)' : 'transparent';
+  $('gs-tab-create').style.borderColor = action==='create' ? 'var(--blue)' : 'var(--border)';
+  $('gs-tab-create').style.color = action==='create' ? 'var(--blue2)' : 'var(--muted2)';
+  $('gs-tab-join').style.background = action==='join' ? 'rgba(109,123,230,0.1)' : 'transparent';
+  $('gs-tab-join').style.borderColor = action==='join' ? 'var(--blue)' : 'var(--border)';
+  $('gs-tab-join').style.color = action==='join' ? 'var(--blue2)' : 'var(--muted2)';
+  $('gs-create-wrap').style.display = action==='create' ? 'block' : 'none';
+  $('gs-join-wrap').style.display = action==='join' ? 'block' : 'none';
+}
+
+function onGsTokenInput(val){
+  clearTimeout(_gsTokenTimer);
+  $('gs-member-wrap').style.display = 'none';
+  if(val.length < 6) return;
+  _gsTokenTimer = setTimeout(()=>lookupGsToken(val), 400);
+}
+
+async function lookupGsToken(token){
+  const res = await fetch(`/api/household/lookup?token=${token}`).then(r=>r.json());
+  const errEl = $('google-setup-err');
+  if(res.error){
+    errEl.style.display = 'block'; errEl.textContent = res.error;
+    return;
+  }
+  errEl.style.display = 'none';
+  const members = res.members || [];
+  const grid = $('gs-member-grid');
+  grid.innerHTML = members.map(m=>`
+    <button type="button" onclick="selectGsMember('${m.id}',this)" style="
+      padding:10px 6px;border-radius:12px;border:2px solid var(--border);
+      background:var(--bg3);cursor:pointer;
+      display:flex;flex-direction:column;align-items:center;gap:4px;">
+      <span style="font-size:28px">${m.emoji}</span>
+      <span style="font-size:11px;font-weight:700;color:var(--text2)">${esc(m.name)}</span>
+    </button>`).join('');
+  $('gs-member-wrap').style.display = 'block';
+}
+
+function selectGsMember(id, btn){
+  $('gs-member').value = id;
+  $('gs-member-grid').querySelectorAll('button').forEach(b=>{
+    b.style.borderColor = 'var(--border)';
+    b.style.background  = 'var(--bg3)';
+  });
+  btn.style.borderColor = 'var(--blue)';
+  btn.style.background  = 'rgba(109,123,230,0.15)';
+}
+
+async function completeGoogleSetup(){
+  const errEl = $('google-setup-err');
+  errEl.style.display = 'none';
+  const body = {id_token: _googleIdToken, action: _gsAction};
+  if(_gsAction === 'join'){
+    const tok = $('gs-token').value.trim().toUpperCase();
+    if(tok.length < 6){ errEl.style.display='block'; errEl.textContent='Wpisz 6-znakowy kod rodziny'; return; }
+    const mid = $('gs-member').value;
+    if(!mid){ errEl.style.display='block'; errEl.textContent='Wybierz, kim jesteś w rodzinie'; return; }
+    body.token = tok;
+    body.member_id = mid;
+  } else {
+    body.household_name = $('gs-hname').value.trim() || 'Moja Rodzina';
+    body.display_name = $('gs-displayname').value.trim();
+  }
+  const res = await POST('/api/auth/google', body);
+  if(res.error){ errEl.style.display='block'; errEl.textContent=res.error; return; }
+  await _finishAuth(res);
+}
+
 function togglePwVisibility(id, btn){
   const el = $(id);
   if(!el) return;
@@ -4455,6 +4597,7 @@ const _origCompleteTask = window.completeTask;
 $('bnav').style.display = 'none';
 applyStaticLang();
 checkAuth();
+initGoogleSignIn();
 </script>
 </body>
 </html>

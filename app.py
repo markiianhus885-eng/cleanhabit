@@ -11,6 +11,8 @@ from datetime import datetime, timedelta, date
 from flask import Flask, jsonify, request, g, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.middleware.proxy_fix import ProxyFix
+from google.oauth2 import id_token as google_id_token
+from google.auth.transport import requests as google_requests
 import os
 
 app = Flask(__name__)
@@ -206,6 +208,14 @@ def verify_pw(stored, pw):
 
 def gen_token():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+# Google Sign-In: both the web (Google Identity Services) and Android
+# (google_sign_in with serverClientId set to this same value) issue ID
+# tokens audienced for the *web* OAuth client, so this is the only client
+# ID the backend needs to verify against.
+GOOGLE_WEB_CLIENT_ID = os.environ.get(
+    'GOOGLE_WEB_CLIENT_ID',
+    '957970436165-nddupot9otscvlm15ual30fagrkfaj5b.apps.googleusercontent.com')
 
 MAIL_FROM    = os.environ.get('MAIL_FROM',    'cleanhabit@myroapp.org')
 MAIL_USER    = os.environ.get('MAIL_USER',    'markiianhus885@gmail.com')
@@ -718,6 +728,80 @@ def auth_verify_email():
         return err
     db.execute("DELETE FROM email_verifications WHERE email=?", [email])
     db.commit()
+    user, household = result
+    return jsonify({'ok': True, 'user': user, 'household': household})
+
+@app.route('/api/auth/google', methods=['POST'])
+@limiter.limit('20 per hour')
+def auth_google():
+    """Sign in (or register) with Google.
+
+    Single endpoint, two passes — mirrors the email-code flow but Google has
+    already proven the email, so there's no separate verification step:
+      1. Client sends just {id_token}. If a user with that email already
+         exists, log them straight in. Otherwise respond with
+         {needs_setup: true, email, suggested_name} so the client can show
+         the same create/join household form used for normal registration.
+      2. Client re-sends {id_token, action, ...household/join fields...}.
+         The id_token is re-verified (cheap, and avoids a server-side
+         pending-signup table) and the account is created via the same
+         _create_account() helper email-verification uses.
+    """
+    d = request.get_json(silent=True) or {}
+    raw_token = d.get('id_token', '').strip()
+    if not raw_token:
+        return jsonify({'error': 'Brak tokenu Google'}), 400
+    try:
+        info = google_id_token.verify_oauth2_token(
+            raw_token, google_requests.Request(), GOOGLE_WEB_CLIENT_ID)
+    except ValueError:
+        return jsonify({'error': 'Nieprawidłowy token Google'}), 400
+    if not info.get('email_verified'):
+        return jsonify({'error': 'Adres email z konta Google nie jest zweryfikowany'}), 400
+    email = info['email'].strip().lower()
+    name = (info.get('name') or info.get('given_name') or '').strip()
+
+    db = get_db()
+    existing = db.execute("SELECT * FROM users WHERE email=?", [email]).fetchone()
+    if existing:
+        session['user_id'] = existing['id']
+        user = dict(db.execute(
+            "SELECT id,username,household_id,member_id,role FROM users WHERE id=?",
+            [existing['id']]).fetchone())
+        household = dict(db.execute(
+            "SELECT * FROM households WHERE id=?", [existing['household_id']]).fetchone())
+        return jsonify({'ok': True, 'user': user, 'household': household})
+
+    action = d.get('action')
+    if not action:
+        return jsonify({'ok': True, 'needs_setup': True, 'email': email, 'suggested_name': name})
+
+    if action == 'join':
+        member_id = d.get('member_id', '').strip()
+        if not member_id:
+            return jsonify({'error': 'Wybierz swojego domownika z listy'}), 400
+        token = d.get('token', '').strip().upper()
+    else:
+        token = ''
+        member_id = ''
+
+    payload = {
+        # Google users sign in via Google, not a password — store an
+        # unusable random hash so the NOT NULL column is satisfied; they
+        # can set a real password later via "forgot password" if they ever
+        # want a fallback login method.
+        'password_hash': make_pw(secrets.token_hex(32)),
+        'email': email,
+        'display_name': d.get('display_name', '').strip() or name,
+        'action': action,
+        'token': token,
+        'household_name': d.get('household_name', 'Moja Rodzina').strip(),
+        'emoji': d.get('emoji', '').strip(),
+        'member_id': member_id,
+    }
+    result, err = _create_account(db, payload)
+    if err:
+        return err
     user, household = result
     return jsonify({'ok': True, 'user': user, 'household': household})
 
