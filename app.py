@@ -513,6 +513,36 @@ h1{color:#6d7be6}h2{color:#444;margin-top:32px}a{color:#6d7be6}</style></head>
 <p>Aplikacja zawiera opcjonalną funkcję asystenta głosowego, która prosi o dostęp do mikrofonu wyłącznie wtedy, gdy sam ją uruchomisz (np. dotykając ikony mikrofonu). Twoja wypowiedź jest zamieniana na tekst przez wbudowany w system Android mechanizm rozpoznawania mowy — surowe nagranie audio nie jest wysyłane na nasze serwery. Powstały tekst (transkrypcja) jest następnie przesyłany do naszego serwera, a stamtąd do API Claude (Anthropic), aby rozpoznać Twoje polecenie (np. „dodaj zadanie odkurzanie") i wykonać odpowiednią akcję w aplikacji. Transkrypcje nie są wykorzystywane do trenowania modeli AI ani do celów marketingowych. Możesz w każdej chwili cofnąć aplikacji dostęp do mikrofonu w ustawieniach systemu Android — funkcja asystenta głosowego przestanie wtedy działać, reszta aplikacji pozostanie w pełni funkcjonalna.</p>
 </body></html>''', 200, {'Content-Type': 'text/html; charset=utf-8'}
 
+@app.route('/delete-account')
+def delete_account():
+    return '''<!DOCTYPE html><html lang="pl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Usunięcie konta — CleanHabit</title>
+<style>body{font-family:sans-serif;max-width:680px;margin:40px auto;padding:0 20px;color:#333;line-height:1.7}
+h1{color:#6d7be6}h2{color:#444;margin-top:32px}a{color:#6d7be6}
+.box{background:#f0f0ff;border:2px solid #6d7be6;border-radius:16px;padding:20px;margin:20px 0}</style></head>
+<body>
+<h1>🏠 Usunięcie konta — CleanHabit</h1>
+<p>Ta strona opisuje, jak trwale usunąć swoje konto i powiązane z nim dane w aplikacji <strong>CleanHabit</strong> (wydawca: właściciel aplikacji CleanHabit).</p>
+<h2>Jak złożyć wniosek o usunięcie konta</h2>
+<div class="box">
+<ol>
+  <li>Wyślij wiadomość e-mail na adres <a href="mailto:cleanhabit@myroapp.org?subject=Usuni%C4%99cie%20konta">cleanhabit@myroapp.org</a> z tematem <strong>„Usunięcie konta"</strong>.</li>
+  <li>W treści podaj adres e-mail, którym logujesz się do aplikacji CleanHabit.</li>
+  <li>Twoje konto i powiązane dane zostaną usunięte w ciągu <strong>14 dni</strong> od otrzymania wniosku, a my potwierdzimy to mailowo.</li>
+</ol>
+</div>
+<h2>Jakie dane zostaną usunięte</h2>
+<ul>
+  <li>Konto (nazwa użytkownika, adres email, hasło)</li>
+  <li>Profil domownika przypisany do konta (imię, emoji, punkty, monety, odznaki)</li>
+  <li>Historia ukończonych zadań powiązana z tym domownikiem</li>
+</ul>
+<h2>Jakie dane mogą zostać zachowane</h2>
+<p>Jeśli usuwane konto jest jedynym kontem administratora w danym gospodarstwie domowym, pozostałe wspólne dane gospodarstwa (lista pokoi, definicje zadań współdzielone z innymi domownikami) mogą pozostać aktywne dla pozostałych członków rodziny — usuwane są wyłącznie dane powiązane bezpośrednio z Twoim kontem i Twoim profilem. Nie przechowujemy kopii zapasowych dłużej niż 30 dni od usunięcia.</p>
+<p>Szczegóły dotyczące przetwarzania danych znajdziesz w <a href="/privacy">polityce prywatności</a>.</p>
+</body></html>''', 200, {'Content-Type': 'text/html; charset=utf-8'}
+
 @app.route('/.well-known/assetlinks.json')
 def assetlinks():
     from flask import send_from_directory
