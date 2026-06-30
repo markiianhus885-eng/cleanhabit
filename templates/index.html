@@ -2007,19 +2007,17 @@ async function checkAuth(){
   }
 }
 async function logout(){
+  // Race the API call against a timeout so a stuck/slow request can never
+  // leave the UI spinning forever, then hard-reload — checkAuth() on load
+  // reliably lands on the login screen once the session cookie is gone,
+  // which is more bulletproof than trying to hand-toggle SPA state here.
   try {
-    await POST('/api/auth/logout', {});
-  } catch (e) {
-    // The session may already be gone server-side even if this request
-    // failed (flaky network, etc) — don't let it strand the UI on the
-    // logged-in screen forever.
-  }
-  state.user = null;
-  state.household = null;
-  state.data = null;
-  $('screen-auth').style.display = 'flex';
-  $('bnav').style.display = 'none';
-  showAuthTab('login');
+    await Promise.race([
+      POST('/api/auth/logout', {}),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000)),
+    ]);
+  } catch (e) {}
+  window.location.href = '/';
 }
 
 // ─── NOTIFICATIONS ────────────────────────────────────────────
@@ -2454,7 +2452,7 @@ function renderHome(d){
   const dueTasks    = d.tasks.filter(isDue);
   const expiredTasks= d.tasks.filter(t => isExpired(t) && !isDue(t));
   const doneTodayIds = (d.history||[])
-    .filter(h=>new Date(h.completed_at)>new Date(Date.now()-86400000))
+    .filter(h=>h.type!=='missed' && new Date(h.completed_at)>new Date(Date.now()-86400000))
     .map(h=>h.task_id);
   const missedTodayIds = (d.history||[])
     .filter(h=>h.type==='missed' && new Date(h.completed_at)>new Date(Date.now()-86400000*2))
@@ -2724,7 +2722,7 @@ function renderHome(d){
 // ═══════════════════════════════════════════
 function renderRooms(d){
   const doneTodayIds = (d.history||[])
-    .filter(h=>new Date(h.completed_at)>new Date(Date.now()-86400000))
+    .filter(h=>h.type!=='missed' && new Date(h.completed_at)>new Date(Date.now()-86400000))
     .map(h=>h.task_id);
 
   let html = `
@@ -2781,7 +2779,7 @@ async function openRoomDetail(roomId){
   const stats = await GET(`/api/rooms/${roomId}/stats`);
   const roomTasks = d.tasks.filter(t=>t.room_id===roomId);
   const doneTodayIds = (d.history||[])
-    .filter(h=>new Date(h.completed_at)>new Date(Date.now()-86400000))
+    .filter(h=>h.type!=='missed' && new Date(h.completed_at)>new Date(Date.now()-86400000))
     .map(h=>h.task_id);
   const col = cleanColor(room.cleanliness);
 
@@ -2905,7 +2903,7 @@ async function deleteRoom(id){
 // ═══════════════════════════════════════════
 function renderTasks(d){
   const doneTodayIds = (d.history||[])
-    .filter(h=>new Date(h.completed_at)>new Date(Date.now()-86400000))
+    .filter(h=>h.type!=='missed' && new Date(h.completed_at)>new Date(Date.now()-86400000))
     .map(h=>h.task_id);
   const pendingApprovalIds = new Set((d.approvals||[]).map(a=>a.task_id));
 
