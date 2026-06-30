@@ -489,25 +489,28 @@ def privacy():
 h1{color:#6d7be6}h2{color:#444;margin-top:32px}a{color:#6d7be6}</style></head>
 <body>
 <h1>🏠 Polityka prywatności CleanHabit</h1>
-<p>Ostatnia aktualizacja: 2026-06-23</p>
+<p>Ostatnia aktualizacja: 2026-06-30</p>
 <h2>1. Administrator danych</h2>
 <p>Administratorem danych osobowych jest właściciel aplikacji CleanHabit. Kontakt: <a href="mailto:cleanhabit@myroapp.org">cleanhabit@myroapp.org</a></p>
 <h2>2. Jakie dane zbieramy</h2>
 <ul>
   <li>Nazwa użytkownika</li>
-  <li>Adres email (do resetowania hasła)</li>
+  <li>Adres email (do logowania, resetowania hasła i weryfikacji konta)</li>
   <li>Dane o aktywności w aplikacji (ukończone zadania, punkty)</li>
+  <li>Nagranie głosowe i jego transkrypcja tekstowa — wyłącznie gdy dobrowolnie skorzystasz z funkcji asystenta głosowego (zob. pkt 8)</li>
 </ul>
 <h2>3. Cel przetwarzania danych</h2>
 <p>Dane przetwarzamy wyłącznie w celu świadczenia usługi — zarządzania gospodarstwem domowym w ramach aplikacji CleanHabit.</p>
 <h2>4. Podstawa prawna</h2>
 <p>Przetwarzanie opiera się na zgodzie użytkownika (art. 6 ust. 1 lit. a RODO), wyrażonej podczas rejestracji.</p>
-<h2>5. Przechowywanie danych</h2>
-<p>Dane przechowywane są na prywatnym serwerze w Polsce. Nie udostępniamy danych podmiotom trzecim.</p>
+<h2>5. Przechowywanie danych i podmioty przetwarzające</h2>
+<p>Dane przechowywane są na prywatnym serwerze w Polsce. Nie sprzedajemy ani nie udostępniamy danych w celach marketingowych. Transkrypcje poleceń głosowych (zob. pkt 8) są przesyłane do Anthropic PBC (dostawcy modelu AI Claude, USA) wyłącznie w celu rozpoznania polecenia — Anthropic pełni rolę podmiotu przetwarzającego dane na nasze zlecenie.</p>
 <h2>6. Prawa użytkownika</h2>
 <p>Masz prawo do dostępu, sprostowania, usunięcia oraz przenoszenia swoich danych. Aby je wykonać, skontaktuj się z nami mailowo.</p>
 <h2>7. Pliki cookies</h2>
 <p>Aplikacja używa wyłącznie niezbędnych plików cookie do utrzymania sesji logowania.</p>
+<h2>8. Mikrofon i asystent głosowy (AI)</h2>
+<p>Aplikacja zawiera opcjonalną funkcję asystenta głosowego, która prosi o dostęp do mikrofonu wyłącznie wtedy, gdy sam ją uruchomisz (np. dotykając ikony mikrofonu). Twoja wypowiedź jest zamieniana na tekst przez wbudowany w system Android mechanizm rozpoznawania mowy — surowe nagranie audio nie jest wysyłane na nasze serwery. Powstały tekst (transkrypcja) jest następnie przesyłany do naszego serwera, a stamtąd do API Claude (Anthropic), aby rozpoznać Twoje polecenie (np. „dodaj zadanie odkurzanie") i wykonać odpowiednią akcję w aplikacji. Transkrypcje nie są wykorzystywane do trenowania modeli AI ani do celów marketingowych. Możesz w każdej chwili cofnąć aplikacji dostęp do mikrofonu w ustawieniach systemu Android — funkcja asystenta głosowego przestanie wtedy działać, reszta aplikacji pozostanie w pełni funkcjonalna.</p>
 </body></html>''', 200, {'Content-Type': 'text/html; charset=utf-8'}
 
 @app.route('/.well-known/assetlinks.json')
