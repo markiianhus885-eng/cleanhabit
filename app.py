@@ -905,7 +905,7 @@ def room_stats(rid):
 
     today = datetime.now().strftime('%Y-%m-%d')
     done_today_ids = {r['task_id'] for r in db.execute(
-        "SELECT task_id FROM history WHERE household_id=? AND completed_at LIKE ?",
+        "SELECT task_id FROM history WHERE household_id=? AND completed_at LIKE ? AND (type='done' OR type IS NULL)",
         [hid, f'{today}%'])}
 
     quests = []
@@ -1295,12 +1295,16 @@ def calendar_view():
     members = {r['id']: dict(r) for r in db.execute("SELECT * FROM members WHERE household_id=?", [hid])}
     rooms   = {r['id']: dict(r) for r in db.execute("SELECT * FROM rooms WHERE household_id=?", [hid])}
     history = [dict(r) for r in db.execute(
-        "SELECT task_id, completed_at FROM history WHERE household_id=? AND completed_at LIKE ?",
+        "SELECT task_id, completed_at, type FROM history WHERE household_id=? AND completed_at LIKE ?",
         [hid, f'{year}-{month:02d}%'])]
     done_dates = {}
+    missed_dates = {}
     for h in history:
         d = h['completed_at'][:10]
-        done_dates.setdefault(d, set()).add(h['task_id'])
+        if h['type'] == 'missed':
+            missed_dates.setdefault(d, set()).add(h['task_id'])
+        else:
+            done_dates.setdefault(d, set()).add(h['task_id'])
 
     # Full completion history (not just this month) is needed to know, for any
     # given day, which cycle the task is on - both real completions and
@@ -1327,6 +1331,14 @@ def calendar_view():
             member = members.get(t['assigned_to'], {})
             room   = rooms.get(t['room_id'], {})
             anchors_before = [a for a in all_anchors.get(t['id'], []) if a <= day.date()]
+
+            # "Skip only this occurrence" (expire_task with a target date)
+            # lands its anchor exactly on the skipped day, which would
+            # otherwise still satisfy the cycle-day check below (diff=0).
+            # Hide the task from that specific day entirely instead of
+            # showing it as done — it was skipped, not completed.
+            if not t.get('one_time') and t['id'] in missed_dates.get(day_iso, set()):
+                continue
 
             if t.get('one_time'):
                 # One-time tasks have no recurrence at all: show only on the day
