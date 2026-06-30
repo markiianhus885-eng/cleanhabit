@@ -2007,7 +2007,13 @@ async function checkAuth(){
   }
 }
 async function logout(){
-  await POST('/api/auth/logout', {});
+  try {
+    await POST('/api/auth/logout', {});
+  } catch (e) {
+    // The session may already be gone server-side even if this request
+    // failed (flaky network, etc) — don't let it strand the UI on the
+    // logged-in screen forever.
+  }
   state.user = null;
   state.household = null;
   state.data = null;
@@ -2204,7 +2210,7 @@ function calDayClick(iso){
       ">
         <span style="width:3px;height:32px;border-radius:2px;background:${DIFF_COLOR[t.diff]||'var(--blue)'};flex-shrink:0"></span>
         <div class="${chkCls}" style="width:26px;height:26px"
-          onclick="${canDo?`calCompleteTask('${t.id}','${iso}',this)`:'void 0'}">${chkIcon}</div>
+          onclick="${t.done&&isToday?`calUncompleteTask('${t.id}','${iso}')`:canDo?`calCompleteTask('${t.id}','${iso}',this)`:'void 0'}">${chkIcon}</div>
         <div style="flex:1">
           <div style="font-size:13px;font-weight:700;color:${t.done?'var(--muted2)':'var(--text)'}">${t.done?'✅ ':''} ${esc(t.name)}</div>
           <div style="font-size:11px;color:var(--muted2);margin-top:2px">${t.member_emoji} ${esc(t.member_name)} · 🏠 ${esc(t.room_name)}</div>
@@ -2233,6 +2239,16 @@ async function calCompleteTask(taskId, iso, el){
   calDayClick(iso);
 }
 
+async function calUncompleteTask(taskId, iso){
+  const L=(pl,en,uk)=>_lang==='pl'?pl:_lang==='uk'?uk:en;
+  if(!confirm(L('Cofnąć ukończenie tego zadania?','Undo completing this task?','Скасувати виконання цього завдання?'))) return;
+  const res = await POST(`/api/tasks/${taskId}/uncomplete`, {});
+  if(res.error){ alert(res.error); return; }
+  await loadData();
+  await renderCalendar();
+  calDayClick(iso);
+}
+
 function calDeleteTask(taskId, iso){
   const full = state.data.tasks.find(x=>x.id===taskId);
   if(!full) return;
@@ -2253,7 +2269,7 @@ function calDeleteTask(taskId, iso){
 }
 
 async function calSkipOccurrence(taskId, iso){
-  await POST(`/api/tasks/${taskId}/expire`, {});
+  await POST(`/api/tasks/${taskId}/expire`, {date: iso});
   closeModal();
   await loadData();
   await renderCalendar();
@@ -2510,7 +2526,7 @@ function renderHome(d){
   d.tasks.filter(t=>doneTodayIds.includes(t.id) && (!t.assigned_to || t.assigned_to===_filterMember)).forEach((task,i)=>{
     const room=d.rooms.find(r=>r.id===task.room_id), mbr=d.members.find(m=>m.id===task.assigned_to);
     const pts=DIFF_PTS[task.diff]||1, bg=_pal[i%_pal.length], ico=room?room.emoji:'✅';
-    questsHtml += `<div class="quest done"><span class="quest-ic" style="background:${bg}">${ico}</span><div class="quest-main"><div class="quest-t">${esc(task.name)}</div><div class="quest-sub">${room?esc(room.name):''}${room&&mbr?' · ':''}${mbr?esc(mbr.name):''}</div></div><span class="quest-coins"><span class="coin" style="width:14px;height:14px"></span>${pts}</span><span class="quest-chk done"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span></div>`;
+    questsHtml += `<div class="quest done"><span class="quest-ic" style="background:${bg}">${ico}</span><div class="quest-main"><div class="quest-t">${esc(task.name)}</div><div class="quest-sub">${room?esc(room.name):''}${room&&mbr?' · ':''}${mbr?esc(mbr.name):''}</div></div><span class="quest-coins"><span class="coin" style="width:14px;height:14px"></span>${pts}</span><span class="quest-chk done" onclick="uncompleteTask('${task.id}')"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span></div>`;
   });
 
   const _top3=[...d.members].sort((a,b)=>b.points-a.points).slice(0,3);
@@ -2778,7 +2794,7 @@ async function openRoomDetail(roomId){
         return `
         <div style="display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--border)">
           <div class="task-chk ${done?'done':due?'due':''}" style="width:26px;height:26px"
-            onclick="${!done?`handleCheck('${t.id}',this);setTimeout(()=>openRoomDetail('${roomId}'),500)`:'void 0'}">
+            onclick="${done?`uncompleteTask('${t.id}').then(()=>openRoomDetail('${roomId}'))`:`handleCheck('${t.id}',this);setTimeout(()=>openRoomDetail('${roomId}'),500)`}">
             ${done?`<span style="color:#fff;font-size:13px">✓</span>`:due?`<span style="font-size:11px;color:var(--orange)">!</span>`:'<span style="font-size:10px;color:var(--muted2)">○</span>'}
           </div>
           <div style="flex:1;min-width:0">
@@ -2945,7 +2961,7 @@ function renderTasks(d){
     html += `
     <div class="task-item${done?' done':''}" id="ti-${task.id}">
       <div class="task-chk${done?' done':pendingAppr?' pending':due?' due':''}${!done&&!pendingAppr&&!canDo?' locked':''}"
-        onclick="${!done&&!pendingAppr&&canDo?`handleCheck('${task.id}',this)`:'void 0'}">
+        onclick="${done?`uncompleteTask('${task.id}')`:!pendingAppr&&canDo?`handleCheck('${task.id}',this)`:'void 0'}">
         ${done?'<span style="color:#fff;font-size:14px">✓</span>':pendingAppr?'<span style="font-size:13px">⏳</span>':!canDo?'<span style="font-size:11px">🔒</span>':due?'<span style="font-size:10px;color:var(--orange)">!</span>':'<span style="font-size:10px;color:var(--muted2)">○</span>'}
       </div>
       <div style="flex:1;min-width:0">
@@ -3238,6 +3254,13 @@ function handleCheck(taskId, el){
   el.innerHTML='<span style="color:#fff;font-size:14px">✓</span>';
   el.classList.add('done');
   completeTask(taskId, el);
+}
+async function uncompleteTask(taskId){
+  const L=(pl,en,uk)=>_lang==='pl'?pl:_lang==='uk'?uk:en;
+  if(!confirm(L('Cofnąć ukończenie tego zadania?','Undo completing this task?','Скасувати виконання цього завдання?'))) return;
+  const res = await POST(`/api/tasks/${taskId}/uncomplete`, {});
+  if(res.error){ alert(res.error); return; }
+  await loadData();
 }
 
 // ═══════════════════════════════════════════

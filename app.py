@@ -7,7 +7,7 @@ import secrets
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from flask import Flask, jsonify, request, g, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -540,7 +540,6 @@ def _create_account(db, payload):
     'join'). Mirrors what auth_register used to do inline before email
     verification was inserted in front of it."""
     import re as _re
-    password     = payload['password']
     email        = payload['email']
     display_name = payload['display_name']
     action       = payload['action']
@@ -996,14 +995,29 @@ def edit_task(tid):
 
 @app.route('/api/tasks/<tid>/expire', methods=['POST'])
 def expire_task(tid):
-    """Mark a task as missed/expired — advance cycle without awarding points."""
+    """Mark a task as missed/expired — advance cycle without awarding points.
+
+    Accepts an optional {"date": "YYYY-MM-DD"} body to skip a *specific*
+    calendar occurrence rather than always anchoring on "now". Without it
+    the anchor lands on today, which only correctly skips the occurrence
+    that's actually due today — for a future-dated occurrence clicked from
+    the calendar, anchoring on "now" can leave that same future day still
+    matching the recurrence cycle (looks like nothing happened).
+    """
     err = require_auth(); hid = get_hid()
     if err: return err
     db = get_db()
     task = db.execute("SELECT * FROM tasks WHERE id=? AND household_id=?", [tid, hid]).fetchone()
     if not task: return jsonify({'error': 'not found'}), 404
     task = dict(task)
+    data = request.get_json(silent=True) or {}
+    target_date = data.get('date')
     now_iso = datetime.now().isoformat()
+    if target_date:
+        try:
+            now_iso = datetime.combine(date.fromisoformat(target_date), datetime.now().time()).isoformat()
+        except ValueError:
+            pass
 
     # Advance last_completed so the task resets to the next cycle
     db.execute("UPDATE tasks SET last_completed=? WHERE id=? AND household_id=?", [now_iso, tid, hid])
@@ -1077,6 +1091,51 @@ def complete_task(tid):
 
     new_badges = check_achievements(db, member_id, hid)
     return jsonify({'ok': True, 'pts': pts, 'coins': pts, 'new_badges': new_badges})
+
+@app.route('/api/tasks/<tid>/uncomplete', methods=['POST'])
+def uncomplete_task(tid):
+    """Undo today's most recent completion of a task: removes the history
+    row and reverses the points/coins/cleanliness it granted. Best-effort —
+    streak is decremented but its prior streak_date isn't reconstructable,
+    and badges already awarded are not revoked."""
+    err = require_auth(); hid = get_hid()
+    if err: return err
+    db = get_db()
+    task = db.execute("SELECT * FROM tasks WHERE id=? AND household_id=?", [tid, hid]).fetchone()
+    if not task: return jsonify({'error': 'not found'}), 404
+    task = dict(task)
+    today = datetime.now().strftime('%Y-%m-%d')
+    row = db.execute(
+        "SELECT * FROM history WHERE household_id=? AND task_id=? AND type='done' AND completed_at LIKE ? "
+        "ORDER BY completed_at DESC LIMIT 1",
+        [hid, tid, f'{today}%']).fetchone()
+    if not row:
+        return jsonify({'error': 'Brak dzisiejszego ukończenia do cofnięcia'}), 400
+    row = dict(row)
+    pts = row['pts'] or 0
+    coins = row['coins_earned'] or 0
+    member_id = row['member_id']
+
+    db.execute("DELETE FROM history WHERE id=? AND household_id=?", [row['id'], hid])
+    db.execute(
+        "UPDATE members SET points=MAX(0,points-?), coins=MAX(0,coins-?) WHERE id=? AND household_id=?",
+        [pts, coins, member_id, hid])
+    member = db.execute("SELECT * FROM members WHERE id=? AND household_id=?", [member_id, hid]).fetchone()
+    if member and member['streak_date'] == today and member['streak'] > 0:
+        db.execute("UPDATE members SET streak=streak-1, streak_date=NULL WHERE id=? AND household_id=?",
+                   [member_id, hid])
+    db.execute("UPDATE rooms SET cleanliness=MAX(0,cleanliness-?) WHERE id=? AND household_id=?",
+               [min(pts*8, 22), task['room_id'], hid])
+
+    # Re-anchor the task on whatever completion (done or missed) precedes
+    # the one we just deleted, so the recurrence cycle resets correctly.
+    prev = db.execute(
+        "SELECT completed_at FROM history WHERE household_id=? AND task_id=? ORDER BY completed_at DESC LIMIT 1",
+        [hid, tid]).fetchone()
+    db.execute("UPDATE tasks SET last_completed=? WHERE id=? AND household_id=?",
+               [prev['completed_at'] if prev else None, tid, hid])
+    db.commit()
+    return jsonify({'ok': True})
 
 @app.route('/api/approvals/<aid>/approve', methods=['POST'])
 def approve_task(aid):
