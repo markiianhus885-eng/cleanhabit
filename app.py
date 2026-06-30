@@ -145,6 +145,15 @@ def _ensure_db():
             user_id TEXT NOT NULL,
             expires_at TEXT NOT NULL
         )""",
+        # Holds a pending registration until the email's ownership is
+        # confirmed via a 6-digit code; the account itself isn't created
+        # until /api/auth/verify-email succeeds.
+        """CREATE TABLE IF NOT EXISTS email_verifications (
+            email TEXT PRIMARY KEY,
+            code TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            payload TEXT NOT NULL
+        )""",
         # Belt-and-suspenders for the app-level duplicate-email check in
         # register(): only non-empty emails are constrained, so legacy
         # accounts created before email collection (NULL/'') don't collide.
@@ -232,6 +241,25 @@ def send_reset_email(to: str, code: str):
     </div>
     """
     send_email(to, 'CleanHabit — kod resetowania hasła', html)
+
+def send_verification_email(to: str, code: str):
+    html = f"""
+    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px">
+      <div style="text-align:center;margin-bottom:24px">
+        <span style="font-size:48px">🏠</span>
+        <h2 style="margin:8px 0;color:#6d7be6">CleanHabit</h2>
+      </div>
+      <h3 style="color:#1a1a2e">Potwierdź adres email</h3>
+      <p style="color:#555">Twój jednorazowy kod weryfikacyjny:</p>
+      <div style="background:#f0f0ff;border:2px solid #6d7be6;border-radius:16px;
+                  padding:24px;text-align:center;margin:24px 0">
+        <span style="font-size:36px;font-weight:900;letter-spacing:12px;color:#6d7be6">{code}</span>
+      </div>
+      <p style="color:#888;font-size:13px">Kod ważny przez <strong>15 minut</strong>.
+      Jeśli to nie Ty zakładałeś konto, zignoruj tę wiadomość.</p>
+    </div>
+    """
+    send_email(to, 'CleanHabit — potwierdź swój adres email', html)
 
 # ─── AUTH HELPERS ─────────────────────────────────────────────
 def current_user():
@@ -506,6 +534,72 @@ def household_lookup():
 # ── AUTH ──────────────────────────────────────────────────────
 MEMBER_EMOJIS = ['😊','😎','🤩','🥳','😄','🦸','🧑','👦','👧','👨','👩','🧔','👴','👵','🐱','🐶','🦊','🐸','🐼','🦁']
 
+def _create_account(db, payload):
+    """Shared by verify-email: turns a validated registration payload into a
+    real user (+ household/member for 'create', or claiming a member for
+    'join'). Mirrors what auth_register used to do inline before email
+    verification was inserted in front of it."""
+    import re as _re
+    password     = payload['password']
+    email        = payload['email']
+    display_name = payload['display_name']
+    action       = payload['action']
+    token        = payload['token']
+    hname        = payload['household_name']
+    chosen_emoji = payload['emoji']
+    member_id    = payload['member_id']
+
+    # Accounts log in with email now; username is just an internal handle
+    # derived from the email's local part (kept unique with a numeric suffix).
+    # Recomputed here (not at register time) so it can't go stale during the
+    # verification window.
+    base_username = _re.sub(r'[^a-z0-9_.]', '', email.split('@')[0]) or 'user'
+    username = base_username
+    suffix = 1
+    while db.execute("SELECT 1 FROM users WHERE username=?", [username]).fetchone():
+        suffix += 1
+        username = f'{base_username}{suffix}'
+
+    if action == 'join':
+        household = db.execute("SELECT * FROM households WHERE token=?", [token]).fetchone()
+        if not household:
+            return None, (jsonify({'error': f'Nie znaleziono rodziny z kodem "{token}"'}), 404)
+        household_id = household['id']
+        role = 'member'
+        mbr = db.execute("SELECT * FROM members WHERE id=? AND household_id=?", [member_id, household_id]).fetchone()
+        if not mbr:
+            return None, (jsonify({'error': 'Nie znaleziono domownika'}), 404)
+        if db.execute("SELECT 1 FROM users WHERE member_id=? AND household_id=?", [member_id, household_id]).fetchone():
+            return None, (jsonify({'error': 'Ten domownik ma już konto — zaloguj się'}), 400)
+    else:
+        # Create new household
+        household_id = uid()
+        new_token = gen_token()
+        while db.execute("SELECT 1 FROM households WHERE token=?", [new_token]).fetchone():
+            new_token = gen_token()
+        db.execute("INSERT INTO households(id,name,token,created_at) VALUES (?,?,?,?)",
+                   [household_id, hname, new_token, datetime.now().isoformat()])
+        db.execute("INSERT OR REPLACE INTO config(key,household_id,value) VALUES ('household',?,?)",
+                   [household_id, hname])
+        role = 'admin'
+        # Auto-create member profile for the owner
+        import random
+        emoji = chosen_emoji if chosen_emoji else random.choice(MEMBER_EMOJIS)
+        member_id = uid()
+        db.execute(
+            "INSERT INTO members(id,household_id,name,emoji,points,coins,streak,streak_date,owned) VALUES (?,?,?,?,0,0,0,NULL,'[]')",
+            [member_id, household_id, display_name, emoji]
+        )
+
+    user_id = uid()
+    db.execute("INSERT INTO users(id,username,password_hash,email,household_id,member_id,role,created_at) VALUES (?,?,?,?,?,?,?,?)",
+               [user_id, username, payload['password_hash'], email, household_id, member_id, role, datetime.now().isoformat()])
+    db.commit()
+    session['user_id'] = user_id
+    user = dict(db.execute("SELECT id,username,household_id,member_id,role FROM users WHERE id=?", [user_id]).fetchone())
+    household = dict(db.execute("SELECT * FROM households WHERE id=?", [household_id]).fetchone())
+    return (user, household), None
+
 @app.route('/api/auth/register', methods=['POST'])
 @limiter.limit('10 per hour')
 def auth_register():
@@ -531,14 +625,6 @@ def auth_register():
     if db.execute("SELECT 1 FROM users WHERE email=?", [email]).fetchone():
         return jsonify({'error': 'Ten adres email jest już używany przez inne konto'}), 400
 
-    # Accounts log in with email now; username is just an internal handle
-    # derived from the email's local part (kept unique with a numeric suffix).
-    base_username = _re.sub(r'[^a-z0-9_.]', '', email.split('@')[0]) or 'user'
-    username = base_username
-    suffix = 1
-    while db.execute("SELECT 1 FROM users WHERE username=?", [username]).fetchone():
-        suffix += 1
-        username = f'{base_username}{suffix}'
     if not display_name:
         display_name = email.split('@')[0]
 
@@ -546,43 +632,61 @@ def auth_register():
         household = db.execute("SELECT * FROM households WHERE token=?", [token]).fetchone()
         if not household:
             return jsonify({'error': f'Nie znaleziono rodziny z kodem "{token}"'}), 404
-        household_id = household['id']
-        role = 'member'
         # Verify the member belongs to this household and isn't claimed yet
         if not member_id:
             return jsonify({'error': 'Wybierz swojego domownika z listy'}), 400
-        mbr = db.execute("SELECT * FROM members WHERE id=? AND household_id=?", [member_id, household_id]).fetchone()
+        mbr = db.execute("SELECT * FROM members WHERE id=? AND household_id=?", [member_id, household['id']]).fetchone()
         if not mbr:
             return jsonify({'error': 'Nie znaleziono domownika'}), 404
-        if db.execute("SELECT 1 FROM users WHERE member_id=? AND household_id=?", [member_id, household_id]).fetchone():
+        if db.execute("SELECT 1 FROM users WHERE member_id=? AND household_id=?", [member_id, household['id']]).fetchone():
             return jsonify({'error': 'Ten domownik ma już konto — zaloguj się'}), 400
-    else:
-        # Create new household
-        household_id = uid()
-        new_token = gen_token()
-        while db.execute("SELECT 1 FROM households WHERE token=?", [new_token]).fetchone():
-            new_token = gen_token()
-        db.execute("INSERT INTO households(id,name,token,created_at) VALUES (?,?,?,?)",
-                   [household_id, hname, new_token, datetime.now().isoformat()])
-        db.execute("INSERT OR REPLACE INTO config(key,household_id,value) VALUES ('household',?,?)",
-                   [household_id, hname])
-        role = 'admin'
-        # Auto-create member profile for the owner
-        import random
-        emoji = chosen_emoji if chosen_emoji else random.choice(MEMBER_EMOJIS)
-        member_id = uid()
-        db.execute(
-            "INSERT INTO members(id,household_id,name,emoji,points,coins,streak,streak_date,owned) VALUES (?,?,?,?,0,0,0,NULL,'[]')",
-            [member_id, household_id, display_name, emoji]
-        )
 
-    user_id = uid()
-    db.execute("INSERT INTO users(id,username,password_hash,email,household_id,member_id,role,created_at) VALUES (?,?,?,?,?,?,?,?)",
-               [user_id, username, make_pw(password), email, household_id, member_id, role, datetime.now().isoformat()])
+    # Don't create the account yet — stash everything needed to finish the
+    # job in email_verifications, keyed by email, and email a 6-digit code.
+    # /api/auth/verify-email does the actual INSERT once the code checks out.
+    payload = {
+        'password_hash': make_pw(password), 'email': email, 'display_name': display_name,
+        'action': action, 'token': token, 'household_name': hname,
+        'emoji': chosen_emoji, 'member_id': member_id,
+    }
+    code = ''.join(random.choices(string.digits, k=6))
+    expires = (datetime.now() + timedelta(minutes=15)).isoformat()
+    db.execute("DELETE FROM email_verifications WHERE email=?", [email])
+    db.execute("INSERT INTO email_verifications(email,code,expires_at,payload) VALUES (?,?,?,?)",
+               [email, code, expires, json.dumps(payload)])
     db.commit()
-    session['user_id'] = user_id
-    user = dict(db.execute("SELECT id,username,household_id,member_id,role FROM users WHERE id=?", [user_id]).fetchone())
-    household = dict(db.execute("SELECT * FROM households WHERE id=?", [household_id]).fetchone())
+    try:
+        send_verification_email(email, code)
+    except Exception as e:
+        return jsonify({'error': f'Nie udało się wysłać emaila: {e}'}), 500
+    return jsonify({'ok': True, 'pending_verification': True, 'email': email})
+
+@app.route('/api/auth/verify-email', methods=['POST'])
+@limiter.limit('10 per hour')
+def auth_verify_email():
+    d = request.get_json(silent=True) or {}
+    email = d.get('email', '').strip().lower()
+    code  = d.get('code', '').strip()
+    if not email or not code:
+        return jsonify({'error': 'Wypełnij wszystkie pola'}), 400
+    db = get_db()
+    row = db.execute("SELECT * FROM email_verifications WHERE email=?", [email]).fetchone()
+    if not row or row['code'] != code:
+        return jsonify({'error': 'Nieprawidłowy kod weryfikacyjny'}), 400
+    if datetime.fromisoformat(row['expires_at']) < datetime.now():
+        return jsonify({'error': 'Kod wygasł — zarejestruj się ponownie'}), 400
+    if db.execute("SELECT 1 FROM users WHERE email=?", [email]).fetchone():
+        db.execute("DELETE FROM email_verifications WHERE email=?", [email])
+        db.commit()
+        return jsonify({'error': 'Ten adres email jest już używany przez inne konto'}), 400
+
+    payload = json.loads(row['payload'])
+    result, err = _create_account(db, payload)
+    if err:
+        return err
+    db.execute("DELETE FROM email_verifications WHERE email=?", [email])
+    db.commit()
+    user, household = result
     return jsonify({'ok': True, 'user': user, 'household': household})
 
 @app.route('/api/auth/login', methods=['POST'])
@@ -783,6 +887,68 @@ def del_room(rid):
     db.execute("DELETE FROM tasks WHERE room_id=? AND household_id=?", [rid, hid])
     db.commit()
     return jsonify({'ok': True})
+
+@app.route('/api/rooms/<rid>/stats')
+def room_stats(rid):
+    """Per-room breakdown for the room detail screen: open quests for this
+    room (with their done-today/assignee/schedule), plus a per-member
+    completion leaderboard and a 7-day total for the room."""
+    err = require_auth(); hid = get_hid()
+    if err: return err
+    db = get_db()
+    room = db.execute("SELECT * FROM rooms WHERE id=? AND household_id=?", [rid, hid]).fetchone()
+    if not room: return jsonify({'error': 'not found'}), 404
+
+    tasks = [dict(r) for r in db.execute(
+        "SELECT * FROM tasks WHERE room_id=? AND household_id=?", [rid, hid])]
+    members = {r['id']: dict(r) for r in db.execute(
+        "SELECT id, name, emoji FROM members WHERE household_id=?", [hid])}
+
+    today = datetime.now().strftime('%Y-%m-%d')
+    done_today_ids = {r['task_id'] for r in db.execute(
+        "SELECT task_id FROM history WHERE household_id=? AND completed_at LIKE ?",
+        [hid, f'{today}%'])}
+
+    quests = []
+    for t in tasks:
+        m = members.get(t['assigned_to'], {})
+        quests.append({
+            'id': t['id'], 'name': t['name'], 'diff': t['diff'], 'freq': t['freq'],
+            'one_time': bool(t['one_time']),
+            'member_id': t['assigned_to'], 'member_name': m.get('name'), 'member_emoji': m.get('emoji'),
+            'done_today': t['id'] in done_today_ids,
+        })
+
+    task_ids = [t['id'] for t in tasks]
+    member_breakdown = []
+    week_total = {'count': 0, 'pts': 0}
+    if task_ids:
+        placeholders = ','.join('?' * len(task_ids))
+        rows = db.execute(
+            f"SELECT member_id, COUNT(*) cnt, SUM(pts) pts FROM history "
+            f"WHERE household_id=? AND task_id IN ({placeholders}) AND (type='done' OR type IS NULL) "
+            f"GROUP BY member_id ORDER BY cnt DESC",
+            [hid] + task_ids).fetchall()
+        for r in rows:
+            m = members.get(r['member_id'], {})
+            member_breakdown.append({
+                'member_id': r['member_id'], 'name': m.get('name', '?'), 'emoji': m.get('emoji', '👤'),
+                'count': r['cnt'], 'pts': r['pts'] or 0,
+            })
+        cutoff7 = (datetime.now() - timedelta(days=7)).isoformat()
+        wk = db.execute(
+            f"SELECT COUNT(*) cnt, SUM(pts) pts FROM history "
+            f"WHERE household_id=? AND task_id IN ({placeholders}) AND (type='done' OR type IS NULL) AND completed_at>=?",
+            [hid] + task_ids + [cutoff7]).fetchone()
+        week_total = {'count': wk['cnt'] or 0, 'pts': wk['pts'] or 0}
+
+    return jsonify({
+        'room': {'id': room['id'], 'name': room['name'], 'emoji': room['emoji'], 'cleanliness': room['cleanliness']},
+        'quests': quests,
+        'done_count': sum(1 for q in quests if q['done_today']),
+        'member_breakdown': member_breakdown,
+        'week_total': week_total,
+    })
 
 # ── TASKS ─────────────────────────────────────────────────────
 @app.route('/api/tasks', methods=['POST'])

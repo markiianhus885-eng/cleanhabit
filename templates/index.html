@@ -1849,6 +1849,15 @@ async function doAuth(){
   }
   const res = await POST(url, body);
   if(res.error){ errEl.style.display='block'; errEl.textContent=res.error; return; }
+  if(res.pending_verification){
+    _pendingRegisterBody = body;
+    showVerifyEmail(res.email);
+    return;
+  }
+  await _finishAuth(res);
+}
+
+async function _finishAuth(res){
   state.user = res.user;
   state.household = res.household;
   $('screen-auth').style.display = 'none';
@@ -1859,6 +1868,45 @@ async function doAuth(){
   if(authMode==='register' && householdAction==='create' && res.household){
     showTokenWelcome(res.household.token, res.household.name);
   }
+}
+
+let _pendingRegisterBody = null;
+
+function showVerifyEmail(email){
+  const L=(pl,en,uk)=>_lang==='pl'?pl:_lang==='uk'?uk:en;
+  openModal(`
+    <div style="padding:8px 0">
+      <div style="text-align:center;font-size:40px;margin-bottom:12px">📧</div>
+      <h3 style="margin-bottom:4px;text-align:center">${L('Potwierdź adres email','Confirm your email','Підтвердіть email')}</h3>
+      <p style="font-size:13px;color:var(--muted2);text-align:center;margin-bottom:6px">${L('Wysłaliśmy kod na','We sent a code to','Ми надіслали код на')} <strong>${esc(email)}</strong></p>
+      <p style="font-size:12px;color:var(--muted2);opacity:0.7;text-align:center;margin-bottom:20px">${L('📁 Nie widzisz? Sprawdź folder spam/śmietnik.','📁 Don\'t see it? Check your spam/junk folder.','📁 Не бачите? Перевірте теку спам.')}</p>
+      <input class="inp" id="ve-code" placeholder="000000" maxlength="6"
+        style="text-align:center;letter-spacing:8px;font-size:22px;font-weight:900;margin-bottom:12px"
+        oninput="this.value=this.value.replace(/[^0-9]/g,'')"/>
+      <div id="ve-err" style="display:none;color:var(--red);font-size:13px;margin-bottom:10px"></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:10px" onclick="veConfirm('${esc(email)}')">${L('Potwierdź','Confirm','Підтвердити')}</button>
+      <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="veResend('${esc(email)}')">${L('Wyślij kod ponownie','Resend code','Надіслати код ще раз')}</button>
+    </div>
+  `);
+}
+
+async function veConfirm(email){
+  const code = $('ve-code').value.trim();
+  const errEl = $('ve-err');
+  errEl.style.display = 'none';
+  if(code.length !== 6){ errEl.style.display='block'; errEl.textContent='Wpisz 6-cyfrowy kod'; return; }
+  const res = await POST('/api/auth/verify-email', {email, code});
+  if(res.error){ errEl.style.display='block'; errEl.textContent=res.error; return; }
+  closeModal();
+  await _finishAuth(res);
+}
+
+async function veResend(email){
+  const errEl = $('ve-err');
+  if(!_pendingRegisterBody){ return; }
+  const res = await POST('/api/auth/register', _pendingRegisterBody);
+  if(res.error && errEl){ errEl.style.display='block'; errEl.textContent=res.error; return; }
+  if(errEl){ errEl.style.display='block'; errEl.style.color='var(--green)'; errEl.textContent='Wysłano nowy kod.'; }
 }
 
 function showForgotPassword(){
@@ -2126,12 +2174,17 @@ function calNav(dir){
   renderCalendar();
 }
 
+let _calLastIso = null;
+
 function calDayClick(iso){
+  _calLastIso = iso;
   const info = _calDayMap[iso] || {tasks:[]};
   const tasks = info.tasks || [];
   const DIFF_COLOR = {easy:'var(--green)',medium:'var(--amber)',hard:'var(--red)'};
   const [y,m,d] = iso.split('-');
   const dateLabel = `${parseInt(d)} ${['stycznia','lutego','marca','kwietnia','maja','czerwca','lipca','sierpnia','września','października','listopada','grudnia'][parseInt(m)-1]} ${y}`;
+  const today = new Date().toISOString().slice(0,10);
+  const isToday = iso === today;
 
   let html = `
   <div style="background:var(--card);border-radius:16px;border:1px solid var(--border);padding:14px">
@@ -2140,21 +2193,79 @@ function calDayClick(iso){
     html += `<div style="font-size:13px;color:var(--muted2);text-align:center;padding:10px 0">${t('cal_free_day')}</div>`;
   } else {
     for(const t of tasks){
+      const full = state.data.tasks.find(x=>x.id===t.id);
+      const canDo = isToday && !t.done && full && canCompleteTask(full);
+      const chkCls = `task-chk${t.done?' done':''}${!t.done && !canDo ? ' locked' : ''}`;
+      const chkIcon = t.done ? '<span style="color:#fff;font-size:14px">✓</span>'
+        : (!canDo ? '<span style="font-size:11px">🔒</span>' : '<span style="font-size:10px;color:var(--muted2)">○</span>');
       html += `<div style="
         display:flex;align-items:center;gap:10px;padding:8px 0;
         border-bottom:1px solid var(--border);
       ">
         <span style="width:3px;height:32px;border-radius:2px;background:${DIFF_COLOR[t.diff]||'var(--blue)'};flex-shrink:0"></span>
+        <div class="${chkCls}" style="width:26px;height:26px"
+          onclick="${canDo?`calCompleteTask('${t.id}','${iso}',this)`:'void 0'}">${chkIcon}</div>
         <div style="flex:1">
           <div style="font-size:13px;font-weight:700;color:${t.done?'var(--muted2)':'var(--text)'}">${t.done?'✅ ':''} ${esc(t.name)}</div>
           <div style="font-size:11px;color:var(--muted2);margin-top:2px">${t.member_emoji} ${esc(t.member_name)} · 🏠 ${esc(t.room_name)}</div>
         </div>
+        <button class="btn btn-ghost btn-xs" style="padding:3px 7px;font-size:11px" onclick="showEditTask('${t.id}')">✏️</button>
+        <button class="btn btn-ghost btn-xs" style="color:var(--red);padding:3px 7px;font-size:11px" onclick="calDeleteTask('${t.id}','${iso}')">✕</button>
       </div>`;
     }
   }
   html += `</div>`;
   $('cal-detail').innerHTML = html;
   $('cal-detail').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+async function calCompleteTask(taskId, iso, el){
+  const task = state.data.tasks.find(t=>t.id===taskId);
+  if(!task) return;
+  const r = await POST(`/api/tasks/${taskId}/complete`, {memberId: task.assigned_to});
+  if(r.pending_approval){
+    showFloat(el.getBoundingClientRect().left, el.getBoundingClientRect().top-30, '⏳ Czeka na akceptację');
+  } else {
+    showFloat(el.getBoundingClientRect().left, el.getBoundingClientRect().top-30, `+${r.pts} pkt &nbsp; 🪙 +${r.coins}`);
+  }
+  await loadData();
+  await renderCalendar();
+  calDayClick(iso);
+}
+
+function calDeleteTask(taskId, iso){
+  const full = state.data.tasks.find(x=>x.id===taskId);
+  if(!full) return;
+  if(full.one_time){
+    if(confirm(t('task_delete_confirm'))) calDoDelete(taskId, iso);
+    return;
+  }
+  const L=(pl,en,uk)=>_lang==='pl'?pl:_lang==='uk'?uk:en;
+  openModal(`
+    <div style="padding:8px 0;text-align:center">
+      <div style="font-size:36px;margin-bottom:10px">🗑️</div>
+      <h3 style="margin-bottom:4px">${L('Usunąć powtarzające się zadanie?','Delete recurring task?','Видалити повторюване завдання?')}</h3>
+      <p style="font-size:13px;color:var(--muted2);margin-bottom:18px">${esc(full.name)}</p>
+      <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:8px" onclick="calSkipOccurrence('${taskId}','${iso}')">${L('Tylko to wystąpienie','Only this occurrence','Лише цей раз')}</button>
+      <button class="btn btn-danger" style="width:100%;justify-content:center" onclick="calDoDelete('${taskId}','${iso}')">${L('Wszystkie kolejne','All future occurrences','Усі наступні')}</button>
+    </div>
+  `);
+}
+
+async function calSkipOccurrence(taskId, iso){
+  await POST(`/api/tasks/${taskId}/expire`, {});
+  closeModal();
+  await loadData();
+  await renderCalendar();
+  calDayClick(iso);
+}
+
+async function calDoDelete(taskId, iso){
+  await DEL(`/api/tasks/${taskId}`);
+  closeModal();
+  await loadData();
+  await renderCalendar();
+  calDayClick(iso);
 }
 
 // ─── FLOAT ANIMATION ──────────────────────────────────────────
@@ -2647,10 +2758,11 @@ function renderRooms(d){
   $('screen-rooms').innerHTML = html;
 }
 
-function openRoomDetail(roomId){
+async function openRoomDetail(roomId){
   const d = state.data;
   const room = d.rooms.find(r=>r.id===roomId);
   if(!room) return;
+  const stats = await GET(`/api/rooms/${roomId}/stats`);
   const roomTasks = d.tasks.filter(t=>t.room_id===roomId);
   const doneTodayIds = (d.history||[])
     .filter(h=>new Date(h.completed_at)>new Date(Date.now()-86400000))
@@ -2677,6 +2789,37 @@ function openRoomDetail(roomId){
         </div>`;
       }).join('');
 
+  const breakdown = (stats?.member_breakdown || []);
+  const maxCnt = Math.max(1, ...breakdown.map(b=>b.count));
+  const statsHtml = stats?.error ? '' : `
+    <div style="display:flex;gap:10px;margin-bottom:14px">
+      <div style="flex:1;background:var(--bg3);border-radius:14px;padding:10px;text-align:center">
+        <div style="font-size:20px;font-weight:900;color:var(--blue2)">${stats.done_count}/${roomTasks.length}</div>
+        <div style="font-size:10.5px;color:var(--muted2);font-weight:700;text-transform:uppercase">Dziś</div>
+      </div>
+      <div style="flex:1;background:var(--bg3);border-radius:14px;padding:10px;text-align:center">
+        <div style="font-size:20px;font-weight:900;color:var(--green)">${stats.week_total?.count||0}</div>
+        <div style="font-size:10.5px;color:var(--muted2);font-weight:700;text-transform:uppercase">7 dni</div>
+      </div>
+      <div style="flex:1;background:var(--bg3);border-radius:14px;padding:10px;text-align:center">
+        <div style="font-size:20px;font-weight:900;color:var(--yellow)">🪙${stats.week_total?.pts||0}</div>
+        <div style="font-size:10.5px;color:var(--muted2);font-weight:700;text-transform:uppercase">Punkty</div>
+      </div>
+    </div>
+    ${breakdown.length>0 ? `
+    <div style="margin-bottom:14px">
+      ${breakdown.map(b=>`
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-size:14px">${b.emoji}</span>
+          <span style="font-size:12px;font-weight:700;width:64px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(b.name)}</span>
+          <div style="flex:1;background:var(--bg3);border-radius:6px;height:8px;overflow:hidden">
+            <div style="width:${(b.count/maxCnt*100).toFixed(0)}%;height:8px;background:var(--blue);border-radius:6px"></div>
+          </div>
+          <span style="font-size:11px;color:var(--muted2);font-weight:700">${b.count}</span>
+        </div>`).join('')}
+    </div>` : ''}
+  `;
+
   openModal(`
     <div style="text-align:center;margin-bottom:18px">
       <div style="font-size:54px;margin-bottom:10px">${room.emoji}</div>
@@ -2691,6 +2834,7 @@ function openRoomDetail(roomId){
       </div>
     </div>
     <div class="divider"></div>
+    ${statsHtml}
     <div style="font-weight:700;font-size:14px;margin-bottom:6px">Zadania (${roomTasks.length})</div>
     ${tasksHtml}
     <div style="display:flex;gap:10px;margin-top:18px">
