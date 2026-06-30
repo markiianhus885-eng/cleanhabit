@@ -161,6 +161,14 @@ def _ensure_db():
         # accounts created before email collection (NULL/'') don't collide.
         """CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_unique
             ON users(email) WHERE email IS NOT NULL AND email != ''""",
+        # Tester/user feedback submitted from the public /feedback page.
+        """CREATE TABLE IF NOT EXISTS feedback (
+            id TEXT PRIMARY KEY,
+            email TEXT,
+            category TEXT,
+            message TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )""",
     ]:
         try:
             db.execute(migration)
@@ -552,6 +560,172 @@ h1{color:#6d7be6}h2{color:#444;margin-top:32px}a{color:#6d7be6}
 <p>Jeśli usuwane konto jest jedynym kontem administratora w danym gospodarstwie domowym, pozostałe wspólne dane gospodarstwa (lista pokoi, definicje zadań współdzielone z innymi domownikami) mogą pozostać aktywne dla pozostałych członków rodziny — usuwane są wyłącznie dane powiązane bezpośrednio z Twoim kontem i Twoim profilem. Nie przechowujemy kopii zapasowych dłużej niż 30 dni od usunięcia.</p>
 <p>Szczegóły dotyczące przetwarzania danych znajdziesz w <a href="/privacy">polityce prywatności</a>.</p>
 </body></html>''', 200, {'Content-Type': 'text/html; charset=utf-8'}
+
+@app.route('/feedback')
+def feedback_page():
+    return '''<!DOCTYPE html><html lang="pl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prześlij opinię — CleanHabit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--indigo-a:#6D7BE6;--indigo-b:#5159D6;--ink:#2B2840;--muted:#908AA8;--faint:#B0AAC8;
+  --page:#F4F2FC;--card:#FFFFFF;--border:#ECE9F7;--fill:#F4F2FC;--green:#2F8B5E;--red:#E5557A;}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:
+  radial-gradient(1100px 520px at 12% -10%,#E4DFFb 0%,transparent 60%),
+  radial-gradient(900px 500px at 100% 0%,#E7DDF0 0%,transparent 55%),
+  linear-gradient(160deg,#F4F2FC 0%,#EEEAFA 100%);
+  min-height:100vh;color:var(--ink);display:flex;align-items:flex-start;justify-content:center;padding:3rem 1.2rem;-webkit-font-smoothing:antialiased}
+.wrap{width:100%;max-width:560px}
+.logo{display:flex;align-items:center;gap:.6rem;justify-content:center;text-decoration:none;color:var(--ink);font-weight:800;font-size:1.25rem;margin-bottom:1.6rem}
+.logo-icon{width:42px;height:42px;background:linear-gradient(135deg,var(--indigo-a),var(--indigo-b));border-radius:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 20px -6px rgba(85,89,214,.6)}
+.card{background:var(--card);border-radius:26px;padding:2.2rem;box-shadow:0 28px 60px -28px rgba(60,45,120,.5)}
+h1{font-size:1.6rem;font-weight:800;letter-spacing:-.02em;margin-bottom:.5rem;text-align:center}
+.sub{color:var(--muted);font-size:.95rem;line-height:1.6;text-align:center;margin-bottom:1.8rem}
+label{display:block;font-size:.85rem;font-weight:700;color:var(--ink);margin:0 0 .5rem .2rem}
+.inp,textarea,select{width:100%;background:var(--fill);border:1.5px solid var(--border);border-radius:14px;
+  padding:.85rem 1rem;color:var(--ink);font-size:.95rem;font-family:inherit;outline:none;transition:border-color .2s,background .2s;appearance:none}
+.inp:focus,textarea:focus,select:focus{border-color:var(--indigo-a);background:rgba(109,123,230,.05)}
+.inp::placeholder,textarea::placeholder{color:var(--faint)}
+textarea{resize:vertical;min-height:140px;line-height:1.5}
+.field{margin-bottom:1.2rem}
+.chips{display:flex;gap:.5rem;flex-wrap:wrap}
+.chip{border:1.5px solid var(--border);background:#fff;border-radius:99px;padding:.5rem 1rem;font-size:.82rem;font-weight:700;cursor:pointer;color:var(--muted);transition:.18s}
+.chip.on{background:rgba(109,123,230,.12);border-color:var(--indigo-a);color:var(--indigo-b)}
+.btn{width:100%;padding:1rem;border:none;border-radius:15px;cursor:pointer;font-weight:800;font-size:1rem;
+  background:linear-gradient(135deg,var(--indigo-a),var(--indigo-b));color:#fff;box-shadow:0 16px 30px -12px rgba(85,89,214,.65);transition:transform .2s}
+.btn:hover{transform:translateY(-2px)}
+.btn:disabled{opacity:.6;cursor:default;transform:none}
+.msg{display:none;border-radius:14px;padding:.85rem 1rem;font-size:.9rem;margin-bottom:1.2rem;font-weight:600}
+.msg.err{display:block;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--red)}
+.ok-screen{display:none;text-align:center;padding:1rem 0}
+.ok-screen .big{font-size:3.4rem;margin-bottom:1rem}
+.ok-screen h2{font-size:1.5rem;font-weight:800;margin-bottom:.6rem}
+.ok-screen p{color:var(--muted);line-height:1.6;margin-bottom:1.6rem}
+.back{display:inline-block;margin-top:1.6rem;text-align:center;width:100%;color:var(--muted);text-decoration:none;font-size:.88rem;font-weight:600}
+.back:hover{color:var(--indigo-b)}
+.lang{display:flex;gap:4px;justify-content:center;margin-bottom:1.2rem}
+.lang button{border:none;background:#fff;border:1px solid var(--border);border-radius:9px;padding:.3rem .6rem;font-size:.78rem;font-weight:700;cursor:pointer;color:var(--muted)}
+.lang button.on{background:linear-gradient(135deg,var(--indigo-a),var(--indigo-b));color:#fff;border-color:transparent}
+</style></head>
+<body>
+<div class="wrap">
+  <a href="/welcome" class="logo">
+    <span class="logo-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/></svg></span>
+    CleanHabit
+  </a>
+  <div class="lang">
+    <button onclick="setLang('pl')" id="lng-pl" class="on">🇵🇱 PL</button>
+    <button onclick="setLang('en')" id="lng-en">🇬🇧 EN</button>
+    <button onclick="setLang('uk')" id="lng-uk">🇺🇦 UK</button>
+  </div>
+  <div class="card">
+    <div id="form-view">
+      <h1 id="t-title">Prześlij opinię 💬</h1>
+      <p class="sub" id="t-sub">Twoja opinia pomaga nam ulepszać CleanHabit. Napisz co działa, co nie, albo co chciałbyś zobaczyć!</p>
+      <div class="msg" id="err"></div>
+      <div class="field">
+        <label id="t-cat-label">Czego dotyczy?</label>
+        <div class="chips" id="chips">
+          <button type="button" class="chip on" data-cat="bug" data-pl="🐞 Błąd" data-en="🐞 Bug" data-uk="🐞 Помилка">🐞 Błąd</button>
+          <button type="button" class="chip" data-cat="idea" data-pl="💡 Pomysł" data-en="💡 Idea" data-uk="💡 Ідея">💡 Pomysł</button>
+          <button type="button" class="chip" data-cat="praise" data-pl="❤️ Pochwała" data-en="❤️ Praise" data-uk="❤️ Похвала">❤️ Pochwała</button>
+          <button type="button" class="chip" data-cat="other" data-pl="✨ Inne" data-en="✨ Other" data-uk="✨ Інше">✨ Inne</button>
+        </div>
+      </div>
+      <div class="field">
+        <label id="t-msg-label">Twoja wiadomość</label>
+        <textarea id="message" maxlength="3000" placeholder="Napisz tutaj..."></textarea>
+      </div>
+      <div class="field">
+        <label id="t-email-label">Email (opcjonalnie — jeśli chcesz odpowiedź)</label>
+        <input class="inp" id="email" type="email" placeholder="ty@example.com"/>
+      </div>
+      <button class="btn" id="submit-btn" onclick="submitFeedback()">Wyślij opinię</button>
+    </div>
+    <div class="ok-screen" id="ok-view">
+      <div class="big">🎉</div>
+      <h2 id="t-ok-title">Dziękujemy!</h2>
+      <p id="t-ok-sub">Twoja opinia została wysłana. Bardzo nam pomaga w ulepszaniu aplikacji.</p>
+      <button class="btn" onclick="resetForm()" id="t-again">Wyślij kolejną</button>
+    </div>
+  </div>
+  <a href="/welcome" class="back" id="t-back">← Wróć do strony głównej</a>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+let lang = 'pl', category = 'bug';
+const TR = {
+  pl:{title:'Prześlij opinię 💬',sub:'Twoja opinia pomaga nam ulepszać CleanHabit. Napisz co działa, co nie, albo co chciałbyś zobaczyć!',cat:'Czego dotyczy?',msgl:'Twoja wiadomość',msgp:'Napisz tutaj...',emaill:'Email (opcjonalnie — jeśli chcesz odpowiedź)',btn:'Wyślij opinię',sending:'Wysyłam...',empty:'Napisz wiadomość przed wysłaniem.',neterr:'Coś poszło nie tak. Spróbuj ponownie.',oktitle:'Dziękujemy!',oksub:'Twoja opinia została wysłana. Bardzo nam pomaga w ulepszaniu aplikacji.',again:'Wyślij kolejną',back:'← Wróć do strony głównej'},
+  en:{title:'Send feedback 💬',sub:'Your feedback helps us improve CleanHabit. Tell us what works, what doesn\\'t, or what you\\'d love to see!',cat:'What\\'s it about?',msgl:'Your message',msgp:'Write here...',emaill:'Email (optional — if you want a reply)',btn:'Send feedback',sending:'Sending...',empty:'Please write a message first.',neterr:'Something went wrong. Try again.',oktitle:'Thank you!',oksub:'Your feedback has been sent. It really helps us improve the app.',again:'Send another',back:'← Back to homepage'},
+  uk:{title:'Надіслати відгук 💬',sub:'Ваш відгук допомагає покращувати CleanHabit. Напишіть що працює, що ні, або що хотіли б побачити!',cat:'Про що це?',msgl:'Ваше повідомлення',msgp:'Напишіть тут...',emaill:'Email (необов\\'язково — якщо хочете відповідь)',btn:'Надіслати відгук',sending:'Надсилаю...',empty:'Спочатку напишіть повідомлення.',neterr:'Щось пішло не так. Спробуйте ще раз.',oktitle:'Дякуємо!',oksub:'Ваш відгук надіслано. Це дуже допомагає нам покращувати додаток.',again:'Надіслати ще',back:'← На головну'}
+};
+function setLang(l){
+  lang=l; const t=TR[l];
+  ['pl','en','uk'].forEach(x=>$('lng-'+x).classList.toggle('on',x===l));
+  $('t-title').textContent=t.title; $('t-sub').textContent=t.sub; $('t-cat-label').textContent=t.cat;
+  $('t-msg-label').textContent=t.msgl; $('message').placeholder=t.msgp; $('t-email-label').textContent=t.emaill;
+  $('submit-btn').textContent=t.btn; $('t-ok-title').textContent=t.oktitle; $('t-ok-sub').textContent=t.oksub;
+  $('t-again').textContent=t.again; $('t-back').textContent=t.back;
+  document.querySelectorAll('.chip').forEach(c=>c.textContent=c.getAttribute('data-'+l));
+}
+document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{
+  category=c.getAttribute('data-cat');
+  document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+  c.classList.add('on');
+});
+async function submitFeedback(){
+  const msg=$('message').value.trim(), email=$('email').value.trim(), err=$('err'), t=TR[lang];
+  err.style.display='none';
+  if(!msg){ err.className='msg err'; err.textContent=t.empty; return; }
+  const btn=$('submit-btn'); btn.disabled=true; btn.textContent=t.sending;
+  try{
+    const r=await fetch('/api/feedback',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message:msg,email:email,category:category})});
+    const data=await r.json();
+    if(data.error){ err.className='msg err'; err.textContent=data.error; btn.disabled=false; btn.textContent=t.btn; return; }
+    $('form-view').style.display='none'; $('ok-view').style.display='block';
+  }catch(e){ err.className='msg err'; err.textContent=t.neterr; btn.disabled=false; btn.textContent=t.btn; }
+}
+function resetForm(){
+  $('message').value=''; $('email').value=''; $('err').style.display='none';
+  $('ok-view').style.display='none'; $('form-view').style.display='block';
+  const btn=$('submit-btn'); btn.disabled=false; btn.textContent=TR[lang].btn;
+}
+</script>
+</body></html>''', 200, {'Content-Type': 'text/html; charset=utf-8'}
+
+@app.route('/api/feedback', methods=['POST'])
+@limiter.limit('10 per hour')
+def submit_feedback():
+    d = request.get_json(silent=True) or {}
+    message = (d.get('message') or '').strip()
+    email = (d.get('email') or '').strip()[:200]
+    category = (d.get('category') or 'other').strip()[:30]
+    if not message:
+        return jsonify({'error': 'Wiadomość nie może być pusta'}), 400
+    message = message[:3000]
+    db = get_db()
+    db.execute(
+        "INSERT INTO feedback(id,email,category,message,created_at) VALUES (?,?,?,?,?)",
+        [uid(), email, category, message, datetime.now().isoformat()])
+    db.commit()
+    # Best-effort email to the owner so feedback is seen without polling the DB.
+    try:
+        safe = message.replace('<', '&lt;').replace('>', '&gt;')
+        html = f"""<div style="font-family:sans-serif;max-width:560px">
+          <h3 style="color:#6d7be6">📨 Nowa opinia — CleanHabit</h3>
+          <p><b>Kategoria:</b> {category}</p>
+          <p><b>Od:</b> {email or '(nie podano emaila)'}</p>
+          <hr style="border:none;border-top:1px solid #eee">
+          <p style="white-space:pre-wrap;line-height:1.6">{safe}</p>
+        </div>"""
+        send_email(MAIL_FROM, 'CleanHabit — nowa opinia', html)
+    except Exception:
+        pass
+    return jsonify({'ok': True})
 
 @app.route('/.well-known/assetlinks.json')
 def assetlinks():
