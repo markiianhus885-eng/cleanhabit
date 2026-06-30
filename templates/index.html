@@ -225,6 +225,9 @@ html.dark .bnav{box-shadow:0 16px 36px -10px rgba(0,0,0,0.55);}
 }
 .inp:focus{border-color:var(--blue);background:rgba(109,123,230,0.05);}
 .inp::placeholder{color:var(--muted2);}
+.pw-wrap{position:relative}
+.pw-wrap .inp{padding-right:44px}
+.pw-toggle{position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:8px;color:var(--muted2);line-height:1}
 
 /* ──────────────── CHIPS ──────────────── */
 .chips{display:flex;gap:8px;flex-wrap:wrap;}
@@ -727,7 +730,10 @@ html.dark .tb-streak{color:#FF9A6B;background:rgba(255,122,61,.14);}
       <div id="auth-email-wrap" style="display:none">
         <input class="inp" id="auth-email" placeholder="Adres email" type="email" autocomplete="email"/>
       </div>
-      <input class="inp" id="auth-password" placeholder="Hasło (min. 4 znaki)" type="password" autocomplete="current-password"/>
+      <div class="pw-wrap">
+        <input class="inp" id="auth-password" placeholder="Hasło (min. 4 znaki)" type="password" autocomplete="current-password"/>
+        <button type="button" class="pw-toggle" onclick="togglePwVisibility('auth-password',this)">👁️</button>
+      </div>
 
       <!-- CREATE: household name -->
       <div id="auth-hname-wrap" style="display:none">
@@ -1927,7 +1933,10 @@ function showForgotPassword(){
         <input class="inp" id="fp-code" placeholder="000000" maxlength="6"
           style="text-align:center;letter-spacing:8px;font-size:22px;font-weight:900;margin-bottom:12px"
           oninput="this.value=this.value.replace(/[^0-9]/g,'')"/>
-        <input class="inp" id="fp-newpass" placeholder="${L('Nowe hasło (min. 4 znaki)','New password (min. 4 chars)','Новий пароль (мін. 4 символи)')}" type="password" style="margin-bottom:12px"/>
+        <div class="pw-wrap" style="margin-bottom:12px">
+          <input class="inp" id="fp-newpass" placeholder="${L('Nowe hasło (min. 4 znaki)','New password (min. 4 chars)','Новий пароль (мін. 4 символи)')}" type="password"/>
+          <button type="button" class="pw-toggle" onclick="togglePwVisibility('fp-newpass',this)">👁️</button>
+        </div>
         <div id="fp-err2" style="display:none;color:var(--red);font-size:13px;margin-bottom:10px"></div>
         <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="fpResetPass()">${L('Zmień hasło','Change password','Змінити пароль')}</button>
       </div>
@@ -2006,6 +2015,13 @@ async function checkAuth(){
     $('bnav').style.display = 'none';
   }
 }
+function togglePwVisibility(id, btn){
+  const el = $(id);
+  if(!el) return;
+  if(el.type === 'password'){ el.type = 'text'; btn.textContent = '🙈'; }
+  else { el.type = 'password'; btn.textContent = '👁️'; }
+}
+
 async function logout(){
   // Race the API call against a timeout so a stuck/slow request can never
   // leave the UI spinning forever, then hard-reload — checkAuth() on load
