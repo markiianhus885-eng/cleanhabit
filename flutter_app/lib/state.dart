@@ -77,6 +77,13 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> loginRfid(String uid) async {
+    await api.loginRfid(uid);
+    await refresh();
+    _status = AuthStatus.loggedIn;
+    notifyListeners();
+  }
+
   Future<void> register(Map<String, dynamic> body) async {
     await api.register(body);
     await refresh();

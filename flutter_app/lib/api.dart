@@ -90,6 +90,23 @@ class Api {
     return null;
   }
 
+  /// Polls the RC522/ESP32 reader's last-scan state. `since` should be the
+  /// `ts` from the previous call (0 on the very first call) — the server
+  /// only reports a `uid` when a scan is newer than that.
+  Future<Map<String, dynamic>> rfidPoll(double since) async {
+    final r = await _dio.get('/api/rfid/poll', queryParameters: {'since': since});
+    if (r.statusCode == 200) return Map<String, dynamic>.from(r.data);
+    throw ApiException(_err(r));
+  }
+
+  Future<Map<String, dynamic>> loginRfid(String uid) async {
+    final r = await _dio.post('/api/auth/login-rfid', data: {'uid': uid});
+    if (r.statusCode == 200 && r.data['ok'] == true) {
+      return Map<String, dynamic>.from(r.data);
+    }
+    throw ApiException(_err(r));
+  }
+
   Future<Map<String, dynamic>> householdLookup(String token) async {
     final r = await _dio.get('/api/household/lookup',
         queryParameters: {'token': token});
