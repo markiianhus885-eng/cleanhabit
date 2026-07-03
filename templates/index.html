@@ -809,6 +809,8 @@ html.dark .tb-streak{color:#FF9A6B;background:rgba(255,122,61,.14);}
       </div>
       <div id="google-signin-btn" style="display:flex;justify-content:center"></div>
 
+      <div id="rfid-hint" style="text-align:center;margin-top:14px;font-size:13px;color:var(--muted2)">📇 Możesz też zeskanować kartę RFID</div>
+
       <!-- shown only after Google sign-in for a brand-new email; lets the
            user pick create-household vs join-household before the account
            actually gets created (mirrors the normal register tabs) -->
@@ -4597,6 +4599,49 @@ const _origCompleteTask = window.completeTask;
 $('bnav').style.display = 'none';
 applyStaticLang();
 checkAuth();
+
+// ─── RFID CARD LOGIN ──────────────────────────────────────────
+// Polls for a fresh scan from the RC522/ESP32 reader while the login
+// screen is showing, and logs in automatically when one matches a linked
+// account (see /api/auth/link-rfid). No-op while already logged in.
+(function(){
+  let since = null; // null = baseline not established yet (avoids reacting
+                     // to a scan that happened before this page loaded)
+  async function rfidPoll(){
+    if(!$('screen-auth') || $('screen-auth').style.display === 'none'){
+      setTimeout(rfidPoll, 2000);
+      return;
+    }
+    try{
+      const res = await fetch(`/api/rfid/poll?since=${since ?? 0}`);
+      const data = await res.json();
+      if(since === null){
+        since = data.ts || 0;
+        setTimeout(rfidPoll, 1000);
+        return;
+      }
+      since = data.ts || since;
+      if(data.uid){
+        const r = await fetch('/api/auth/login-rfid', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({uid: data.uid})
+        });
+        const login = await r.json();
+        const hint = $('rfid-hint');
+        if(login.ok){
+          if(hint){ hint.textContent = `✅ Witaj, ${login.user.username}!`; }
+          await checkAuth();
+        } else if(hint){
+          hint.textContent = '📇 Nieznana karta';
+          setTimeout(() => { hint.textContent = '📇 Możesz też zeskanować kartę RFID'; }, 2500);
+        }
+      }
+    }catch(e){ /* network hiccup, keep polling */ }
+    setTimeout(rfidPoll, 1000);
+  }
+  rfidPoll();
+})();
 initGoogleSignIn();
 </script>
 </body>
