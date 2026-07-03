@@ -5,6 +5,7 @@ import random
 import string
 import secrets
 import smtplib
+import time
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta, date
@@ -52,6 +53,12 @@ if os.environ.get('DATABASE_PATH'):
     DB = os.environ['DATABASE_PATH']
 else:
     DB = os.path.join(os.path.dirname(__file__), 'sweepy.db')
+
+# Single-kiosk RFID scan state (see rfid_last_scan table): device posts a
+# scan, a kiosk browser polls for it and performs its own login. Shared
+# secret gates the device endpoint since, unlike password login, a bare UID
+# is trivial to guess/replay.
+RFID_SCAN_SECRET = os.environ.get('RFID_SCAN_SECRET', '')
 
 # ─── DB INIT ──────────────────────────────────────────────────
 def _ensure_db():
@@ -135,6 +142,14 @@ def _ensure_db():
             purchased_at TEXT,
             fulfilled INTEGER DEFAULT 0
         );
+        -- Single-row table holding the most recent RFID card scan. Backed by
+        -- SQLite (not an in-process dict) because gunicorn runs multiple
+        -- worker processes that don't share memory.
+        CREATE TABLE IF NOT EXISTS rfid_last_scan (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            card_uid TEXT,
+            ts REAL
+        );
     ''')
     db.commit()
     for migration in [
@@ -169,6 +184,11 @@ def _ensure_db():
             message TEXT NOT NULL,
             created_at TEXT NOT NULL
         )""",
+        # Physical RFID card UID linked to this account, for the RC522/ESP32
+        # reader kiosk login flow (see /api/rfid/*, /api/auth/login-rfid).
+        "ALTER TABLE users ADD COLUMN rfid_uid TEXT",
+        """CREATE UNIQUE INDEX IF NOT EXISTS idx_users_rfid_uid_unique
+            ON users(rfid_uid) WHERE rfid_uid IS NOT NULL AND rfid_uid != ''""",
     ]:
         try:
             db.execute(migration)
@@ -473,6 +493,13 @@ def root():
 @app.route('/welcome')
 def landing():
     with open(os.path.join(os.path.dirname(__file__), 'templates', 'landing.html'), encoding='utf-8') as f:
+        return f.read()
+
+@app.route('/kiosk')
+def kiosk():
+    """Single-purpose page for a tablet/screen next to the RC522 reader:
+    polls for scans and logs the matching account in automatically."""
+    with open(os.path.join(os.path.dirname(__file__), 'templates', 'kiosk.html'), encoding='utf-8') as f:
         return f.read()
 
 @app.route('/app')
@@ -1008,6 +1035,72 @@ def auth_login():
 def auth_logout():
     session.clear()
     return jsonify({'ok': True})
+
+@app.route('/api/auth/login-rfid', methods=['POST'])
+@limiter.limit('20 per minute')
+def auth_login_rfid():
+    """Kiosk browser calls this after /api/rfid/poll shows a fresh scan.
+    Possession of the physical card is the auth factor, same trust model as
+    the standalone rfid-login demo."""
+    d = request.get_json(silent=True) or {}
+    card_uid = str(d.get('uid', '')).strip().upper()
+    if not card_uid:
+        return jsonify({'ok': False, 'error': 'missing uid'}), 400
+    db = get_db()
+    row = db.execute("SELECT * FROM users WHERE rfid_uid=?", [card_uid]).fetchone()
+    if not row:
+        return jsonify({'ok': False, 'error': 'Nieznana karta'}), 404
+    session['user_id'] = row['id']
+    user = dict(db.execute("SELECT id,username,household_id,member_id,role FROM users WHERE id=?",
+                            [row['id']]).fetchone())
+    household = dict(db.execute("SELECT * FROM households WHERE id=?", [user['household_id']]).fetchone())
+    return jsonify({'ok': True, 'user': user, 'household': household})
+
+@app.route('/api/auth/link-rfid', methods=['POST'])
+def auth_link_rfid():
+    """Self-service: logged-in user assigns their own card's UID to their account."""
+    err = require_auth()
+    if err: return err
+    d = request.get_json(silent=True) or {}
+    card_uid = str(d.get('uid', '')).strip().upper()
+    if not card_uid:
+        return jsonify({'ok': False, 'error': 'missing uid'}), 400
+    db = get_db()
+    existing = db.execute("SELECT id FROM users WHERE rfid_uid=?", [card_uid]).fetchone()
+    if existing and existing['id'] != session['user_id']:
+        return jsonify({'ok': False, 'error': 'Karta jest już przypisana do innego konta'}), 409
+    db.execute("UPDATE users SET rfid_uid=? WHERE id=?", [card_uid, session['user_id']])
+    db.commit()
+    return jsonify({'ok': True})
+
+@app.route('/api/rfid/scan', methods=['POST'])
+def rfid_scan():
+    """Device endpoint: the ESP32/RC522 reader POSTs here on every card scan."""
+    if RFID_SCAN_SECRET and request.headers.get('X-RFID-Secret') != RFID_SCAN_SECRET:
+        return jsonify({'ok': False, 'error': 'unauthorized'}), 401
+    d = request.get_json(silent=True) or {}
+    card_uid = str(d.get('uid', '')).strip().upper()
+    if not card_uid:
+        return jsonify({'ok': False, 'error': 'missing uid'}), 400
+    db = get_db()
+    db.execute("""INSERT INTO rfid_last_scan (id, card_uid, ts) VALUES (1, ?, ?)
+                  ON CONFLICT(id) DO UPDATE SET card_uid=excluded.card_uid, ts=excluded.ts""",
+               [card_uid, time.time()])
+    db.commit()
+    return jsonify({'ok': True})
+
+@app.route('/api/rfid/poll')
+def rfid_poll():
+    """Kiosk browser long-poll target: returns the latest scan if it's newer
+    than the `since` timestamp the caller already knows about."""
+    try:
+        since = float(request.args.get('since', 0))
+    except ValueError:
+        since = 0.0
+    row = get_db().execute("SELECT card_uid, ts FROM rfid_last_scan WHERE id=1").fetchone()
+    if row and row['ts'] and row['ts'] > since:
+        return jsonify({'uid': row['card_uid'], 'ts': row['ts']})
+    return jsonify({'uid': None, 'ts': row['ts'] if row else 0})
 
 @app.route('/api/auth/forgot-password', methods=['POST'])
 @limiter.limit('5 per hour')

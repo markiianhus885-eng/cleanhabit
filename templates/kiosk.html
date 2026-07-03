@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CleanHabit — zeskanuj kartę</title>
+<style>
+  body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #f8fafc;
+         display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }
+  .card { max-width: 420px; padding: 40px; }
+  .icon { font-size: 64px; margin-bottom: 16px; }
+  h1 { font-size: 24px; margin: 0 0 8px; }
+  p { color: #94a3b8; font-size: 15px; }
+  .status.error { color: #f87171; }
+  .status.ok { color: #4ade80; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon" id="icon">📇</div>
+    <h1 id="title">Zeskanuj kartę, aby się zalogować</h1>
+    <p class="status" id="status">Czekam na skan...</p>
+  </div>
+<script>
+// Baseline is unset until we've fetched the server's current scan timestamp
+// once — otherwise a stale scan already sitting in the DB from before this
+// page loaded would immediately "trigger" a login on page load.
+let since = null;
+
+async function poll() {
+  if (since === null) {
+    try {
+      const res = await fetch('/api/rfid/poll?since=0');
+      const data = await res.json();
+      since = data.ts || 0;
+    } catch (e) {
+      since = 0;
+    }
+    setTimeout(poll, 1000);
+    return;
+  }
+  try {
+    const res = await fetch(`/api/rfid/poll?since=${since}`);
+    const data = await res.json();
+    since = data.ts || since;
+    if (data.uid) {
+      await login(data.uid);
+      return; // stop polling after a login attempt; page will redirect or reset below
+    }
+  } catch (e) {
+    // network hiccup, keep polling
+  }
+  setTimeout(poll, 1000);
+}
+
+async function login(uid) {
+  document.getElementById('status').textContent = 'Rozpoznaję kartę...';
+  try {
+    const res = await fetch('/api/auth/login-rfid', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById('icon').textContent = '✅';
+      document.getElementById('title').textContent = `Witaj, ${data.user.username}!`;
+      document.getElementById('status').textContent = 'Zalogowano — przekierowuję...';
+      document.getElementById('status').className = 'status ok';
+      setTimeout(() => { window.location.href = '/app'; }, 1200);
+    } else {
+      showError(data.error || 'Nieznana karta');
+    }
+  } catch (e) {
+    showError('Błąd połączenia z serwerem');
+  }
+}
+
+function showError(msg) {
+  document.getElementById('icon').textContent = '❌';
+  document.getElementById('status').textContent = msg;
+  document.getElementById('status').className = 'status error';
+  setTimeout(() => {
+    document.getElementById('icon').textContent = '📇';
+    document.getElementById('title').textContent = 'Zeskanuj kartę, aby się zalogować';
+    document.getElementById('status').textContent = 'Czekam na skan...';
+    document.getElementById('status').className = 'status';
+    poll();
+  }, 2500);
+}
+
+poll();
+</script>
+</body>
+</html>
