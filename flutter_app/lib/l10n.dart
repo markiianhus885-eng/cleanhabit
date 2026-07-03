@@ -295,7 +295,7 @@ class L10n {
     'gdpr_accept': ['I accept the ', 'Akceptuję ', 'Я приймаю '],
     'privacy_policy': ['privacy policy', 'politykę prywatności', 'політику конфіденційності'],
     'forgot_password': ['Forgot password?', 'Zapomniałem hasła', 'Забули пароль?'],
-    'rfid_hint': ['You can also tap your RFID card', 'Możesz też zeskanować kartę RFID', 'Ви також можете прикласти картку RFID'],
+    'rfid_hint': ['You can also tap your RFID card to this phone', 'Możesz też przyłożyć kartę RFID do telefonu', 'Ви також можете прикласти картку RFID до телефону'],
     'forgot_desc': ['Enter your registration email. We\'ll send a verification code.', 'Podaj email z rejestracji. Wyślemy kod weryfikacyjny.', 'Введіть email з реєстрації. Надішлемо код.'],
     'enter_code_desc': ['Enter the 6-digit code from your email:', 'Wpisz 6-cyfrowy kod z emaila:', 'Введіть 6-значний код з email:'],
     'check_spam': ['📁 Check your spam/junk folder if you don\'t see it.', '📁 Nie widzisz? Sprawdź folder spam/śmietnik.', '📁 Не бачите? Перевірте папку спам.'],
