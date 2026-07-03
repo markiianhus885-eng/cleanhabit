@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -34,8 +36,49 @@ class _AuthScreenState extends State<AuthScreen> {
   String? _selectedMemberId;
   String? _lookedUpName;
 
+  // RFID card login: polls the RC522/ESP32 reader's last-scan state while
+  // this screen is showing (mirrors the web /app and /kiosk behavior).
+  Timer? _rfidTimer;
+  double? _rfidSince; // null = baseline not established yet
+  String? _rfidHint;
+
+  @override
+  void initState() {
+    super.initState();
+    _rfidTimer = Timer.periodic(const Duration(seconds: 1), (_) => _rfidPollOnce());
+  }
+
+  Future<void> _rfidPollOnce() async {
+    if (!mounted) return;
+    final app = context.read<AppState>();
+    try {
+      final data = await app.api.rfidPoll(_rfidSince ?? 0);
+      final ts = (data['ts'] as num?)?.toDouble() ?? 0;
+      if (_rfidSince == null) {
+        // First poll only establishes the baseline — a scan already sitting
+        // on the server from before this screen opened shouldn't auto-login.
+        _rfidSince = ts;
+        return;
+      }
+      _rfidSince = ts;
+      final uid = data['uid'] as String?;
+      if (uid == null || !mounted) return;
+      try {
+        await app.loginRfid(uid);
+      } on ApiException catch (e) {
+        if (mounted) setState(() => _rfidHint = e.message);
+        Future.delayed(const Duration(milliseconds: 2500), () {
+          if (mounted) setState(() => _rfidHint = null);
+        });
+      }
+    } catch (_) {
+      // network hiccup, keep polling
+    }
+  }
+
   @override
   void dispose() {
+    _rfidTimer?.cancel();
     _username.dispose();
     _password.dispose();
     _email.dispose();
@@ -347,6 +390,12 @@ class _AuthScreenState extends State<AuthScreen> {
                         ),
                       ],
                     ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    _rfidHint ?? '📇 ${context.t('rfid_hint')}',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 13, color: c.textSecondary),
                   ),
                 ],
               ),
