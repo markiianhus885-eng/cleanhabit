@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:nfc_manager/nfc_manager.dart';
+import 'package:nfc_manager/nfc_manager_android.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -36,16 +38,59 @@ class _AuthScreenState extends State<AuthScreen> {
   String? _selectedMemberId;
   String? _lookedUpName;
 
-  // RFID card login: polls the RC522/ESP32 reader's last-scan state while
-  // this screen is showing (mirrors the web /app and /kiosk behavior).
+  // RFID card login, two independent sources feeding the same account
+  // lookup: (1) polling the RC522/ESP32 kiosk reader's last-scan state
+  // (mirrors the web /app and /kiosk behavior), and (2) the phone's own NFC
+  // radio reading the card directly, no external reader needed.
   Timer? _rfidTimer;
   double? _rfidSince; // null = baseline not established yet
   String? _rfidHint;
+  bool _nfcActive = false;
 
   @override
   void initState() {
     super.initState();
     _rfidTimer = Timer.periodic(const Duration(seconds: 1), (_) => _rfidPollOnce());
+    _startNfcSession();
+  }
+
+  Future<void> _startNfcSession() async {
+    try {
+      final available = await NfcManager.instance.isAvailable();
+      if (!available) return;
+      _nfcActive = true;
+      await NfcManager.instance.startSession(
+        pollingOptions: {NfcPollingOption.iso14443},
+        onDiscovered: (NfcTag tag) async {
+          final idBytes = NfcTagAndroid.from(tag)?.id;
+          if (idBytes == null || idBytes.isEmpty) return;
+          final uid = idBytes
+              .map((b) => b.toRadixString(16).padLeft(2, '0'))
+              .join()
+              .toUpperCase();
+          await _tryRfidLogin(uid);
+        },
+      );
+    } catch (_) {
+      // No NFC hardware, or permission denied — the RC522 kiosk reader
+      // (polled above) still works as a fallback.
+      _nfcActive = false;
+    }
+  }
+
+  Future<void> _tryRfidLogin(String uid) async {
+    if (!mounted) return;
+    final app = context.read<AppState>();
+    try {
+      await app.loginRfid(uid);
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _rfidHint = e.message);
+      Future.delayed(const Duration(milliseconds: 2500), () {
+        if (mounted) setState(() => _rfidHint = null);
+      });
+    } catch (_) {
+      // network hiccup
+    }
   }
 
   Future<void> _rfidPollOnce() async {
@@ -63,14 +108,7 @@ class _AuthScreenState extends State<AuthScreen> {
       _rfidSince = ts;
       final uid = data['uid'] as String?;
       if (uid == null || !mounted) return;
-      try {
-        await app.loginRfid(uid);
-      } on ApiException catch (e) {
-        if (mounted) setState(() => _rfidHint = e.message);
-        Future.delayed(const Duration(milliseconds: 2500), () {
-          if (mounted) setState(() => _rfidHint = null);
-        });
-      }
+      await _tryRfidLogin(uid);
     } catch (_) {
       // network hiccup, keep polling
     }
@@ -79,6 +117,9 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   void dispose() {
     _rfidTimer?.cancel();
+    if (_nfcActive) {
+      NfcManager.instance.stopSession();
+    }
     _username.dispose();
     _password.dispose();
     _email.dispose();
