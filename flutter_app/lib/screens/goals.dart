@@ -84,9 +84,91 @@ class GoalsScreen extends StatelessWidget {
               else
                 for (final g in data.goals)
                   _GoalCard(goal: g, coins: coins, data: data),
+
+              if (_fulfilled(data).isNotEmpty) ...[
+                const SizedBox(height: 8),
+                _FulfilledSection(entries: _fulfilled(data)),
+              ],
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+List<_FulfilledEntry> _fulfilled(HouseholdData data) {
+  final amStaff = data.amAdmin || data.amOwner;
+  final myId = data.me?.id;
+  final out = <_FulfilledEntry>[];
+  for (final g in data.goals) {
+    for (final p in g.purchases) {
+      if (!p.fulfilled) continue;
+      if (!amStaff && p.memberId != myId) continue;
+      out.add(_FulfilledEntry(goal: g, purchase: p));
+    }
+  }
+  return out.take(5).toList();
+}
+
+class _FulfilledEntry {
+  final Goal goal;
+  final GoalPurchase purchase;
+  const _FulfilledEntry({required this.goal, required this.purchase});
+}
+
+class _FulfilledSection extends StatelessWidget {
+  final List<_FulfilledEntry> entries;
+  const _FulfilledSection({required this.entries});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.ch;
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '✅ ${context.t('goals_fulfilled_section')} (${entries.length})'
+                .toUpperCase(),
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+                color: c.textSecondary),
+          ),
+          const SizedBox(height: 10),
+          for (final e in entries)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                children: [
+                  Text(e.goal.emoji, style: const TextStyle(fontSize: 20)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(e.goal.name,
+                            style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                                color: c.textPrimary)),
+                        Text('${e.purchase.memberEmoji} ${e.purchase.memberName}',
+                            style: TextStyle(fontSize: 11, color: c.textSecondary)),
+                      ],
+                    ),
+                  ),
+                  Text('✓ ${context.t('done')}',
+                      style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF2E9E5B))),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -103,7 +185,11 @@ class _GoalCard extends StatelessWidget {
     final c = context.ch;
     final app = context.read<AppState>();
     final canAfford = coins >= goal.price;
-    final pending = goal.purchases.where((p) => !p.fulfilled).toList();
+    final amStaff = data.amAdmin || data.amOwner;
+    final myId = data.me?.id;
+    final pending = goal.purchases
+        .where((p) => !p.fulfilled && (amStaff || p.memberId == myId))
+        .toList();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
@@ -158,7 +244,7 @@ class _GoalCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed:
-                      canAfford ? () => _buy(context, app) : null,
+                      canAfford ? () => _confirmBuy(context, app) : null,
                   child: Text(context.t(canAfford ? 'redeem' : 'not_enough')),
                 ),
               ],
@@ -168,23 +254,38 @@ class _GoalCard extends StatelessWidget {
               Divider(color: c.divider, height: 1),
               const SizedBox(height: 10),
               ...pending.map((p) => Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Row(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('${p.memberEmoji} ${context.t('redeemed_this', {'name': p.memberName})}',
-                            style: TextStyle(
-                                fontSize: 12.5, color: c.textSecondary)),
-                        const Spacer(),
-                        if (data.amAdmin)
-                          TextButton(
-                            onPressed: () => _fulfill(context, app, p.id),
-                            child: Text(context.t('mark_given'),
-                                style: TextStyle(color: c.accent)),
-                          )
-                        else
-                          Text(context.t('pending'),
-                              style: TextStyle(
-                                  fontSize: 12, color: c.textFaint)),
+                        Row(
+                          children: [
+                            Text('${p.memberEmoji} ${context.t('redeemed_this', {'name': p.memberName})}',
+                                style: TextStyle(
+                                    fontSize: 12.5, color: c.textSecondary)),
+                            const Spacer(),
+                            if (data.amAdmin || data.amOwner)
+                              TextButton(
+                                onPressed: () => _fulfill(context, app, p.id),
+                                child: Text(context.t('mark_given'),
+                                    style: TextStyle(color: c.accent)),
+                              )
+                            else
+                              Text(context.t('pending'),
+                                  style: TextStyle(
+                                      fontSize: 12, color: c.textFaint)),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          (data.amAdmin || data.amOwner)
+                              ? context.t('to_approve')
+                              : context.t('to_do'),
+                          style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: c.textFaint),
+                        ),
                       ],
                     ),
                   )),
@@ -193,6 +294,123 @@ class _GoalCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmBuy(BuildContext context, AppState app) async {
+    final c = context.ch;
+    final remaining = coins - goal.price;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: c.card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(goal.emoji, style: const TextStyle(fontSize: 56)),
+              const SizedBox(height: 12),
+              Text(goal.name,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                      color: c.textPrimary)),
+              if ((goal.description ?? '').isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(goal.description!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 13, color: c.textSecondary)),
+              ],
+              const SizedBox(height: 18),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('${context.t('buy_for_q')} ',
+                      style: TextStyle(fontSize: 15, color: c.textSecondary)),
+                  const CoinDot(size: 18),
+                  const SizedBox(width: 4),
+                  Text('${goal.price}?',
+                      style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: c.star)),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('${context.t('remaining_colon')} ',
+                      style: TextStyle(fontSize: 13, color: c.textSecondary)),
+                  const CoinDot(size: 14),
+                  const SizedBox(width: 4),
+                  Text('$remaining',
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: c.star)),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: c.accent.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(
+                  context.t('owner_notified'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontSize: 12, color: c.textSecondary, height: 1.4),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: c.textSecondary,
+                        side: BorderSide(color: c.divider),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: Text(context.t('cancel')),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: c.accentGradient,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: TextButton(
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: Text(context.t('buy_btn'),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w800)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (ok == true && context.mounted) await _buy(context, app);
   }
 
   Future<void> _buy(BuildContext context, AppState app) async {
@@ -305,7 +523,8 @@ class _AddGoalSheetState extends State<_AddGoalSheet> {
   @override
   Widget build(BuildContext context) {
     final c = context.ch;
-    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    final mq = MediaQuery.of(context);
+    final bottom = mq.viewInsets.bottom > 0 ? mq.viewInsets.bottom : mq.padding.bottom;
     return Container(
       padding: EdgeInsets.fromLTRB(20, 12, 20, 20 + bottom),
       decoration: BoxDecoration(

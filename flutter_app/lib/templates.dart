@@ -28,6 +28,10 @@ const Map<String, List<TaskSuggestion>> _taskSugg = {
     TaskSuggestion('Wycieranie luster', 'easy'), TaskSuggestion('Czyszczenie mikrofalówki', 'easy'),
     TaskSuggestion('Mycie kafelek', 'hard'), TaskSuggestion('Odkurzanie kanapy', 'medium'),
     TaskSuggestion('Porządkowanie szaf', 'hard'), TaskSuggestion('Mycie drzwi', 'medium'),
+    TaskSuggestion('Wyprowadzanie psa', 'easy'), TaskSuggestion('Karmienie psa', 'easy'),
+    TaskSuggestion('Karmienie kota', 'easy'), TaskSuggestion('Czyszczenie kuwety', 'medium'),
+    TaskSuggestion('Czesanie zwierzaka', 'easy'), TaskSuggestion('Mycie miski zwierzaka', 'easy'),
+    TaskSuggestion('Sprzątanie po zwierzaku', 'medium'), TaskSuggestion('Kąpiel psa', 'hard'),
   ],
   'en': [
     TaskSuggestion('Vacuuming', 'medium'), TaskSuggestion('Mopping floors', 'hard'),
@@ -40,6 +44,10 @@ const Map<String, List<TaskSuggestion>> _taskSugg = {
     TaskSuggestion('Wiping mirrors', 'easy'), TaskSuggestion('Cleaning the microwave', 'easy'),
     TaskSuggestion('Scrubbing tiles', 'hard'), TaskSuggestion('Vacuuming the sofa', 'medium'),
     TaskSuggestion('Organizing wardrobes', 'hard'), TaskSuggestion('Wiping doors', 'medium'),
+    TaskSuggestion('Walking the dog', 'easy'), TaskSuggestion('Feeding the dog', 'easy'),
+    TaskSuggestion('Feeding the cat', 'easy'), TaskSuggestion('Cleaning the litter box', 'medium'),
+    TaskSuggestion('Brushing the pet', 'easy'), TaskSuggestion('Washing the pet bowl', 'easy'),
+    TaskSuggestion('Cleaning up after the pet', 'medium'), TaskSuggestion('Bathing the dog', 'hard'),
   ],
   'uk': [
     TaskSuggestion('Пилосос', 'medium'), TaskSuggestion('Миття підлог', 'hard'),
@@ -52,6 +60,10 @@ const Map<String, List<TaskSuggestion>> _taskSugg = {
     TaskSuggestion('Протирання дзеркал', 'easy'), TaskSuggestion('Чищення мікрохвильовки', 'easy'),
     TaskSuggestion('Чищення кахелю', 'hard'), TaskSuggestion('Пилосос дивану', 'medium'),
     TaskSuggestion('Упорядкування шаф', 'hard'), TaskSuggestion('Протирання дверей', 'medium'),
+    TaskSuggestion('Вигул собаки', 'easy'), TaskSuggestion('Годування собаки', 'easy'),
+    TaskSuggestion('Годування кота', 'easy'), TaskSuggestion('Чищення лотка', 'medium'),
+    TaskSuggestion('Розчісування тварини', 'easy'), TaskSuggestion('Миття миски тварини', 'easy'),
+    TaskSuggestion('Прибирання після тварини', 'medium'), TaskSuggestion('Купання собаки', 'hard'),
   ],
 };
 

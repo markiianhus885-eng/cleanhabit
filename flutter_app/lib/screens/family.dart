@@ -136,7 +136,7 @@ class _MemberRow extends StatelessWidget {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        padding: EdgeInsets.fromLTRB(20, 12, 20, 24 + MediaQuery.of(ctx).padding.bottom),
         decoration: BoxDecoration(
           color: c.pageBg,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
@@ -246,7 +246,8 @@ class _AddMemberSheetState extends State<_AddMemberSheet> {
   @override
   Widget build(BuildContext context) {
     final c = context.ch;
-    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    final mq = MediaQuery.of(context);
+    final bottom = mq.viewInsets.bottom > 0 ? mq.viewInsets.bottom : mq.padding.bottom;
     return Container(
       padding: EdgeInsets.fromLTRB(20, 12, 20, 20 + bottom),
       decoration: BoxDecoration(

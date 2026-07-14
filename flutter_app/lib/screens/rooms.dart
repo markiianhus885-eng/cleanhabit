@@ -7,6 +7,8 @@ import '../models.dart';
 import '../state.dart';
 import '../theme.dart';
 import '../widgets.dart';
+import 'task_actions.dart';
+import 'tasks.dart' show openTaskEditSheet;
 
 class RoomsScreen extends StatelessWidget {
   const RoomsScreen({super.key});
@@ -93,7 +95,9 @@ class _RoomCard extends StatelessWidget {
     final clean = room.cleanliness;
     final isClean = clean >= 90;
 
-    return AppCard(
+    return GestureDetector(
+      onTap: () => _openRoomDetail(context, room),
+      child: AppCard(
       radius: 24,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -164,6 +168,7 @@ class _RoomCard extends StatelessWidget {
           ),
         ],
       ),
+      ),
     );
   }
 
@@ -206,6 +211,292 @@ class _RoomCard extends StatelessWidget {
         if (context.mounted) showSnack(context, e.message, error: true);
       }
     }
+  }
+}
+
+void _openRoomDetail(BuildContext context, Room room) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => _RoomDetailSheet(room: room),
+  );
+}
+
+class _RoomDetailSheet extends StatefulWidget {
+  final Room room;
+  const _RoomDetailSheet({required this.room});
+  @override
+  State<_RoomDetailSheet> createState() => _RoomDetailSheetState();
+}
+
+class _RoomDetailSheetState extends State<_RoomDetailSheet> {
+  Future<Map<String, dynamic>>? _stats;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  void _load() {
+    _stats = context.read<AppState>().roomStats(widget.room.id);
+  }
+
+  Future<void> _reload() async {
+    await context.read<AppState>().refresh();
+    setState(_load);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.ch;
+    final data = context.watch<AppState>().data;
+    final room = data?.rooms.firstWhere((r) => r.id == widget.room.id,
+            orElse: () => widget.room) ??
+        widget.room;
+    final roomTasks = data?.tasks.where((t) => t.roomId == room.id).toList() ?? [];
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(20, 12, 20, 24 + MediaQuery.of(context).padding.bottom),
+      decoration: BoxDecoration(
+        color: c.pageBg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                      color: c.divider,
+                      borderRadius: BorderRadius.circular(999))),
+            ),
+            const SizedBox(height: 16),
+            Center(
+              child: Text(room.emoji, style: const TextStyle(fontSize: 48)),
+            ),
+            const SizedBox(height: 8),
+            Center(
+              child: Text(room.name,
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: c.textPrimary)),
+            ),
+            const SizedBox(height: 10),
+            Center(
+              child: Text('${room.cleanliness}%',
+                  style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      color: c.accent)),
+            ),
+            const SizedBox(height: 8),
+            BarMeter(value: room.cleanliness / 100, height: 10),
+            const SizedBox(height: 18),
+            FutureBuilder<Map<String, dynamic>>(
+              future: _stats,
+              builder: (ctx, snap) {
+                final s = snap.data;
+                if (s == null || s['error'] != null) return const SizedBox();
+                final weekTotal = s['week_total'] as Map<String, dynamic>? ?? {};
+                final breakdown =
+                    (s['member_breakdown'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+                final maxCount = breakdown.isEmpty
+                    ? 1
+                    : breakdown
+                        .map((b) => (b['count'] as num?)?.toInt() ?? 0)
+                        .reduce((a, b) => a > b ? a : b)
+                        .clamp(1, 1 << 30);
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(children: [
+                      Expanded(
+                          child: _StatBox(
+                              label: context.t('room_stat_today'),
+                              value: '${s['done_count'] ?? 0}/${roomTasks.length}',
+                              color: c.accent)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                          child: _StatBox(
+                              label: context.t('room_stat_week'),
+                              value: '${weekTotal['count'] ?? 0}',
+                              color: c.successPillText)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                          child: _StatBox(
+                              label: context.t('room_stat_points'),
+                              value: '🪙${weekTotal['pts'] ?? 0}',
+                              color: c.star)),
+                    ]),
+                    if (breakdown.isNotEmpty) ...[
+                      const SizedBox(height: 14),
+                      for (final b in breakdown)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Row(children: [
+                            Text('${b['emoji'] ?? '👤'}',
+                                style: const TextStyle(fontSize: 14)),
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 64,
+                              child: Text('${b['name'] ?? '?'}',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: c.textPrimary)),
+                            ),
+                            Expanded(
+                              child: Container(
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: c.trackBg,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: FractionallySizedBox(
+                                  alignment: Alignment.centerLeft,
+                                  widthFactor:
+                                      ((b['count'] as num?)?.toInt() ?? 0) / maxCount,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: c.accent,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text('${b['count'] ?? 0}',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: c.textSecondary)),
+                          ]),
+                        ),
+                    ],
+                    const Divider(height: 24),
+                  ],
+                );
+              },
+            ),
+            Text('${context.t('room_tasks_label')} (${roomTasks.length})',
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: c.textPrimary)),
+            const SizedBox(height: 8),
+            if (roomTasks.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Center(
+                    child: Text(context.t('no_tasks'),
+                        style: TextStyle(color: c.textSecondary))),
+              )
+            else if (data != null)
+              for (final t in roomTasks)
+                _RoomTaskRow(task: t, data: data, onChanged: _reload),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatBox extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  const _StatBox({required this.label, required this.value, required this.color});
+  @override
+  Widget build(BuildContext context) {
+    final c = context.ch;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        color: c.pageBg,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(children: [
+        Text(value,
+            style: TextStyle(
+                fontSize: 18, fontWeight: FontWeight.w900, color: color)),
+        const SizedBox(height: 2),
+        Text(label,
+            style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: c.textSecondary)),
+      ]),
+    );
+  }
+}
+
+class _RoomTaskRow extends StatelessWidget {
+  final Task task;
+  final HouseholdData data;
+  final Future<void> Function() onChanged;
+  const _RoomTaskRow({required this.task, required this.data, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.ch;
+    final app = context.read<AppState>();
+    final done = data.isDoneToday(task.id);
+    final canDo = !done && canCompleteTask(data, task);
+    final assignee =
+        task.assignedTo.isNotEmpty ? data.memberById(task.assignedTo) : null;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          TaskCheckbox(
+            done: done,
+            locked: !done && !canDo,
+            size: 26,
+            onTap: done
+                ? () async {
+                    await uncompleteTaskFlow(context, app, task);
+                    await onChanged();
+                  }
+                : (canDo
+                    ? () async {
+                        await completeTaskFlow(context, app, task);
+                        await onChanged();
+                      }
+                    : null),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(task.name,
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: c.textPrimary,
+                        decoration: done ? TextDecoration.lineThrough : null)),
+                Text(
+                    '${assignee?.emoji ?? ''} ${assignee?.name ?? '?'} · ${fmtSchedule(context, task)}',
+                    style: TextStyle(fontSize: 12.5, color: c.textSecondary)),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () => openTaskEditSheet(context, data, task),
+            child: Icon(Icons.edit_outlined, size: 18, color: c.textFaint),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -261,7 +552,8 @@ class _AddRoomSheetState extends State<_AddRoomSheet> {
   @override
   Widget build(BuildContext context) {
     final c = context.ch;
-    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    final mq = MediaQuery.of(context);
+    final bottom = mq.viewInsets.bottom > 0 ? mq.viewInsets.bottom : mq.padding.bottom;
     return Container(
       padding: EdgeInsets.fromLTRB(20, 12, 20, 20 + bottom),
       decoration: BoxDecoration(

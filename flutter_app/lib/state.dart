@@ -77,22 +77,45 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loginRfid(String uid) async {
-    await api.loginRfid(uid);
+  /// Returns the raw response so the caller can tell a completed signup
+  /// (`user`/`household` present, already logged in) apart from a pending
+  /// one (`pending_verification: true` — a code was emailed, call
+  /// [verifyEmail] once the user enters it).
+  Future<Map<String, dynamic>> register(Map<String, dynamic> body) async {
+    final res = await api.register(body);
+    if (res['pending_verification'] == true) return res;
+    await refresh();
+    _status = AuthStatus.loggedIn;
+    notifyListeners();
+    return res;
+  }
+
+  Future<void> verifyEmail(String email, String code) async {
+    await api.verifyEmail(email, code);
     await refresh();
     _status = AuthStatus.loggedIn;
     notifyListeners();
   }
 
-  Future<void> register(Map<String, dynamic> body) async {
-    await api.register(body);
+  /// Returns the raw response — `needs_setup: true` means the caller must
+  /// collect create/join household details and call again via [googleAuth].
+  Future<Map<String, dynamic>> googleAuth(String idToken,
+      [Map<String, dynamic>? extra]) async {
+    final res = await api.googleAuth(idToken, extra);
+    if (res['needs_setup'] == true) return res;
     await refresh();
     _status = AuthStatus.loggedIn;
     notifyListeners();
+    return res;
   }
 
   Future<void> logout() async {
-    await api.logout();
+    // The session may already be gone server-side even if this request
+    // fails or hangs (flaky network, etc) — cap the wait so the UI can
+    // never be stranded on the logged-in screen forever.
+    try {
+      await api.logout().timeout(const Duration(seconds: 3));
+    } catch (_) {}
     _data = null;
     _status = AuthStatus.loggedOut;
     notifyListeners();
@@ -105,10 +128,26 @@ class AppState extends ChangeNotifier {
     return res;
   }
 
+  Future<void> uncompleteTask(String id) async {
+    await api.uncompleteTask(id);
+    await refresh();
+  }
+
   Future<void> deleteTask(String id) async {
     await api.deleteTask(id);
     await refresh();
   }
+
+  /// "Delete only this occurrence" of a recurring task — skips its next
+  /// cycle without deleting the task definition itself. Pass the specific
+  /// calendar day (YYYY-MM-DD) being skipped so the right occurrence is
+  /// affected, not just whatever's due "now".
+  Future<void> expireTask(String id, {String? date}) async {
+    await api.expireTask(id, date: date);
+    await refresh();
+  }
+
+  Future<Map<String, dynamic>> roomStats(String id) => api.roomStats(id);
 
   Future<void> addTask({
     required String name,
@@ -121,6 +160,31 @@ class AppState extends ChangeNotifier {
     String? specificDays,
   }) async {
     await api.addTask(
+      name: name,
+      roomId: roomId,
+      assignedTo: assignedTo,
+      freq: freq,
+      diff: diff,
+      approvalNeeded: approvalNeeded,
+      oneTime: oneTime,
+      specificDays: specificDays,
+    );
+    await refresh();
+  }
+
+  Future<void> editTask({
+    required String id,
+    required String name,
+    required String roomId,
+    required String assignedTo,
+    required String freq,
+    required String diff,
+    bool approvalNeeded = false,
+    bool oneTime = false,
+    String? specificDays,
+  }) async {
+    await api.editTask(
+      id: id,
       name: name,
       roomId: roomId,
       assignedTo: assignedTo,

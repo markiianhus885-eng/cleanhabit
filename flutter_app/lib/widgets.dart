@@ -764,6 +764,66 @@ class QuestTile extends StatelessWidget {
   }
 }
 
+/// Circular task-completion checkbox mirroring web's `.task-chk` exactly
+/// (same glyphs/colors): ✓ green when done, ⏳ gold while pending approval,
+/// 🔒 dimmed when locked (not the assignee/admin), otherwise an empty
+/// tappable ring.
+class TaskCheckbox extends StatelessWidget {
+  final bool done;
+  final bool pendingApproval;
+  final bool locked;
+  final VoidCallback? onTap;
+  final double size;
+  const TaskCheckbox({
+    super.key,
+    required this.done,
+    this.pendingApproval = false,
+    this.locked = false,
+    this.onTap,
+    this.size = 30,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.ch;
+    Color? bg;
+    Color borderColor = c.divider;
+    Widget glyph;
+    if (done) {
+      bg = const Color(0xFF2F8B5E);
+      borderColor = bg;
+      glyph = const Text('✓',
+          style: TextStyle(color: Colors.white, fontSize: 14, height: 1));
+    } else if (pendingApproval) {
+      bg = c.star;
+      borderColor = bg;
+      glyph = const Text('⏳', style: TextStyle(fontSize: 13, height: 1));
+    } else if (locked) {
+      glyph = const Text('🔒', style: TextStyle(fontSize: 11, height: 1));
+    } else {
+      glyph = Text('○',
+          style: TextStyle(fontSize: 10, color: c.textFaint, height: 1));
+    }
+    return Opacity(
+      opacity: !done && !pendingApproval && locked ? 0.45 : 1,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: size,
+          height: size,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: bg,
+            border: Border.all(color: borderColor, width: 2),
+          ),
+          child: glyph,
+        ),
+      ),
+    );
+  }
+}
+
 /// Rounded gradient "+" button for screen headers (replaces floating FABs).
 class HeaderAddButton extends StatelessWidget {
   final VoidCallback onTap;

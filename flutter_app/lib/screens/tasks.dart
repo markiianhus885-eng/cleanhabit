@@ -21,6 +21,7 @@ class TasksScreen extends StatefulWidget {
 class _TasksScreenState extends State<TasksScreen> {
   _Filter _filter = _Filter.all;
   String _diff = 'all'; // all | easy | medium | hard
+  String? _memberFilter; // null = not yet initialized; 'all' = everyone
 
   @override
   Widget build(BuildContext context) {
@@ -29,13 +30,19 @@ class _TasksScreenState extends State<TasksScreen> {
     final c = context.ch;
     if (data == null) return const Loader();
 
+    _memberFilter ??= data.me?.id ?? 'all';
+
     Iterable<Task> tasks = data.tasks;
     if (_filter == _Filter.today) {
-      tasks = tasks.where((t) => t.dueToday && !t.doneToday);
+      tasks = tasks.where((t) => t.dueToday && !data.isDoneToday(t.id));
     } else if (_filter == _Filter.done) {
-      tasks = tasks.where((t) => t.doneToday);
+      tasks = tasks.where((t) => data.isDoneToday(t.id));
     }
     if (_diff != 'all') tasks = tasks.where((t) => t.diff == _diff);
+    if (_memberFilter != 'all') {
+      tasks = tasks.where(
+          (t) => t.assignedTo.isEmpty || t.assignedTo == _memberFilter);
+    }
     final list = tasks.toList();
 
     return Scaffold(
@@ -73,6 +80,8 @@ class _TasksScreenState extends State<TasksScreen> {
               ),
               const SizedBox(height: 14),
 
+              _memberChips(c, data),
+              const SizedBox(height: 10),
               _segmented(c),
               const SizedBox(height: 14),
               _diffChips(c),
@@ -145,6 +154,38 @@ class _TasksScreenState extends State<TasksScreen> {
     );
   }
 
+  Widget _memberChips(ChColors c, HouseholdData data) {
+    Widget chip(String label, String value) {
+      final sel = _memberFilter == value;
+      return Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: GestureDetector(
+          onTap: () => setState(() => _memberFilter = value),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+            decoration: BoxDecoration(
+              color: sel ? c.accent : c.card,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(label,
+                style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: sel ? Colors.white : c.textSecondary)),
+          ),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(children: [
+        chip(context.t('all'), 'all'),
+        for (final m in data.members) chip('${m.emoji} ${m.name}', m.id),
+      ]),
+    );
+  }
+
   Widget _diffChips(ChColors c) {
     Widget chip(String label, String value, int bolts) {
       final sel = _diff == value;
@@ -203,9 +244,12 @@ class _TaskRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final app = context.read<AppState>();
-    final done = task.doneToday;
+    final c = context.ch;
+    final done = data.isDoneToday(task.id);
     final qi = questIcon(context, task);
     final xp = task.points * 20;
+    final canDo = canCompleteTask(data, task);
+    final pendingApproval = data.approvals.any((a) => a.taskId == task.id);
     final assignee = task.assignedTo.isNotEmpty
         ? data.memberById(task.assignedTo)
         : null;
@@ -218,26 +262,69 @@ class _TaskRow extends StatelessWidget {
         title: task.name,
         done: done,
         doneLabel: context.t('claimed_xp', {'n': xp}),
-        onTap: done ? null : () => completeTaskFlow(context, app, task),
+        onTap: done
+            ? () => uncompleteTaskFlow(context, app, task)
+            : (!canDo || pendingApproval
+                ? null
+                : () => completeTaskFlow(context, app, task)),
         trailing: done
-            ? null
-            : GoButton(
-                label: context.t('go'),
-                onTap: () => completeTaskFlow(context, app, task),
+            ? TaskCheckbox(
+                done: true,
+                size: 28,
+                onTap: () => uncompleteTaskFlow(context, app, task),
+              )
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TaskCheckbox(
+                    done: false,
+                    pendingApproval: pendingApproval,
+                    locked: !canDo,
+                    size: 28,
+                    onTap: canDo && !pendingApproval
+                        ? () => completeTaskFlow(context, app, task)
+                        : null,
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => openTaskEditSheet(context, data, task),
+                    child: Icon(Icons.edit_outlined, size: 18, color: c.textFaint),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => _confirmDelete(context, app, task),
+                    child: const Text('✕',
+                        style: TextStyle(
+                            color: Color(0xFFE5557A),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700)),
+                  ),
+                ],
               ),
-        subtitle: Row(
+        subtitle: Wrap(
+          spacing: 7,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             RewardTags(xp: xp, coins: task.points),
-            const SizedBox(width: 7),
             DiffTag(
               diffLevel: task.diffLevel,
               quickLabel: context.t('q_quick'),
               epicLabel: context.t('q_epic'),
             ),
-            if (assignee != null) ...[
-              const SizedBox(width: 7),
+            if (assignee != null)
               Text(assignee.emoji, style: const TextStyle(fontSize: 13)),
-            ],
+            Text(fmtSchedule(context, task),
+                style: TextStyle(fontSize: 11.5, color: c.textSecondary)),
+            if (pendingApproval)
+              Text('⏳ ${context.t('task_pending_approval')}',
+                  style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: c.star))
+            else if (task.approvalNeeded)
+              Text('🔒 ${context.t('task_acceptance')}',
+                  style: TextStyle(fontSize: 11.5, color: c.star)),
           ],
         ),
       ),
@@ -287,9 +374,19 @@ void _openAddSheet(BuildContext context, HouseholdData data) {
   );
 }
 
+void openTaskEditSheet(BuildContext context, HouseholdData data, Task task) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => _AddTaskSheet(data: data, existingTask: task),
+  );
+}
+
 class _AddTaskSheet extends StatefulWidget {
   final HouseholdData data;
-  const _AddTaskSheet({required this.data});
+  final Task? existingTask;
+  const _AddTaskSheet({required this.data, this.existingTask});
   @override
   State<_AddTaskSheet> createState() => _AddTaskSheetState();
 }
@@ -297,7 +394,7 @@ class _AddTaskSheet extends StatefulWidget {
 class _AddTaskSheetState extends State<_AddTaskSheet> {
   final _name = TextEditingController();
   String? _roomId;
-  String _assignedTo = '';
+  String? _assignedTo;
   String _freq = 'weekly';
   String _diff = 'easy';
   bool _approval = false;
@@ -305,10 +402,26 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
   bool _busy = false;
   bool _showSugg = false;
 
+  bool get _isEdit => widget.existingTask != null;
+
   @override
   void initState() {
     super.initState();
-    if (widget.data.rooms.isNotEmpty) _roomId = widget.data.rooms.first.id;
+    final t = widget.existingTask;
+    if (t != null) {
+      _name.text = t.name;
+      _roomId = t.roomId.isNotEmpty ? t.roomId : null;
+      _assignedTo = t.assignedTo.isNotEmpty ? t.assignedTo : null;
+      _freq = kFreqDays.containsKey(t.freq) ? t.freq : 'weekly';
+      _diff = t.diff;
+      _approval = t.approvalNeeded;
+      _oneTime = t.oneTime;
+    } else if (widget.data.rooms.isNotEmpty) {
+      _roomId = widget.data.rooms.first.id;
+    }
+    if (_assignedTo == null && widget.data.members.isNotEmpty) {
+      _assignedTo = widget.data.members.first.id;
+    }
   }
 
   @override
@@ -326,20 +439,37 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
       showSnack(context, context.t('add_room_first'), error: true);
       return;
     }
+    if (_assignedTo == null || _assignedTo!.isEmpty) {
+      showSnack(context, context.t('assign_someone_first'), error: true);
+      return;
+    }
     setState(() => _busy = true);
     try {
-      await context.read<AppState>().addTask(
-            name: _name.text.trim(),
-            roomId: _roomId!,
-            assignedTo: _assignedTo,
-            freq: _freq,
-            diff: _diff,
-            approvalNeeded: _approval,
-            oneTime: _oneTime,
-          );
+      if (_isEdit) {
+        await context.read<AppState>().editTask(
+              id: widget.existingTask!.id,
+              name: _name.text.trim(),
+              roomId: _roomId!,
+              assignedTo: _assignedTo!,
+              freq: _freq,
+              diff: _diff,
+              approvalNeeded: _approval,
+              oneTime: _oneTime,
+            );
+      } else {
+        await context.read<AppState>().addTask(
+              name: _name.text.trim(),
+              roomId: _roomId!,
+              assignedTo: _assignedTo!,
+              freq: _freq,
+              diff: _diff,
+              approvalNeeded: _approval,
+              oneTime: _oneTime,
+            );
+      }
       if (mounted) {
         Navigator.pop(context);
-        showSnack(context, context.t('task_added'));
+        showSnack(context, context.t(_isEdit ? 'task_saved' : 'task_added'));
       }
     } on ApiException catch (e) {
       if (mounted) showSnack(context, e.message, error: true);
@@ -351,7 +481,8 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
   @override
   Widget build(BuildContext context) {
     final c = context.ch;
-    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    final mq = MediaQuery.of(context);
+    final bottom = mq.viewInsets.bottom > 0 ? mq.viewInsets.bottom : mq.padding.bottom;
     return Container(
       padding: EdgeInsets.fromLTRB(20, 12, 20, 20 + bottom),
       decoration: BoxDecoration(
@@ -375,7 +506,7 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
             const SizedBox(height: 16),
             Row(
               children: [
-                Text(context.t('new_task'),
+                Text(context.t(_isEdit ? 'modal_edit_task' : 'new_task'),
                     style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
@@ -469,24 +600,26 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
             _dropdown<String>(
               c,
               value: _assignedTo,
-              items: [
-                DropdownMenuItem(value: '', child: Text(context.t('anyone'))),
-                ...widget.data.members.map((m) => DropdownMenuItem(
-                    value: m.id, child: Text('${m.emoji}  ${m.name}'))),
-              ],
-              onChanged: (v) => setState(() => _assignedTo = v ?? ''),
-            ),
-            const SizedBox(height: 14),
-            _label(c, context.t('repeats')),
-            _dropdown<String>(
-              c,
-              value: _freq,
-              items: const ['daily', 'every2', 'weekly', 'biweekly', 'monthly']
-                  .map((k) =>
-                      DropdownMenuItem(value: k, child: Text(freqLabel(context, k))))
+              hint: context.t('select_member'),
+              items: widget.data.members
+                  .map((m) => DropdownMenuItem(
+                      value: m.id, child: Text('${m.emoji}  ${m.name}')))
                   .toList(),
-              onChanged: (v) => setState(() => _freq = v ?? 'weekly'),
+              onChanged: (v) => setState(() => _assignedTo = v),
             ),
+            if (!_oneTime) ...[
+              const SizedBox(height: 14),
+              _label(c, context.t('repeats')),
+              _dropdown<String>(
+                c,
+                value: _freq,
+                items: const ['daily', 'every2', 'weekly', 'biweekly', 'monthly']
+                    .map((k) =>
+                        DropdownMenuItem(value: k, child: Text(freqLabel(context, k))))
+                    .toList(),
+                onChanged: (v) => setState(() => _freq = v ?? 'weekly'),
+              ),
+            ],
             const SizedBox(height: 14),
             _label(c, context.t('difficulty')),
             Row(
@@ -557,7 +690,7 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
                         height: 22,
                         child: CircularProgressIndicator(
                             strokeWidth: 2.5, color: Colors.white))
-                    : Text(context.t('add_task'),
+                    : Text(context.t(_isEdit ? 'modal_task_save_btn' : 'add_task'),
                         style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
