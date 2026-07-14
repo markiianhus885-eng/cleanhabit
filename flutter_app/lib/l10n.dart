@@ -63,7 +63,7 @@ class L10n {
     // common
     'cancel': ['Cancel', 'Anuluj', 'Скасувати'],
     'delete': ['Delete', 'Usuń', 'Видалити'],
-    'undo': ['Undo', 'Cofnij', 'Скасувати'],
+    'undo': ['Undo', 'Cofnij', 'Скасувати виконання'],
     'undo_complete_q': ['Undo completing this task?', 'Cofnąć ukończenie tego zadania?', 'Скасувати виконання цього завдання?'],
     'add': ['Add', 'Dodaj', 'Додати'],
     'save': ['Save', 'Zapisz', 'Зберегти'],

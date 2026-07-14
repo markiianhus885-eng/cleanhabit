@@ -292,8 +292,15 @@ class ChPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.ch;
+    final resolved = padding.resolve(TextDirection.ltr);
+    final navClearance = 98 + MediaQuery.of(context).padding.bottom;
     final body = ListView(
-      padding: padding,
+      padding: EdgeInsets.fromLTRB(
+        resolved.left,
+        resolved.top,
+        resolved.right,
+        resolved.bottom < navClearance ? navClearance : resolved.bottom,
+      ),
       children: [
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
