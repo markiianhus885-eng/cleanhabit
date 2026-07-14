@@ -10,7 +10,7 @@ Setup in Claude Code (~/.claude/claude_desktop_config.json or .mcp.json):
       "args": ["mcp_server.py"],
       "env": {
         "CLEANHABIT_URL": "https://cleanhabit.myroapp.org",
-        "CLEANHABIT_USERNAME": "your_username",
+        "CLEANHABIT_EMAIL": "your_email",
         "CLEANHABIT_PASSWORD": "your_password"
       }
     }
@@ -27,7 +27,7 @@ import urllib.error
 import http.cookiejar
 
 CLEANHABIT_URL = os.environ.get("CLEANHABIT_URL", "https://cleanhabit.myroapp.org")
-USERNAME = os.environ.get("CLEANHABIT_USERNAME", "")
+EMAIL = os.environ.get("CLEANHABIT_EMAIL", "")
 PASSWORD = os.environ.get("CLEANHABIT_PASSWORD", "")
 
 # Cookie jar for session
@@ -52,7 +52,7 @@ def _ensure_logged_in():
     global _logged_in
     if _logged_in:
         return True
-    result = _request("POST", "/api/auth/login", {"username": USERNAME, "password": PASSWORD})
+    result = _request("POST", "/api/auth/login", {"username": EMAIL, "password": PASSWORD})
     if result.get("ok") or result.get("user"):
         _logged_in = True
         return True
@@ -143,7 +143,7 @@ TOOLS = [
 
 def handle_tool(name, args):
     if not _ensure_logged_in():
-        return f"Login failed. Check CLEANHABIT_USERNAME and CLEANHABIT_PASSWORD env vars."
+        return f"Login failed. Check CLEANHABIT_EMAIL and CLEANHABIT_PASSWORD env vars."
 
     if name == "get_data":
         data = _request("GET", "/api/data")
