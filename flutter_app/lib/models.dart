@@ -177,8 +177,6 @@ class Task {
   /// Difficulty as a 1-3 count (for the lightning-bolt chips).
   int get diffLevel => kDiffPts[diff] ?? 1;
 
-  bool get doneToday => _sameDay(lastCompleted, DateTime.now());
-
   /// Mirrors the server's /api/calendar due algorithm (app.py).
   bool isDueOn(DateTime day) {
     // A completed one-time task never becomes due again; it lingers only in
@@ -389,10 +387,17 @@ class HouseholdData {
     return null;
   }
 
+  /// True only for a real completion today — a skipped/missed occurrence
+  /// (history type 'missed') doesn't count, even though it also touches
+  /// the task's last_completed timestamp.
+  bool isDoneToday(String taskId) => history.any(
+      (h) => h.taskId == taskId && h.type != 'missed' && h.isToday);
+
   // ── Derived dashboard numbers (mirror server) ──
   List<Task> get dueTodayTasks => tasks.where((t) => t.dueToday).toList();
 
-  int get todoCount => dueTodayTasks.where((t) => !t.doneToday).length;
+  int get todoCount =>
+      dueTodayTasks.where((t) => !isDoneToday(t.id)).length;
 
   int get doneTodayCount =>
       history.where((h) => h.type == 'done' && h.isToday).length;

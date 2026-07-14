@@ -52,8 +52,20 @@ class Api {
     throw ApiException(_err(r));
   }
 
+  /// Returns either `{ok, pending_verification, email}` (a code was emailed
+  /// and the account isn't created yet) or `{ok, user, household}` for the
+  /// rare server config without verification.
   Future<Map<String, dynamic>> register(Map<String, dynamic> body) async {
     final r = await _dio.post('/api/auth/register', data: body);
+    if (r.statusCode == 200 && r.data['ok'] == true) {
+      return Map<String, dynamic>.from(r.data);
+    }
+    throw ApiException(_err(r));
+  }
+
+  Future<Map<String, dynamic>> verifyEmail(String email, String code) async {
+    final r = await _dio.post('/api/auth/verify-email',
+        data: {'email': email, 'code': code});
     if (r.statusCode == 200 && r.data['ok'] == true) {
       return Map<String, dynamic>.from(r.data);
     }
@@ -63,6 +75,20 @@ class Api {
   Future<void> logout() async {
     await _dio.post('/api/auth/logout');
     await _jar.deleteAll();
+  }
+
+  /// Sign in (or register) with Google. Pass just `idToken` first — if the
+  /// response has `needs_setup: true`, the email is brand new and the
+  /// caller must show a create/join household form, then call this again
+  /// with the same idToken plus the rest of [extra] (action, etc.).
+  Future<Map<String, dynamic>> googleAuth(String idToken,
+      [Map<String, dynamic>? extra]) async {
+    final r = await _dio.post('/api/auth/google',
+        data: {'id_token': idToken, ...?extra});
+    if (r.statusCode == 200 && r.data['ok'] == true) {
+      return Map<String, dynamic>.from(r.data);
+    }
+    throw ApiException(_err(r));
   }
 
   Future<void> forgotPassword(String email) async {
@@ -88,23 +114,6 @@ class Api {
       return Map<String, dynamic>.from(r.data['user']);
     }
     return null;
-  }
-
-  /// Polls the RC522/ESP32 reader's last-scan state. `since` should be the
-  /// `ts` from the previous call (0 on the very first call) — the server
-  /// only reports a `uid` when a scan is newer than that.
-  Future<Map<String, dynamic>> rfidPoll(double since) async {
-    final r = await _dio.get('/api/rfid/poll', queryParameters: {'since': since});
-    if (r.statusCode == 200) return Map<String, dynamic>.from(r.data);
-    throw ApiException(_err(r));
-  }
-
-  Future<Map<String, dynamic>> loginRfid(String uid) async {
-    final r = await _dio.post('/api/auth/login-rfid', data: {'uid': uid});
-    if (r.statusCode == 200 && r.data['ok'] == true) {
-      return Map<String, dynamic>.from(r.data);
-    }
-    throw ApiException(_err(r));
   }
 
   Future<Map<String, dynamic>> householdLookup(String token) async {
@@ -145,6 +154,30 @@ class Api {
     if (r.statusCode != 200) throw ApiException(_err(r));
   }
 
+  Future<void> editTask({
+    required String id,
+    required String name,
+    required String roomId,
+    required String assignedTo,
+    required String freq,
+    required String diff,
+    bool approvalNeeded = false,
+    bool oneTime = false,
+    String? specificDays,
+  }) async {
+    final r = await _dio.put('/api/tasks/$id', data: {
+      'name': name,
+      'roomId': roomId,
+      'assignedTo': assignedTo,
+      'freq': freq,
+      'diff': diff,
+      'approvalNeeded': approvalNeeded,
+      'oneTime': oneTime,
+      if (specificDays != null) 'specificDays': specificDays,
+    });
+    if (r.statusCode != 200) throw ApiException(_err(r));
+  }
+
   /// Returns the server response (may contain `pending_approval`, `pts`, ...).
   Future<Map<String, dynamic>> completeTask(String id, {String? memberId}) async {
     final r = await _dio.post('/api/tasks/$id/complete',
@@ -153,8 +186,26 @@ class Api {
     throw ApiException(_err(r));
   }
 
+  /// Undoes today's most recent completion of a task (points/coins/
+  /// cleanliness reversed, best-effort).
+  Future<void> uncompleteTask(String id) async {
+    final r = await _dio.post('/api/tasks/$id/uncomplete');
+    if (r.statusCode != 200) throw ApiException(_err(r));
+  }
+
   Future<void> deleteTask(String id) async {
     final r = await _dio.delete('/api/tasks/$id');
+    if (r.statusCode != 200) throw ApiException(_err(r));
+  }
+
+  /// Skips a recurring task's occurrence (advances its cycle without
+  /// awarding points) — used for "delete only this occurrence". Pass the
+  /// specific calendar day being skipped (YYYY-MM-DD); without it the
+  /// server anchors on "now", which only behaves correctly for the
+  /// occurrence that's actually due today.
+  Future<void> expireTask(String id, {String? date}) async {
+    final r = await _dio.post('/api/tasks/$id/expire',
+        data: {if (date != null) 'date': date});
     if (r.statusCode != 200) throw ApiException(_err(r));
   }
 
@@ -167,6 +218,12 @@ class Api {
   Future<void> deleteRoom(String id) async {
     final r = await _dio.delete('/api/rooms/$id');
     if (r.statusCode != 200) throw ApiException(_err(r));
+  }
+
+  Future<Map<String, dynamic>> roomStats(String id) async {
+    final r = await _dio.get('/api/rooms/$id/stats');
+    if (r.statusCode == 200) return Map<String, dynamic>.from(r.data);
+    throw ApiException(_err(r));
   }
 
   // ── HOUSEHOLD ─────────────────────────────────────────────────
@@ -199,9 +256,12 @@ class Api {
   }
 
   // ── CALENDAR ──────────────────────────────────────────────────
-  Future<List<dynamic>> calendar(int year, int month) async {
-    final r = await _dio.get('/api/calendar',
-        queryParameters: {'year': year, 'month': month});
+  Future<List<dynamic>> calendar(int year, int month, {String? memberId}) async {
+    final r = await _dio.get('/api/calendar', queryParameters: {
+      'year': year,
+      'month': month,
+      if (memberId != null) 'memberId': memberId,
+    });
     if (r.statusCode == 200) return r.data as List<dynamic>;
     throw ApiException(_err(r));
   }

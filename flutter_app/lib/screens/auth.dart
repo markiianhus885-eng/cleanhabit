@@ -1,8 +1,5 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:nfc_manager/nfc_manager.dart';
-import 'package:nfc_manager/nfc_manager_android.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -13,6 +10,12 @@ import '../theme.dart';
 import '../widgets.dart';
 
 enum _Mode { login, create, join }
+
+// Same Web OAuth client as the backend/web app verify against — Android's
+// google_sign_in issues an ID token audienced for this client when given
+// as serverClientId, so the server only ever needs to check one audience.
+const _googleWebClientId =
+    '957970436165-nddupot9otscvlm15ual30fagrkfaj5b.apps.googleusercontent.com';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -31,6 +34,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
   bool _busy = false;
   bool _gdpr = false;
+  bool _obscurePassword = true;
   String? _error;
 
   // For join: looked-up members to claim
@@ -38,95 +42,100 @@ class _AuthScreenState extends State<AuthScreen> {
   String? _selectedMemberId;
   String? _lookedUpName;
 
-  // RFID card login, two independent sources feeding the same account
-  // lookup: (1) polling the RC522/ESP32 kiosk reader's last-scan state
-  // (mirrors the web /app and /kiosk behavior), and (2) the phone's own NFC
-  // radio reading the card directly, no external reader needed.
-  Timer? _rfidTimer;
-  double? _rfidSince; // null = baseline not established yet
-  String? _rfidHint;
-  bool _nfcActive = false;
+  // Email verification step, shown after register() returns
+  // pending_verification — see _submit()/_verifyCode()/_resendCode().
+  bool _verifying = false;
+  String? _pendingEmail;
+  Map<String, dynamic>? _pendingRegisterBody;
+  final _code = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-    _rfidTimer = Timer.periodic(const Duration(seconds: 1), (_) => _rfidPollOnce());
-    _startNfcSession();
-  }
-
-  Future<void> _startNfcSession() async {
-    try {
-      final available = await NfcManager.instance.isAvailable();
-      if (!available) return;
-      _nfcActive = true;
-      await NfcManager.instance.startSession(
-        pollingOptions: {NfcPollingOption.iso14443},
-        onDiscovered: (NfcTag tag) async {
-          final idBytes = NfcTagAndroid.from(tag)?.id;
-          if (idBytes == null || idBytes.isEmpty) return;
-          final uid = idBytes
-              .map((b) => b.toRadixString(16).padLeft(2, '0'))
-              .join()
-              .toUpperCase();
-          await _tryRfidLogin(uid);
-        },
-      );
-    } catch (_) {
-      // No NFC hardware, or permission denied — the RC522 kiosk reader
-      // (polled above) still works as a fallback.
-      _nfcActive = false;
-    }
-  }
-
-  Future<void> _tryRfidLogin(String uid) async {
-    if (!mounted) return;
-    final app = context.read<AppState>();
-    try {
-      await app.loginRfid(uid);
-    } on ApiException catch (e) {
-      if (mounted) setState(() => _rfidHint = e.message);
-      Future.delayed(const Duration(milliseconds: 2500), () {
-        if (mounted) setState(() => _rfidHint = null);
-      });
-    } catch (_) {
-      // network hiccup
-    }
-  }
-
-  Future<void> _rfidPollOnce() async {
-    if (!mounted) return;
-    final app = context.read<AppState>();
-    try {
-      final data = await app.api.rfidPoll(_rfidSince ?? 0);
-      final ts = (data['ts'] as num?)?.toDouble() ?? 0;
-      if (_rfidSince == null) {
-        // First poll only establishes the baseline — a scan already sitting
-        // on the server from before this screen opened shouldn't auto-login.
-        _rfidSince = ts;
-        return;
-      }
-      _rfidSince = ts;
-      final uid = data['uid'] as String?;
-      if (uid == null || !mounted) return;
-      await _tryRfidLogin(uid);
-    } catch (_) {
-      // network hiccup, keep polling
-    }
-  }
+  // Google sign-in: shown when /api/auth/google says the email is brand
+  // new and needs a create/join household choice — see
+  // _handleGoogleSignIn()/_completeGoogleSetup().
+  final _googleSignIn = GoogleSignIn(serverClientId: _googleWebClientId);
+  bool _googleNeedsSetup = false;
+  bool _googleBusy = false;
+  String? _googleIdToken;
+  String? _googleEmail;
+  _Mode _googleSetupMode = _Mode.create;
 
   @override
   void dispose() {
-    _rfidTimer?.cancel();
-    if (_nfcActive) {
-      NfcManager.instance.stopSession();
-    }
     _username.dispose();
     _password.dispose();
     _email.dispose();
     _displayName.dispose();
     _householdName.dispose();
     _token.dispose();
+    _code.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    setState(() {
+      _googleBusy = true;
+      _error = null;
+    });
+    try {
+      final account = await _googleSignIn.signIn();
+      if (account == null) return; // user cancelled the picker
+      final auth = await account.authentication;
+      final idToken = auth.idToken;
+      if (idToken == null) {
+        setState(() => _error = context.t('net_retry'));
+        return;
+      }
+      if (!mounted) return;
+      final res = await context.read<AppState>().googleAuth(idToken);
+      if (res['needs_setup'] == true && mounted) {
+        setState(() {
+          _googleIdToken = idToken;
+          _googleEmail = res['email']?.toString();
+          _googleNeedsSetup = true;
+          _googleSetupMode = _Mode.create;
+          final suggested = res['suggested_name']?.toString() ?? '';
+          if (suggested.isNotEmpty) _displayName.text = suggested;
+        });
+      }
+    } on ApiException catch (e) {
+      setState(() => _error = e.message);
+    } catch (_) {
+      setState(() => _error = context.t('net_retry'));
+    } finally {
+      if (mounted) setState(() => _googleBusy = false);
+    }
+  }
+
+  Future<void> _completeGoogleSetup() async {
+    final extra = <String, dynamic>{
+      'action': _googleSetupMode == _Mode.join ? 'join' : 'create',
+    };
+    if (_googleSetupMode == _Mode.join) {
+      if (_selectedMemberId == null) {
+        setState(() => _error = context.t('pick_who'));
+        return;
+      }
+      extra['token'] = _token.text.trim().toUpperCase();
+      extra['member_id'] = _selectedMemberId;
+    } else {
+      extra['household_name'] = _householdName.text.trim().isEmpty
+          ? 'My Family'
+          : _householdName.text.trim();
+      extra['display_name'] = _displayName.text.trim();
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await context.read<AppState>().googleAuth(_googleIdToken!, extra);
+    } on ApiException catch (e) {
+      setState(() => _error = e.message);
+    } catch (_) {
+      setState(() => _error = context.t('net_retry'));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _lookup() async {
@@ -157,17 +166,24 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
+  static final _emailRe = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+
   Future<void> _submit() async {
     final app = context.read<AppState>();
-    final username = _username.text.trim();
     final password = _password.text;
-    if (username.isEmpty || password.isEmpty) {
-      setState(() => _error = context.t('enter_user_pass'));
+    if (password.isEmpty) {
+      setState(() => _error = context.t('enter_email_pass'));
       return;
     }
-    if (_mode != _Mode.login) {
+    if (_mode == _Mode.login) {
+      final identifier = _username.text.trim();
+      if (identifier.isEmpty || !_emailRe.hasMatch(identifier)) {
+        setState(() => _error = context.t('enter_email'));
+        return;
+      }
+    } else {
       final email = _email.text.trim();
-      if (email.isEmpty || !email.contains('@')) {
+      if (email.isEmpty || !_emailRe.hasMatch(email)) {
         setState(() => _error = context.t('enter_email'));
         return;
       }
@@ -183,10 +199,9 @@ class _AuthScreenState extends State<AuthScreen> {
     try {
       switch (_mode) {
         case _Mode.login:
-          await app.login(username, password);
+          await app.login(_username.text.trim(), password);
         case _Mode.create:
-          await app.register({
-            'username': username,
+          final body = {
             'password': password,
             'email': _email.text.trim(),
             'action': 'create',
@@ -194,21 +209,73 @@ class _AuthScreenState extends State<AuthScreen> {
             'household_name': _householdName.text.trim().isEmpty
                 ? 'My Family'
                 : _householdName.text.trim(),
-          });
+          };
+          await _registerAndMaybeVerify(app, body);
         case _Mode.join:
           if (_selectedMemberId == null) {
             setState(() => _error = context.t('pick_who'));
             return;
           }
-          await app.register({
-            'username': username,
+          final body = {
             'password': password,
             'email': _email.text.trim(),
             'action': 'join',
             'token': _token.text.trim().toUpperCase(),
             'member_id': _selectedMemberId,
-          });
+          };
+          await _registerAndMaybeVerify(app, body);
       }
+    } on ApiException catch (e) {
+      setState(() => _error = e.message);
+    } catch (_) {
+      setState(() => _error = context.t('net_retry'));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _registerAndMaybeVerify(
+      AppState app, Map<String, dynamic> body) async {
+    final res = await app.register(body);
+    if (res['pending_verification'] == true && mounted) {
+      setState(() {
+        _verifying = true;
+        _pendingEmail = res['email']?.toString() ?? body['email'] as String?;
+        _pendingRegisterBody = body;
+      });
+    }
+  }
+
+  Future<void> _verifyCode() async {
+    final code = _code.text.trim();
+    if (code.length != 6) {
+      setState(() => _error = context.t('enter_code6_digits'));
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await context.read<AppState>().verifyEmail(_pendingEmail!, code);
+    } on ApiException catch (e) {
+      setState(() => _error = e.message);
+    } catch (_) {
+      setState(() => _error = context.t('net_retry'));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _resendCode() async {
+    if (_pendingRegisterBody == null) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await context.read<AppState>().register(_pendingRegisterBody!);
+      if (mounted) showSnack(context, context.t('code_resent'));
     } on ApiException catch (e) {
       setState(() => _error = e.message);
     } catch (_) {
@@ -221,6 +288,8 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     final c = context.ch;
+    if (_verifying) return _buildVerifyScreen(context, c);
+    if (_googleNeedsSetup) return _buildGoogleSetupScreen(context, c);
     return Scaffold(
       backgroundColor: c.pageBg,
       body: SafeArea(
@@ -327,14 +396,24 @@ class _AuthScreenState extends State<AuthScreen> {
                           _field(c, _householdName, context.t('family_name')),
                           const SizedBox(height: 10),
                         ],
-                        _field(c, _username, context.t('username')),
-                        const SizedBox(height: 10),
-                        _field(c, _password, context.t('password'),
-                            obscure: true),
-                        if (_mode != _Mode.login) ...[
+                        if (_mode == _Mode.login) ...[
+                          _field(c, _username, context.t('email'),
+                              keyboardType: TextInputType.emailAddress),
                           const SizedBox(height: 10),
+                          _field(c, _password, context.t('password'),
+                              obscure: _obscurePassword,
+                              suffixIcon: _passwordToggle(c, _obscurePassword,
+                                  () => setState(() =>
+                                      _obscurePassword = !_obscurePassword))),
+                        ] else ...[
                           _field(c, _email, context.t('email'),
                               keyboardType: TextInputType.emailAddress),
+                          const SizedBox(height: 10),
+                          _field(c, _password, context.t('password'),
+                              obscure: _obscurePassword,
+                              suffixIcon: _passwordToggle(c, _obscurePassword,
+                                  () => setState(() =>
+                                      _obscurePassword = !_obscurePassword))),
                           const SizedBox(height: 12),
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -429,14 +508,336 @@ class _AuthScreenState extends State<AuthScreen> {
                                         color: Colors.white)),
                           ),
                         ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(child: Divider(color: c.divider)),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 10),
+                              child: Text(context.t('or'),
+                                  style: TextStyle(
+                                      fontSize: 12, color: c.textSecondary)),
+                            ),
+                            Expanded(child: Divider(color: c.divider)),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        SizedBox(
+                          height: 50,
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: c.divider),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14)),
+                            ),
+                            onPressed: _googleBusy ? null : _handleGoogleSignIn,
+                            icon: _googleBusy
+                                ? SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2, color: c.textSecondary))
+                                : const Text('G',
+                                    style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w800,
+                                        color: Color(0xFF4285F4))),
+                            label: Text(context.t('continue_with_google'),
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: c.textPrimary)),
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 14),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVerifyScreen(BuildContext context, ChColors c) {
+    return Scaffold(
+      backgroundColor: c.pageBg,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Center(child: Text('📧', style: TextStyle(fontSize: 44))),
+                  const SizedBox(height: 12),
+                  Text(context.t('verify_email_title'),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: c.textPrimary)),
+                  const SizedBox(height: 6),
                   Text(
-                    _rfidHint ?? '📇 ${context.t('rfid_hint')}',
+                    context.t('verify_email_desc', {'email': _pendingEmail ?? ''}),
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 13, color: c.textSecondary),
+                    style: TextStyle(fontSize: 14, color: c.textSecondary),
+                  ),
+                  const SizedBox(height: 24),
+                  AppCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TextField(
+                          controller: _code,
+                          keyboardType: TextInputType.number,
+                          maxLength: 6,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 8,
+                              color: c.textPrimary),
+                          decoration: InputDecoration(
+                            counterText: '',
+                            hintText: '000000',
+                            hintStyle: TextStyle(color: c.textFaint),
+                            filled: true,
+                            fillColor: c.pageBg,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                        if (_error != null) ...[
+                          const SizedBox(height: 12),
+                          Text(_error!,
+                              style: const TextStyle(
+                                  color: Color(0xFFB3261E), fontSize: 13)),
+                        ],
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          height: 50,
+                          child: FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: c.accent,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14)),
+                            ),
+                            onPressed: _busy ? null : _verifyCode,
+                            child: _busy
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2.5, color: Colors.white))
+                                : Text(context.t('verify_confirm'),
+                                    style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white)),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        TextButton(
+                          onPressed: _busy ? null : _resendCode,
+                          child: Text(context.t('resend_code'),
+                              style: TextStyle(color: c.accent)),
+                        ),
+                        TextButton(
+                          onPressed: _busy
+                              ? null
+                              : () => setState(() {
+                                    _verifying = false;
+                                    _error = null;
+                                    _code.clear();
+                                  }),
+                          child: Text(context.t('cancel'),
+                              style: TextStyle(color: c.textSecondary)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGoogleSetupScreen(BuildContext context, ChColors c) {
+    Widget seg(String label, _Mode m) {
+      final sel = _googleSetupMode == m;
+      return Expanded(
+        child: GestureDetector(
+          onTap: () => setState(() {
+            _googleSetupMode = m;
+            _error = null;
+          }),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              color: sel ? c.card : Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontWeight: sel ? FontWeight.w700 : FontWeight.w600,
+                    color: sel ? c.textPrimary : c.textSecondary,
+                    fontSize: 13.5)),
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: c.pageBg,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Center(child: Text('🏠', style: TextStyle(fontSize: 44))),
+                  const SizedBox(height: 12),
+                  Text(context.t('google_setup_title'),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: c.textPrimary)),
+                  const SizedBox(height: 6),
+                  Text(_googleEmail ?? '',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 14, color: c.textSecondary)),
+                  const SizedBox(height: 18),
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).brightness == Brightness.light
+                          ? const Color(0xFFEBEFEC)
+                          : c.card,
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: Row(children: [
+                      seg(context.t('create'), _Mode.create),
+                      seg(context.t('join'), _Mode.join),
+                    ]),
+                  ),
+                  const SizedBox(height: 18),
+                  AppCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (_googleSetupMode == _Mode.join) ...[
+                          _field(c, _token, context.t('family_code_hint'),
+                              caps: true),
+                          const SizedBox(height: 10),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: _busy ? null : _lookup,
+                              child: Text(context.t('lookup_family'),
+                                  style: TextStyle(color: c.accent)),
+                            ),
+                          ),
+                          if (_lookedUpName != null) ...[
+                            Text(context.t('who_are_you', {'name': _lookedUpName!}),
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: c.textPrimary)),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: _lookupMembers.map((m) {
+                                final id = m['id'].toString();
+                                final sel = id == _selectedMemberId;
+                                return GestureDetector(
+                                  onTap: () =>
+                                      setState(() => _selectedMemberId = id),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: sel ? c.accent : c.pageBg,
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: Text(
+                                      '${m['emoji']} ${m['name']}',
+                                      style: TextStyle(
+                                          color: sel
+                                              ? Colors.white
+                                              : c.textPrimary,
+                                          fontWeight: FontWeight.w600),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                        ] else ...[
+                          _field(c, _displayName, context.t('your_name')),
+                          const SizedBox(height: 10),
+                          _field(c, _householdName, context.t('family_name')),
+                          const SizedBox(height: 10),
+                        ],
+                        if (_error != null) ...[
+                          const SizedBox(height: 8),
+                          Text(_error!,
+                              style: const TextStyle(
+                                  color: Color(0xFFB3261E), fontSize: 13)),
+                        ],
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          height: 50,
+                          child: FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: c.accent,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14)),
+                            ),
+                            onPressed: _busy ? null : _completeGoogleSetup,
+                            child: _busy
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2.5, color: Colors.white))
+                                : Text(context.t('join_cleanhabit'),
+                                    style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white)),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: _busy
+                              ? null
+                              : () => setState(() {
+                                    _googleNeedsSetup = false;
+                                    _googleIdToken = null;
+                                    _error = null;
+                                  }),
+                          child: Text(context.t('cancel'),
+                              style: TextStyle(color: c.textSecondary)),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -503,6 +904,7 @@ class _AuthScreenState extends State<AuthScreen> {
     final passCtrl = TextEditingController();
     int step = 0;
     String? err;
+    bool obscureNewPass = true;
 
     showDialog(
       context: context,
@@ -555,7 +957,9 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
                 const SizedBox(height: 10),
                 _field(c, passCtrl, context.t('new_password'),
-                    obscure: true),
+                    obscure: obscureNewPass,
+                    suffixIcon: _passwordToggle(c, obscureNewPass,
+                        () => setS(() => obscureNewPass = !obscureNewPass))),
               ],
               if (err != null) ...[
                 const SizedBox(height: 8),
@@ -617,7 +1021,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
   Widget _field(ChColors c, TextEditingController ctrl, String hint,
       {bool obscure = false, bool caps = false,
-      TextInputType? keyboardType}) {
+      TextInputType? keyboardType, Widget? suffixIcon}) {
     return TextField(
       controller: ctrl,
       obscureText: obscure,
@@ -640,7 +1044,16 @@ class _AuthScreenState extends State<AuthScreen> {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: c.accent, width: 1.5),
         ),
+        suffixIcon: suffixIcon,
       ),
+    );
+  }
+
+  Widget _passwordToggle(ChColors c, bool obscured, VoidCallback onTap) {
+    return IconButton(
+      icon: Icon(obscured ? Icons.visibility_off : Icons.visibility,
+          color: c.textFaint, size: 20),
+      onPressed: onTap,
     );
   }
 }

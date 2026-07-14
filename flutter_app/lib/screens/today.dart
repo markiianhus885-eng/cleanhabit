@@ -9,8 +9,14 @@ import '../theme.dart';
 import '../widgets.dart';
 import 'task_actions.dart';
 
-class TodayScreen extends StatelessWidget {
+class TodayScreen extends StatefulWidget {
   const TodayScreen({super.key});
+  @override
+  State<TodayScreen> createState() => _TodayScreenState();
+}
+
+class _TodayScreenState extends State<TodayScreen> {
+  String? _memberFilter; // null = not yet initialized; 'all' = everyone
 
   @override
   Widget build(BuildContext context) {
@@ -18,6 +24,8 @@ class TodayScreen extends StatelessWidget {
     final data = app.data;
     final c = context.ch;
     if (data == null) return const Loader();
+
+    _memberFilter ??= data.me?.id ?? 'all';
 
     final me = data.me;
     final name = me?.name ?? data.currentUser?.username ?? 'there';
@@ -27,7 +35,11 @@ class TodayScreen extends StatelessWidget {
     final lvl = levelOf(pts);
     final toNext = ptsToNext(pts);
 
-    final dueTasks = data.dueTodayTasks;
+    final dueTasks = data.dueTodayTasks
+        .where((t) => _memberFilter == 'all' ||
+            t.assignedTo.isEmpty ||
+            t.assignedTo == _memberFilter)
+        .toList();
 
     return SafeArea(
       bottom: false,
@@ -221,6 +233,15 @@ class TodayScreen extends StatelessWidget {
                     style: TextStyle(fontSize: 13, color: c.textSecondary)),
               ],
             ),
+            const SizedBox(height: 10),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(children: [
+                _memberChip(c, context.t('all'), 'all'),
+                for (final m in data.members)
+                  _memberChip(c, '${m.emoji} ${m.name}', m.id),
+              ]),
+            ),
             const SizedBox(height: 12),
             if (dueTasks.isEmpty)
               Padding(
@@ -235,10 +256,32 @@ class TodayScreen extends StatelessWidget {
               )
             else
               for (int i = 0; i < dueTasks.length; i++) ...[
-                _TodayRow(task: dueTasks[i]),
+                _TodayRow(task: dueTasks[i], data: data),
                 if (i != dueTasks.length - 1) const SizedBox(height: 12),
               ],
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _memberChip(ChColors c, String label, String value) {
+    final sel = _memberFilter == value;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: GestureDetector(
+        onTap: () => setState(() => _memberFilter = value),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+          decoration: BoxDecoration(
+            color: sel ? c.accent : c.card,
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(label,
+              style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: sel ? Colors.white : c.textSecondary)),
         ),
       ),
     );
@@ -339,14 +382,17 @@ class _ApprovalRow extends StatelessWidget {
 
 class _TodayRow extends StatelessWidget {
   final Task task;
-  const _TodayRow({required this.task});
+  final HouseholdData data;
+  const _TodayRow({required this.task, required this.data});
 
   @override
   Widget build(BuildContext context) {
     final app = context.read<AppState>();
-    final done = task.doneToday;
+    final done = data.isDoneToday(task.id);
     final qi = questIcon(context, task);
     final xp = task.points * 20; // points → xp scale
+    final canDo = canCompleteTask(data, task);
+    final pendingApproval = data.approvals.any((a) => a.taskId == task.id);
 
     return QuestTile(
       icon: qi.icon,
@@ -354,7 +400,26 @@ class _TodayRow extends StatelessWidget {
       title: task.name,
       done: done,
       doneLabel: context.t('claimed_xp', {'n': xp}),
-      onTap: done ? null : () => completeTaskFlow(context, app, task),
+      onTap: done
+          ? () => uncompleteTaskFlow(context, app, task)
+          : (!canDo || pendingApproval
+              ? null
+              : () => completeTaskFlow(context, app, task)),
+      trailing: done
+          ? TaskCheckbox(
+              done: true,
+              size: 28,
+              onTap: () => uncompleteTaskFlow(context, app, task),
+            )
+          : TaskCheckbox(
+              done: false,
+              pendingApproval: pendingApproval,
+              locked: !canDo,
+              size: 28,
+              onTap: canDo && !pendingApproval
+                  ? () => completeTaskFlow(context, app, task)
+                  : null,
+            ),
       subtitle: Row(
         children: [
           RewardTags(xp: xp, coins: task.points),
