@@ -390,7 +390,7 @@ class _TodayRow extends StatelessWidget {
     final app = context.read<AppState>();
     final done = data.isDoneToday(task.id);
     final qi = questIcon(context, task);
-    final xp = task.points * 20; // points → xp scale
+    final xp = task.points;
     final canDo = canCompleteTask(data, task);
     final pendingApproval = data.approvals.any((a) => a.taskId == task.id);
 

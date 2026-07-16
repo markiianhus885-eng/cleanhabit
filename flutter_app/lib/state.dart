@@ -158,6 +158,7 @@ class AppState extends ChangeNotifier {
     bool approvalNeeded = false,
     bool oneTime = false,
     String? specificDays,
+    String? dueDate,
   }) async {
     await api.addTask(
       name: name,
@@ -168,6 +169,7 @@ class AppState extends ChangeNotifier {
       approvalNeeded: approvalNeeded,
       oneTime: oneTime,
       specificDays: specificDays,
+      dueDate: dueDate,
     );
     await refresh();
   }

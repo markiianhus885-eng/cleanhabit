@@ -1346,11 +1346,16 @@ def add_task():
         specific_days = ','.join(str(x) for x in specific_days)
     freq = d.get('freq', 'weekly') if not specific_days else 'custom'
     one_time = 1 if d.get('oneTime') else 0
+    due_date = d.get('dueDate')  # optional 'YYYY-MM-DD' - schedules the task's first occurrence
+    if due_date:
+        created_at = f"{due_date}T{datetime.now().strftime('%H:%M:%S')}"
+    else:
+        created_at = datetime.now().isoformat()
     db = get_db()
     db.execute(
         "INSERT INTO tasks(id,household_id,name,room_id,assigned_to,freq,diff,last_completed,approval_needed,created_at,specific_days,one_time) VALUES (?,?,?,?,?,?,?,NULL,?,?,?,?)",
         [uid(), hid, d['name'], d['roomId'], d['assignedTo'], freq, d['diff'],
-         1 if d.get('approvalNeeded') else 0, datetime.now().isoformat(), specific_days, one_time])
+         1 if d.get('approvalNeeded') else 0, created_at, specific_days, one_time])
     db.commit()
     return jsonify({'ok': True})
 

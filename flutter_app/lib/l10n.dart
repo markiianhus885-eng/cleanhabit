@@ -56,7 +56,7 @@ class L10n {
     'q_all': ['all', 'wszystkie', 'усі'],
     'q_quick': ['quick', 'szybkie', 'швидкі'],
     'q_epic': ['epic', 'epickie', 'епічні'],
-    'claimed_xp': ['claimed +{n} xp 🎉', 'zdobyto +{n} xp 🎉', 'отримано +{n} xp 🎉'],
+    'claimed_xp': ['claimed +{n} pts 🎉', 'zdobyto +{n} pkt 🎉', 'отримано +{n} бал. 🎉'],
     'go': ['go', 'start', 'вперед'],
     'xp': ['xp', 'xp', 'xp'],
 
