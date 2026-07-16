@@ -1261,7 +1261,7 @@ const LANGS = {
     badge_early_bird_name:'Ranny Ptaszek', badge_early_bird_desc:'Wykonaj zadanie przed 9:00',
     badge_night_owl_name:'Nocna Sowa', badge_night_owl_desc:'Wykonaj zadanie po 22:00',
     modal_new_task:'Nowe zadanie', modal_edit_task:'Edytuj zadanie', modal_task_name:'Nazwa zadania', modal_task_name_ph:'np. Odkurzanie',
-    modal_task_room:'Pokój', modal_task_room_ph:'Wybierz pokój...',
+    modal_task_room:'Pokój', modal_task_room_ph:'Wybierz pokój...', add_room_first:'Najpierw dodaj pokój (zakładka Pokoje)',
     modal_task_assign:'Przypisz do', modal_task_assign_ph:'Wybierz osobę...',
     modal_task_diff:'Trudność / Punkty', modal_task_type:'Typ zadania',
     modal_task_schedule:'Harmonogram', modal_task_approval:'Wymaga zatwierdzenia?',
@@ -1391,7 +1391,7 @@ const LANGS = {
     badge_early_bird_name:'Early Bird', badge_early_bird_desc:'Complete a task before 9:00',
     badge_night_owl_name:'Night Owl', badge_night_owl_desc:'Complete a task after 22:00',
     modal_new_task:'New task', modal_edit_task:'Edit task', modal_task_name:'Task name', modal_task_name_ph:'e.g. Vacuuming',
-    modal_task_room:'Room', modal_task_room_ph:'Choose a room...',
+    modal_task_room:'Room', modal_task_room_ph:'Choose a room...', add_room_first:'Add a room first (Rooms tab)',
     modal_task_assign:'Assign to', modal_task_assign_ph:'Choose a person...',
     modal_task_diff:'Difficulty / Points', modal_task_type:'Task type',
     modal_task_schedule:'Schedule', modal_task_approval:'Requires approval?',
@@ -1522,7 +1522,7 @@ const LANGS = {
     badge_early_bird_name:'Ранній птах', badge_early_bird_desc:'Виконайте завдання до 9:00',
     badge_night_owl_name:'Нічна сова', badge_night_owl_desc:'Виконайте завдання після 22:00',
     modal_new_task:'Нове завдання', modal_edit_task:'Редагувати завдання', modal_task_name:'Назва завдання', modal_task_name_ph:'напр. Пилосос',
-    modal_task_room:'Кімната', modal_task_room_ph:'Оберіть кімнату...',
+    modal_task_room:'Кімната', modal_task_room_ph:'Оберіть кімнату...', add_room_first:'Спершу додайте кімнату (вкладка Кімнати)',
     modal_task_assign:'Призначити', modal_task_assign_ph:'Оберіть людину...',
     modal_task_diff:'Складність / Бали', modal_task_type:'Тип завдання',
     modal_task_schedule:'Розклад', modal_task_approval:'Потребує підтвердження?',
@@ -2351,6 +2351,12 @@ function calNav(dir){
 }
 
 let _calLastIso = null;
+let _addTaskForDate = null;
+
+function calAddTaskForDay(iso){
+  _addTaskForDate = iso;
+  showAddTask();
+}
 
 function calDayClick(iso){
   _calLastIso = iso;
@@ -2364,7 +2370,10 @@ function calDayClick(iso){
 
   let html = `
   <div style="background:var(--card);border-radius:16px;border:1px solid var(--border);padding:14px">
-    <div style="font-weight:800;font-size:14px;margin-bottom:10px;color:var(--blue2)">📅 ${dateLabel}</div>`;
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-weight:800;font-size:14px;color:var(--blue2)">📅 ${dateLabel}</div>
+      <button class="btn btn-ghost btn-xs" style="padding:4px 9px;font-size:14px;font-weight:800" onclick="calAddTaskForDay('${iso}')">+</button>
+    </div>`;
   if(tasks.length === 0){
     html += `<div style="font-size:13px;color:var(--muted2);text-align:center;padding:10px 0">${t('cal_free_day')}</div>`;
   } else {
@@ -2471,6 +2480,7 @@ function openModal(html){
 }
 function closeModal(){
   $('modal').classList.remove('open');
+  _addTaskForDate = null;
 }
 $('modal').addEventListener('click', e=>{
   if(e.target===$('modal')) closeModal();
@@ -3241,6 +3251,7 @@ function getGoalTemplates(){ return _GOAL_TPL[_lang] || _GOAL_TPL.pl; }
 function showAddTask(prefillName='', prefillDiff='medium', existingTask=null){
   const d = state.data;
   const isEdit = !!existingTask;
+  if(!isEdit && (!d.rooms || d.rooms.length===0)){ alert(t('add_room_first')); return; }
   openModal(`
     <h2>${isEdit?t('modal_edit_task'):t('modal_new_task')}</h2>
     <div class="field">
@@ -3401,9 +3412,12 @@ async function submitAddTask(editId=null){
   const roomId=$('task-room').value;
   const assignedTo=$('task-member').value;
   if(!name||!roomId||!assignedTo) return;
+  const forDate = _addTaskForDate;
   if(editId) await PUT(`/api/tasks/${editId}`,{name,roomId,assignedTo,...f});
-  else await POST('/api/tasks',{name,roomId,assignedTo,...f});
+  else await POST('/api/tasks',{name,roomId,assignedTo,...f, ...(forDate?{dueDate:forDate}:{})});
+  _addTaskForDate = null;
   closeModal(); await loadData();
+  if(forDate){ await renderCalendar(); calDayClick(forDate); }
 }
 async function deleteTask(id){
   await DEL(`/api/tasks/${id}`);
