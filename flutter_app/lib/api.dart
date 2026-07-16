@@ -140,6 +140,7 @@ class Api {
     bool approvalNeeded = false,
     bool oneTime = false,
     String? specificDays,
+    String? dueDate,
   }) async {
     final r = await _dio.post('/api/tasks', data: {
       'name': name,
@@ -150,6 +151,7 @@ class Api {
       'approvalNeeded': approvalNeeded,
       'oneTime': oneTime,
       if (specificDays != null) 'specificDays': specificDays,
+      if (dueDate != null) 'dueDate': dueDate,
     });
     if (r.statusCode != 200) throw ApiException(_err(r));
   }

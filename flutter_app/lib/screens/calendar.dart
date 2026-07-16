@@ -8,7 +8,7 @@ import '../state.dart';
 import '../theme.dart';
 import '../widgets.dart';
 import 'task_actions.dart';
-import 'tasks.dart' show openTaskEditSheet;
+import 'tasks.dart' show openTaskEditSheet, openTaskAddSheet;
 
 const Map<String, List<String>> _monthsByLang = {
   'en': ['January', 'February', 'March', 'April', 'May', 'June', 'July',
@@ -273,11 +273,32 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             borderRadius: BorderRadius.circular(999))),
                   ),
                   const SizedBox(height: 16),
-                  Text('${day.date.day} ${_months(sheetCtx)[day.date.month - 1]}',
-                      style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: c.textPrimary)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('${day.date.day} ${_months(sheetCtx)[day.date.month - 1]}',
+                          style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: c.textPrimary)),
+                      if (data != null)
+                        GestureDetector(
+                          onTap: () async {
+                            await openTaskAddSheet(sheetCtx, data,
+                                forDate: day.date);
+                            await reload();
+                          },
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                                color: c.accent.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(10)),
+                            child: Icon(Icons.add, size: 18, color: c.accent),
+                          ),
+                        ),
+                    ],
+                  ),
                   const SizedBox(height: 12),
                   if (day.tasks.isEmpty)
                     Padding(

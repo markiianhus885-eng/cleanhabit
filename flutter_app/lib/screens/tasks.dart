@@ -247,7 +247,7 @@ class _TaskRow extends StatelessWidget {
     final c = context.ch;
     final done = data.isDoneToday(task.id);
     final qi = questIcon(context, task);
-    final xp = task.points * 20;
+    final xp = task.points;
     final canDo = canCompleteTask(data, task);
     final pendingApproval = data.approvals.any((a) => a.taskId == task.id);
     final assignee = task.assignedTo.isNotEmpty
@@ -365,12 +365,20 @@ class _TaskRow extends StatelessWidget {
   }
 }
 
-void _openAddSheet(BuildContext context, HouseholdData data) {
-  showModalBottomSheet(
+void _openAddSheet(BuildContext context, HouseholdData data) =>
+    openTaskAddSheet(context, data);
+
+Future<void> openTaskAddSheet(BuildContext context, HouseholdData data,
+    {DateTime? forDate}) async {
+  if (data.rooms.isEmpty) {
+    showSnack(context, context.t('add_room_first'), error: true);
+    return;
+  }
+  await showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => _AddTaskSheet(data: data),
+    builder: (_) => _AddTaskSheet(data: data, initialDueDate: forDate),
   );
 }
 
@@ -386,7 +394,8 @@ void openTaskEditSheet(BuildContext context, HouseholdData data, Task task) {
 class _AddTaskSheet extends StatefulWidget {
   final HouseholdData data;
   final Task? existingTask;
-  const _AddTaskSheet({required this.data, this.existingTask});
+  final DateTime? initialDueDate;
+  const _AddTaskSheet({required this.data, this.existingTask, this.initialDueDate});
   @override
   State<_AddTaskSheet> createState() => _AddTaskSheetState();
 }
@@ -418,6 +427,7 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
       _oneTime = t.oneTime;
     } else if (widget.data.rooms.isNotEmpty) {
       _roomId = widget.data.rooms.first.id;
+      if (widget.initialDueDate != null) _oneTime = true;
     }
     if (_assignedTo == null && widget.data.members.isNotEmpty) {
       _assignedTo = widget.data.members.first.id;
@@ -457,6 +467,7 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
               oneTime: _oneTime,
             );
       } else {
+        final due = widget.initialDueDate;
         await context.read<AppState>().addTask(
               name: _name.text.trim(),
               roomId: _roomId!,
@@ -465,6 +476,9 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
               diff: _diff,
               approvalNeeded: _approval,
               oneTime: _oneTime,
+              dueDate: due == null
+                  ? null
+                  : '${due.year.toString().padLeft(4, '0')}-${due.month.toString().padLeft(2, '0')}-${due.day.toString().padLeft(2, '0')}',
             );
       }
       if (mounted) {
