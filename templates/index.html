@@ -809,7 +809,7 @@ html.dark .tb-streak{color:#FF9A6B;background:rgba(255,122,61,.14);}
       </div>
       <div id="google-signin-btn" style="display:flex;justify-content:center"></div>
 
-      <div id="rfid-hint" style="text-align:center;margin-top:14px;font-size:13px;color:var(--muted2)">📇 Możesz też zeskanować kartę RFID</div>
+      <div id="rfid-hint" style="text-align:center;margin-top:14px;font-size:13px;color:var(--muted2);display:none"></div>
 
       <!-- shown only after Google sign-in for a brand-new email; lets the
            user pick create-household vs join-household before the account
@@ -4656,11 +4656,12 @@ checkAuth();
         const login = await r.json();
         const hint = $('rfid-hint');
         if(login.ok){
-          if(hint){ hint.textContent = `✅ Witaj, ${login.user.username}!`; }
+          if(hint){ hint.textContent = `✅ Witaj, ${login.user.username}!`; hint.style.display='block'; }
           await checkAuth();
         } else if(hint){
           hint.textContent = '📇 Nieznana karta';
-          setTimeout(() => { hint.textContent = '📇 Możesz też zeskanować kartę RFID'; }, 2500);
+          hint.style.display='block';
+          setTimeout(() => { hint.textContent = ''; hint.style.display='none'; }, 2500);
         }
       }
     }catch(e){ /* network hiccup, keep polling */ }
