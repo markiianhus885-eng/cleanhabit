@@ -273,6 +273,25 @@ class L10n {
     'b_night_owl_n': ['Night Owl', 'Nocna Sowa', 'Нічна сова'],
     'b_night_owl_d': ['A task after 22:00', 'Zadanie po 22:00', 'Завдання після 22:00'],
 
+    // mcp server
+    'nav_mcp': ['MCP Server', 'Serwer MCP', 'MCP сервер'],
+    'mcp_title': ['MCP Server setup', 'Konfiguracja serwera MCP', 'Налаштування MCP сервера'],
+    'mcp_desc': [
+      'Connect an AI assistant (like Claude) to your household. Fill in your email below, then copy the config and paste it into your assistant\'s MCP settings file.',
+      'Podłącz asystenta AI (np. Claude) do swojego gospodarstwa domowego. Wpisz swój e-mail poniżej, skopiuj konfigurację i wklej ją do pliku ustawień MCP swojego asystenta.',
+      'Підключіть AI-асистента (напр. Claude) до вашого домогосподарства. Введіть свою електронну пошту нижче, скопіюйте конфігурацію та вставте її у файл налаштувань MCP вашого асистента.'
+    ],
+    'mcp_email_label': ['Your email', 'Twój e-mail', 'Ваша електронна пошта'],
+    'mcp_email_ph': ['you@example.com', 'ty@przyklad.com', 'ty@example.com'],
+    'mcp_config_label': ['Config to copy', 'Konfiguracja do skopiowania', 'Конфігурація для копіювання'],
+    'mcp_copy_btn': ['Copy config', 'Kopiuj konfigurację', 'Копіювати конфігурацію'],
+    'mcp_copied': ['Config copied!', 'Skopiowano konfigurację!', 'Конфігурацію скопійовано!'],
+    'mcp_hint': [
+      'Replace "your_password" with your account password, then paste this into ~/.claude/claude_desktop_config.json or .mcp.json.',
+      'Zastąp "your_password" hasłem do swojego konta, a następnie wklej to do ~/.claude/claude_desktop_config.json lub .mcp.json.',
+      'Замініть "your_password" на пароль вашого облікового запису, а потім вставте це у ~/.claude/claude_desktop_config.json або .mcp.json.'
+    ],
+
     // profile
     'profile_title': ['Profile', 'Profil', 'Профіль'],
     'progress_next': ['Progress to next level', 'Postęp do następnego poziomu', 'Прогрес до наступного рівня'],

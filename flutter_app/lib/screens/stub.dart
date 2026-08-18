@@ -12,6 +12,7 @@ import 'family.dart';
 import 'badges.dart';
 import 'profile.dart';
 import 'assistant.dart';
+import 'mcp_setup.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -54,6 +55,8 @@ class MoreScreen extends StatelessWidget {
                   context.t('badges_title'), const BadgesScreen()),
               _nav(context, Icons.person_outline, context.t('profile_title'),
                   const ProfileScreen()),
+              _nav(context, Icons.hub_outlined, context.t('nav_mcp'),
+                  const McpSetupScreen()),
             ],
           ),
         ),
