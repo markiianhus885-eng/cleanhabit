@@ -242,12 +242,17 @@ def main():
         method = msg.get("method")
 
         if method == "initialize":
+            # Echo back the client's requested version if we support it,
+            # otherwise fall back to the latest spec we implement.
+            SUPPORTED_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"]
+            requested = msg.get("params", {}).get("protocolVersion")
+            negotiated = requested if requested in SUPPORTED_VERSIONS else SUPPORTED_VERSIONS[0]
             resp = {
                 "jsonrpc": "2.0", "id": msg_id,
                 "result": {
-                    "protocolVersion": "2024-11-05",
+                    "protocolVersion": negotiated,
                     "capabilities": {"tools": {}},
-                    "serverInfo": {"name": "cleanhabit", "version": "1.0.0"}
+                    "serverInfo": {"name": "cleanhabit", "version": "1.1.0"}
                 }
             }
         elif method == "tools/list":
