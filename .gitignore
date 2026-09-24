@@ -12,3 +12,17 @@ flutter_app/build/
 # APK too large for GitHub — uploaded directly to Pi via SCP
 static/cleanhabit.apk
 flutter_app/.dart_tool/
+google-service-account.json
+
+# Local tooling / notes
+.claude/
+CLAUDE.md
+
+# Backups and local junk
+*.bak
+*.bak-*
+*.db
+deploy.log
+.env.*
+*.jks
+key.properties
