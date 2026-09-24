@@ -24,5 +24,6 @@ CLAUDE.md
 *.db
 deploy.log
 .env.*
+!.env.example
 *.jks
 key.properties
